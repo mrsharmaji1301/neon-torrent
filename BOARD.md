@@ -53,6 +53,7 @@ Read AGENTS.md and BOARD.md in F:\neon-torrent. Do task <ID> exactly as its card
 | D-02 | Launch copy pack | Codex · GPT-6 Luna | done: reviewed, 4 fixes, in `marketing/` |
 | D-03 | Outreach list | Antigravity · Gemini 3.8 Flash (3.1 Pro is not in the dropdown) | doing |
 | D-05 | Unit tests for `guard.py` and `theme.py` | Codex · GPT-6 Luna | done: 22 tests in `tests/` pass (`python -m unittest discover -s tests`); one wrong expectation fixed |
+| D-04a | Privacy policy, terms and abuse page (refund page waits for your decision) | Codex · GPT-6 Luna | doing |
 | U-01 | Install GitHub CLI and log in | You | done |
 | U-02 | Partner Center individual account (ID + selfie) | You | todo |
 | U-03 | Dodo Payments signup + KYC | You | todo |
@@ -70,6 +71,10 @@ first-run folder screen). Tests 22/22, audit 14/14, and the Sandbox install show
 (no `DONE.md`; Antigravity's last write was at 03:57 and there is no `assets/` folder) and D-03 (no `inbox/D-03/`). Both
 look stalled in Antigravity. Please review the LGPL wording in the notices. `APP_VERSION` is now 1.0.0, but the engine's
 user agent still says `NeonTorrent/2.0`.
+
+**24 Oct 05:05, Claude:** D-01b and D-03 did not crash. Antigravity ran out of model quota at 03:57 (D-01b started four
+page-builder sub-agents at once), and it refreshes at **08:47**. Then type `continue` in both Antigravity
+conversations. Do not click "Enable Overages": it bills. Codex has its own quota and is now writing D-04a.
 
 Every session on this shift: read CLAUDE.md and this board first, write in English, never write to drive C:, and make
 no purchases, posts, account or settings changes. A scheduled session cannot drive Codex or Antigravity (no desktop
@@ -204,6 +209,30 @@ product images, a lot of space, short copy.
   their content stays.
 - **Done when:** no empty boxes, nothing looks like a spreadsheet, and `DONE.md` lists each section of the landing
   page with one line on what it shows.
+
+### D-04a Privacy policy, terms and abuse page
+
+- **App:** Codex app · GPT-6 Luna, reasoning High.
+- **Output:** `inbox/D-04a/privacy.html`, `terms.html` and `abuse.html`, plus a `.md` copy of each. They move to
+  `site/legal/` once accepted. The refund page waits for the user's decision on the refund window.
+
+Plain English that a Microsoft Store reviewer and a careful user can trust. Facts come only from README.md,
+SECURITY.md and SHIP_PLAN.md; anything else becomes a `{{PLACEHOLDER}}` (owner name, postal address, contact and
+abuse emails, effective date, `{{REFUND_DAYS}}`).
+- **Privacy:** no telemetry and no account. List every network connection the app makes and why: peers and trackers
+  of the user's own torrents, the IP-range lists the Shield downloads, optional VirusTotal hash lookups with the
+  user's own key, and Store updates. List what stays on the PC (settings, learned blocks, resume data) and how to
+  delete it. The website uses Cloudflare Web Analytics without cookies, and Dodo Payments handles payments as
+  merchant of record. Say plainly that peers in a swarm see your IP address, because that is how BitTorrent works.
+  One short section on rights under GDPR and India's DPDP Act 2023.
+- **Terms:** licence to use, the Free and Pro plans and prices from SHIP_PLAN.md, licence keys, refunds within
+  `{{REFUND_DAYS}}` days, no warranty, the user is responsible for what they download and must not infringe
+  copyright, termination, governing law India.
+- **Abuse:** how rights holders and others report misuse to `{{ABUSE_EMAIL}}`; NEON hosts no content and has no
+  catalogue or search; what we can and cannot do about a report.
+- Link `../style.css` and use simple semantic HTML so the pages take the site's look. At most 1,500 words per page.
+- **Done when:** every page shows an effective-date placeholder, no claim lacks a source, and `DONE.md` lists every
+  placeholder and says the pages need a lawyer's review before launch.
 
 ### D-05 Unit tests for guard.py and theme.py
 
