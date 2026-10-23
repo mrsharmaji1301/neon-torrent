@@ -53,7 +53,7 @@ Read AGENTS.md and BOARD.md in F:\neon-torrent. Do task <ID> exactly as its card
 | D-02 | Launch copy pack | Codex · GPT-6 Luna | done: reviewed, 4 fixes, in `marketing/` |
 | D-03 | Outreach list | Antigravity · Gemini 3.8 Flash (3.1 Pro is not in the dropdown) | doing |
 | D-05 | Unit tests for `guard.py` and `theme.py` | Codex · GPT-6 Luna | done: 22 tests in `tests/` pass (`python -m unittest discover -s tests`); one wrong expectation fixed |
-| D-04a | Privacy policy, terms and abuse page (refund page waits for your decision) | Codex · GPT-6 Luna | doing |
+| D-04a | Privacy policy, terms and abuse page (refund page waits for your decision) | Codex · GPT-6 Luna | todo: paste the prompt |
 | U-01 | Install GitHub CLI and log in | You | done |
 | U-02 | Partner Center individual account (ID + selfie) | You | todo |
 | U-03 | Dodo Payments signup + KYC | You | todo |
@@ -74,7 +74,8 @@ user agent still says `NeonTorrent/2.0`.
 
 **24 Oct 05:05, Claude:** D-01b and D-03 did not crash. Antigravity ran out of model quota at 03:57 (D-01b started four
 page-builder sub-agents at once), and it refreshes at **08:47**. Then type `continue` in both Antigravity
-conversations. Do not click "Enable Overages": it bills. Codex has its own quota and is now writing D-04a.
+conversations. Do not click "Enable Overages": it bills. D-04a is written up but not sent: at 05:05 a Windows input
+overlay (TextInputHost) blocked desktop control. Paste the standard prompt with `D-04a` into Codex (NEON project).
 
 Every session on this shift: read CLAUDE.md and this board first, write in English, never write to drive C:, and make
 no purchases, posts, account or settings changes. A scheduled session cannot drive Codex or Antigravity (no desktop
