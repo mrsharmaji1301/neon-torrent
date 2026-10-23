@@ -48,10 +48,10 @@ Read AGENTS.md and BOARD.md in F:\neon-torrent. Do task <ID> exactly as its card
 | C-06 | Bug: quitting freezes the window for several seconds. Hide it at once, finish shutdown in the background | Claude | done |
 | C-07 | Status filter chips with live counts (All, Downloading, Seeding, Completed, Active, Paused, Stopped, Errors) | Claude | done |
 | C-08 | Dev tools into `F:\neon-build\tools`: Windows SDK BuildTools 10.0.28000.2705 (makeappx/signtool, nuget.org, 21.3 MB), gitleaks 8.30.1 (secret scan, SHA256-checked, 8.4 MB), ruff (lint, into `.venv`), Token Savior (MCP code navigation, own venv, `optimized` profile, project `.mcp.json`) | Claude | done, hash-checked; Token Savior skipped (not needed to ship) |
-| D-01 | Website | Antigravity · Claude Opus 4.6 | doing |
+| D-01 | Website | Antigravity · Claude Opus 4.6 | done: reviewed, overclaims fixed, pricing matched to SHIP_PLAN; in `site/` with placeholder images until C-04 |
 | D-02 | Launch copy pack | Codex · GPT-6 Luna | done: reviewed, 4 fixes, in `marketing/` |
-| D-03 | Outreach list | Antigravity · Gemini 3.1 Pro | todo |
-| D-05 | Unit tests for `guard.py` and `theme.py` | Codex · GPT-6 Luna | todo |
+| D-03 | Outreach list | Antigravity · Gemini 3.8 Flash (3.1 Pro is not in the dropdown) | doing |
+| D-05 | Unit tests for `guard.py` and `theme.py` | Codex · GPT-6 Luna | doing |
 | U-01 | Install GitHub CLI and log in | You | done |
 | U-02 | Partner Center individual account (ID + selfie) | You | todo |
 | U-03 | Dodo Payments signup + KYC | You | todo |
@@ -60,6 +60,7 @@ Read AGENTS.md and BOARD.md in F:\neon-torrent. Do task <ID> exactly as its card
 **Open questions for you:**
 1. Refund window: 14 days or 7 days (needed for D-04 legal drafts).
 2. The Store submission on Sun 25 needs your Partner Center account (U-02) first.
+3. Confirm the Free/Pro split in SHIP_PLAN ("Free vs Pro in v1.0"). The website shows it now, and C-02 builds it.
 
 **Next up** (cards are written when they start):
 - D-04 legal drafts (Codex), after you decide the refund window

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Download NEON Torrent | Fast &amp; Defensive BitTorrent Client for Windows</title>
+  <meta name="description" content="Download NEON Torrent for Windows 10 and 11 (64-bit). Pre-filters hostile peers, blocks disguised malware before downloading, and gives you pure BitTorrent performance.">
+  <link rel="canonical" href="https://{{DOMAIN}}/download.html">
+  <meta property="og:title" content="Download NEON Torrent for Windows">
+  <meta property="og:description" content="Defensive, fast BitTorrent client for Windows 10/11. No ads, no telemetry, no miners.">
+  <meta property="og:image" content="assets/og.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <header class="navbar">
+    <div class="container nav-inner">
+      <a href="index.html" class="brand" aria-label="NEON Torrent Home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="#22d3ee" stroke="#22d3ee"/>
+        </svg>
+        <span>NEON <span class="brand-accent">TORRENT</span></span>
+      </a>
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/>
+        </svg>
+      </button>
+      <nav>
+        <ul class="nav-links" id="navLinks">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="index.html#features">Features</a></li>
+          <li><a href="index.html#shield">Shield</a></li>
+          <li><a href="index.html#guard">Download Guard</a></li>
+          <li><a href="index.html#pricing">Pricing</a></li>
+          <li><a href="docs.html">Docs</a></li>
+          <li><a href="security.html">Security</a></li>
+          <li><a href="download.html" class="btn btn-primary btn-sm active">Download</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Download Hero -->
+    <section class="hero" style="padding-bottom: 2rem;">
+      <div class="container container-narrow">
+        <span class="badge badge-cyan">Official Windows Release · v1.0</span>
+        <h1>Get NEON Torrent for <span class="hero-highlight">Windows</span></h1>
+        <p class="hero-sub">Engineered specifically for Windows 10 and 11 (64-bit). Standalone execution with zero bundled offers, zero telemetry, and built-in swarm protection.</p>
+        
+        <div class="hero-cta" style="margin-bottom: 2rem;">
+          <a href="{{STORE_URL}}" class="btn btn-primary btn-lg" style="gap: 0.75rem;">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width: 22px; height: 22px;">
+              <path d="M2 3h9v9H2V3zm11 0h9v9h-9V3zM2 13h9v9H2v-9zm11 0h9v9h-9v-9z"/>
+            </svg>
+            <span>Get from Microsoft Store</span>
+          </a>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin-bottom: 2rem;">
+          <span class="badge badge-green">&#10003; Verified Clean</span>
+          <span class="badge badge-cyan">&#10003; Windows 10 / 11 x64</span>
+          <span class="badge">&#10003; 14/14 Security Audits Passed</span>
+          <span class="badge badge-magenta">&#10003; Zero Adware / Trackers</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Requirements & Architecture -->
+    <section style="padding: 2rem 0 4rem 0;">
+      <div class="container container-narrow">
+        <h2>System Requirements</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Requirement</th>
+                <th>Specification</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Operating System</strong></td>
+                <td>Windows 10 / 11 (64-bit)</td>
+                <td>Windows 10 64-bit (version 1809 / build 17763 or later) or Windows 11.</td>
+              </tr>
+              <tr>
+                <td><strong>Architecture</strong></td>
+                <td>x64 (AMD64 / Intel 64)</td>
+                <td>Optimized native 64-bit execution for multi-threaded piece hashing.</td>
+              </tr>
+              <tr>
+                <td><strong>Memory (RAM)</strong></td>
+                <td>2 GB minimum (4 GB recommended)</td>
+                <td>Lightweight PySide6 interface with isolated libtorrent session thread.</td>
+              </tr>
+              <tr>
+                <td><strong>Storage</strong></td>
+                <td>150 MB disk space</td>
+                <td>For runtime and core libraries; additional space required for downloaded content.</td>
+              </tr>
+              <tr>
+                <td><strong>Runtime Engine</strong></td>
+                <td>Self-contained interpreter</td>
+                <td>A signed Microsoft Store package with its own runtime. It does not need or change anything else on your PC.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2 style="margin-top: 3.5rem;">First-Run &amp; Network Setup</h2>
+        <div class="grid grid-2" style="margin-top: 1.5rem;">
+          <div class="card">
+            <div class="card-icon">
+              <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+            </div>
+            <h3>Windows Firewall Prompt</h3>
+            <p>Windows Firewall prompts once for <code>NeonTorrent.exe</code>. Allow access on <strong>Private networks</strong> to enable incoming peer connections and NAT-PMP/UPnP port mapping.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-icon magenta">
+              <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            </div>
+            <h3>Antivirus Coexistence</h3>
+            <p>NEON Torrent actively reads <code>MwacDetections</code> every 2 seconds to absorb blocked torrent IPs into libtorrent's filter. To silence connection warnings completely, whitelist <code>runtime\NeonTorrent.exe</code> in your antivirus.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-icon green">
+              <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z"/></svg>
+            </div>
+            <h3>Disk Full Safeguard</h3>
+            <p>If a destination drive fills up, transfers stop writing and transition to upload-only, displaying <strong>Disk full</strong> in red. They resume automatically when space is cleared, or use <em>Move data</em> to transfer files to another drive.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-icon yellow">
+              <svg viewBox="0 0 24 24"><path d="M13 3h-2v10h2V3zm4.83 2.17l-1.42 1.42C17.99 7.86 19 9.81 19 12c0 3.87-3.13 7-7 7s-7-3.13-7-7c0-2.19 1.01-4.14 2.58-5.42L6.17 5.17C4.23 6.82 3 9.26 3 12c0 4.97 4.03 9 9 9s9-4.03 9-9c0-2.74-1.23-5.18-3.17-6.83z"/></svg>
+            </div>
+            <h3>Instant Background Shutdown</h3>
+            <p>Quitting hides the UI window immediately. Resume data, fastresume states, and network caches are safely persisted to disk in the background within seconds, eliminating annoying UI freezing.</p>
+          </div>
+        </div>
+
+        <!-- Security Summary Box -->
+        <div class="security-banner" style="margin-top: 3.5rem;">
+          <div class="security-banner-info">
+            <h3>
+              <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: currentColor;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+              14/14 Offline Attack Checks Verified
+            </h3>
+            <p>Every release is audited against path traversal, alternate data streams, hostile unicode overrides, SSRF exploits, and malicious double extensions via <code>tools/security_audit.py</code>.</p>
+          </div>
+          <a href="security.html" class="btn btn-secondary">Read Full Audit</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="index.html" class="brand" aria-label="NEON Torrent Home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="#22d3ee" stroke="#22d3ee"/>
+            </svg>
+            <span>NEON <span class="brand-accent">TORRENT</span></span>
+          </a>
+          <p>Defensive BitTorrent client for Windows 10/11. Zero ads, zero miners, intelligent peer filtering and file verification.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul>
+            <li><a href="index.html">Overview</a></li>
+            <li><a href="download.html">Download</a></li>
+            <li><a href="docs.html">Documentation</a></li>
+            <li><a href="security.html">Security Model</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="/legal/privacy.html">Privacy Policy</a></li>
+            <li><a href="/legal/terms.html">Terms of Service</a></li>
+            <li><a href="/legal/refund.html">Refund Policy</a></li>
+            <li><a href="/legal/abuse.html">Abuse / DMCA</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Platform</h4>
+          <ul>
+            <li>Windows 10 / 11 (64-bit)</li>
+            <li>Microsoft Store Distribution</li>
+            <li>libtorrent 2.x Engine</li>
+            <li>Cyberpunk Palette</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div>&copy; 2026 NEON Torrent. Built for performance and security on Windows.</div>
+        <div>Microsoft Store: <a href="{{STORE_URL}}">{{STORE_URL}}</a></div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <!-- Cloudflare Web Analytics -->
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "{{CF_ANALYTICS_TOKEN}}"}'></script>
+</body>
+</html>

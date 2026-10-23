@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Security Model &amp; Audit | NEON Torrent</title>
+  <meta name="description" content="Detailed security architecture and offline attack audit of NEON Torrent. Built-in Shield peer filter, Download Guard file inspection, and Mark-of-the-Web enforcement.">
+  <link rel="canonical" href="https://{{DOMAIN}}/security.html">
+  <meta property="og:title" content="NEON Torrent Security Model &amp; Audit">
+  <meta property="og:description" content="14/14 offline attack tests passed. Read how NEON Torrent protects Windows users from swarm hazards and malicious payloads.">
+  <meta property="og:image" content="assets/og.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <header class="navbar">
+    <div class="container nav-inner">
+      <a href="index.html" class="brand" aria-label="NEON Torrent Home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="#22d3ee" stroke="#22d3ee"/>
+        </svg>
+        <span>NEON <span class="brand-accent">TORRENT</span></span>
+      </a>
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/>
+        </svg>
+      </button>
+      <nav>
+        <ul class="nav-links" id="navLinks">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="index.html#features">Features</a></li>
+          <li><a href="index.html#shield">Shield</a></li>
+          <li><a href="index.html#guard">Download Guard</a></li>
+          <li><a href="index.html#pricing">Pricing</a></li>
+          <li><a href="docs.html">Docs</a></li>
+          <li><a href="security.html" class="active">Security</a></li>
+          <li><a href="download.html" class="btn btn-primary btn-sm">Download</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Security Hero -->
+    <section class="hero" style="padding-bottom: 2rem;">
+      <div class="container container-narrow">
+        <span class="badge badge-green">Audit Verified · 14/14 Tests Passed</span>
+        <h1>Security Model &amp; <span class="hero-highlight">Attack Audit</span></h1>
+        <p class="hero-sub">An honest, technical breakdown of what a BitTorrent client can and cannot promise, how NEON Torrent shields your network and storage, and verified audit results.</p>
+      </div>
+    </section>
+
+    <!-- Honest Promise -->
+    <section style="padding: 2rem 0;">
+      <div class="container container-narrow">
+        <div class="card" style="border-left: 4px solid var(--cyan); background: var(--panel);">
+          <h3>What a BitTorrent Client Can and Cannot Promise</h3>
+          <p>BitTorrent verifies every piece against the torrent's cryptographic hashes (SHA-1, or SHA-256 for v2 torrents). This guarantees that every byte downloaded is bit-for-bit identical to what the uploader published. Nobody in transit can tamper with or inject data into that payload.</p>
+          <p style="margin-bottom: 0;">However, whether that published file is benign or hostile depends entirely on the uploader. No client can magically make an intentional Trojan installer safe to execute, so claiming "100% malware-proof" is fundamentally dishonest. NEON Torrent focuses with relentless precision on everything a desktop client <em>can</em> control.</p>
+        </div>
+
+        <!-- 3 Layers of Defense -->
+        <h2 style="margin-top: 3.5rem;">The Three Protection Layers</h2>
+
+        <!-- Layer 1: Shield -->
+        <div class="card" style="margin-top: 1.5rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div class="card-icon" style="margin-bottom: 0;"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg></div>
+              <h3>1. Network Layer: The Shield</h3>
+            </div>
+            <span class="badge badge-cyan">Network</span>
+          </div>
+          <p>Antivirus web protection (such as Malwarebytes) monitors connections using private IP reputation databases. Swarms frequently include flagged datacenter or VPN exit nodes, leading to popup spam and dropped transfers. The Shield stops this before it begins:</p>
+          <ul style="list-style: none; margin: 1rem 0;">
+            <li style="margin-bottom: 0.75rem;"><strong>Pre-contact Peer Filter:</strong> Refuses connections to known VPN and datacenter ranges (using X4BNet lists refreshed daily, plus Cloudflare WARP) before packets are transmitted. Legitimate seedbox providers (Hetzner, OVH, Scaleway) remain whitelisted. In real-world telemetry, 12 out of 13 flagged peers would have been blocked before contact.</li>
+            <li style="margin-bottom: 0.75rem;"><strong>Antivirus Learning:</strong> Automatically checks Malwarebytes' <code>MwacDetections</code> every 2 seconds. Any IP or tracker flagged for a torrent application is immediately injected into libtorrent's IP filter and tracker blocklist.</li>
+            <li style="margin-bottom: 0.75rem;"><strong>Automated Subnet Neutralization:</strong> Flagged IPs cause their /24 subnet to be blocked. Hosting-sized networks (&le; 2 million IPv4 addresses) are blocked completely. Major consumer ISPs (Jio, Airtel, BSNL) and CDN backbones (Cloudflare, Akamai) are protected from whole-network blocks.</li>
+            <li style="margin-bottom: 0.75rem;"><strong>File-Only Swarm by Default:</strong> Distributed Hash Table (DHT) and Local Peer Discovery (LSD) are turned off by default, ensuring your machine speaks exclusively to your torrents' trackers and verified peers.</li>
+            <li style="margin-bottom: 0;"><strong>Tracker Hardening:</strong> SSRF mitigation stops requests to local administrative endpoints, look-alike IDNA punycode domains are rejected (<code>allow_idna = false</code>), and HTTPS trackers require valid TLS certificates.</li>
+          </ul>
+        </div>
+
+        <!-- Layer 2: Download Guard -->
+        <div class="card" style="margin-top: 1.5rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div class="card-icon magenta" style="margin-bottom: 0;"><svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
+              <h3>2. File Layer: Download Guard</h3>
+            </div>
+            <span class="badge badge-magenta">Filesystem</span>
+          </div>
+          <p>Download Guard intercepts files at both entry and completion stages:</p>
+          <ul style="list-style: none; margin: 1rem 0;">
+            <li style="margin-bottom: 0.75rem;"><strong>Pre-Download Inspection (Priority 0):</strong> The following malicious patterns are skipped automatically and never requested or written to disk:
+              <ul style="list-style: square; margin-left: 1.5rem; margin-top: 0.5rem; color: var(--muted);">
+                <li>Disguised double extensions (e.g. <code>movie.mp4.exe</code>)</li>
+                <li>Windows shortcut files (<code>.lnk</code>, <code>.url</code>, <code>.scf</code>)</li>
+                <li>Hidden Unicode right-to-left direction override (RTLO) tricks</li>
+                <li>Filenames with trailing dots or spaces</li>
+                <li>Executables or scripts embedded inside media torrents</li>
+                <li>Symbolic links and directory reparse points</li>
+                <li>Reserved Windows device names (<code>CON</code>, <code>AUX</code>, <code>PRN</code>, <code>NUL</code>, etc.)</li>
+              </ul>
+            </li>
+            <li style="margin-bottom: 0.75rem;"><strong>Strict Mode:</strong> Optional setting that skips all programs, scripts, and macro documents regardless of torrent category.</li>
+            <li style="margin-bottom: 0.75rem;"><strong>Mark-of-the-Web (ZoneId=3):</strong> Automatically attaches Windows Zone Identifier metadata to completed downloads. Windows SmartScreen and Office Protected View will inspect executables before they can run.</li>
+            <li style="margin-bottom: 0;"><strong>Active Scanning &amp; VirusTotal:</strong> Triggers Microsoft Defender scans on completed downloads when Defender is active. With an optional free VirusTotal API key, program SHA-256 hashes (never the file content) are queried against ~70 antivirus engines. If flagged, seeding halts instantly, the row is marked &#9763;, and an alert appears.</li>
+          </ul>
+        </div>
+
+        <!-- Layer 3: Client Sandbox -->
+        <div class="card" style="margin-top: 1.5rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div class="card-icon green" style="margin-bottom: 0;"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></div>
+              <h3>3. Client Architecture &amp; Execution Isolation</h3>
+            </div>
+            <span class="badge badge-green">Runtime</span>
+          </div>
+          <ul style="list-style: none; margin: 1rem 0;">
+            <li style="margin-bottom: 0.75rem;"><strong>Zero Auto-Execution:</strong> NEON Torrent never launches or runs any downloaded file. The <em>Open folder</em> action explicitly opens <code>explorer.exe /select,</code> with an absolute path and verifies the target resolves inside the destination folder.</li>
+            <li style="margin-bottom: 0.75rem;"><strong>Plain Text Sanitization:</strong> Torrent names, peer client tags, and tracker comments are strictly rendered as plain text in the UI and tooltips, eliminating HTML injection and remote image triggers.</li>
+            <li style="margin-bottom: 0.75rem;"><strong>Single-Instance User Scoping:</strong> Command IPC channels (<code>magnet:...</code>, <code>--pause-all</code>, <code>--stop-all</code>) verify that incoming requests originate from the same Windows user Security Identifier (SID).</li>
+            <li style="margin-bottom: 0.75rem;"><strong>Input Defense:</strong> <code>.torrent</code> downloads are capped at 20 MB; malformed or hostile bencode is rejected safely without crashing.</li>
+            <li style="margin-bottom: 0;"><strong>Dedicated Non-Admin Process:</strong> Executes as <code>runtime\NeonTorrent.exe</code> (a signed Python interpreter copy) under standard user privileges.</li>
+          </ul>
+        </div>
+
+        <!-- 14/14 Security Audit -->
+        <h2 style="margin-top: 3.5rem;">Verified Offline Security Audit (14/14 Checks)</h2>
+        <p>You can reproduce and run these attack tests at any time in the repository using <code>.venv\Scripts\python.exe tools\security_audit.py</code>:</p>
+        
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 40px;">#</th>
+                <th>Simulated Attack / Threat Vector</th>
+                <th>Observed Result &amp; Defense</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>Torrent with directory traversal: <code>../../evil.txt</code>, <code>C:\Windows\System32\evil.dll</code>, <code>sub/../../escape.bat</code></td>
+                <td>All paths safely normalized and constrained inside download root</td>
+                <td><span class="badge badge-green">Passed</span></td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>Alternate-data-stream name: <code>notes.txt:hidden.exe</code></td>
+                <td>Sanitized to benign filename <code>notes.txt_hidden.exe</code></td>
+                <td><span class="badge badge-green">Passed</span></td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>Windows reserved device names: <code>CON</code>, <code>aux.txt</code></td>
+                <td>Flagged by Download Guard and skipped (never requested or written)</td>
+                <td><span class="badge badge-green">Passed</span></td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>Symlink target escaping directory: <code>..\..\..\..\Windows\System32</code></td>
+                <td>Retargeted inside torrent boundary by libtorrent; flagged and skipped by Guard</td>
+                <td><span class="badge badge-green">Passed</span></td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td>Media torrent packed with <code>.mp4.exe</code>, <code>.lnk</code>, RTLO <code>.scr</code>, and codec <code>.exe</code></td>
+                <td>All 4 hostile files skipped prior to download; genuine <code>.mkv</code>/<code>.srt</code> preserved</td>
+                <td><span class="badge badge-green">Passed</span></td>
+              </tr>
+              <tr>
+                <td>6</td>
+                <td>Corrupt bencode, invalid info hash, <code>javascript:</code> and <code>file:</code> URI schemes</td>
+                <td>Safely rejected with zero crashes or exceptions</td>
+                <td><span class="badge badge-green">Passed</span></td>
+              </tr>
+              <tr>
+                <td>7</td>
+                <td>Oversized 20 MB+ <code>.torrent</code> file streamed over HTTP</td>
+                <td>Terminated and refused at boundary limit</td>
+                <td><span class="badge badge-green">Passed</span></td>
+              </tr>
+              <tr>
+                <td>8</td>
+                <td>Tracker URL aimed at local administrative services (SSRF)</td>
+                <td>SSRF mitigation blocks local loopback and subnet requests</td>
+                <td><span class="badge badge-green">Passed</span></td>
+              </tr>
+              <tr>
+                <td>9</td>
+                <td>HTML injection in torrent name: <code>&lt;img src=file:///...&gt;</code></td>
+                <td>Strict plain text rendering in tooltips and table view</td>
+                <td><span class="badge badge-green">Passed</span></td>
+              </tr>
+              <tr>
+                <td>10</td>
+                <td>Open-folder command with path traversal and quote injection</td>
+                <td>Only explorer in download root is invoked; executable launch blocked</td>
+                <td><span class="badge badge-green">Passed</span></td>
+              </tr>
+              <tr>
+                <td>11</td>
+                <td>Cross-user IPC socket message injection</td>
+                <td>Refused; socket validates local user SID</td>
+                <td><span class="badge badge-green">Passed</span></td>
+              </tr>
+              <tr>
+                <td>12</td>
+                <td>Real BitTorrent download integrity</td>
+                <td>Piece hash-verified byte-for-byte at 100% completion</td>
+                <td><span class="badge badge-green">Passed</span></td>
+              </tr>
+              <tr>
+                <td>13</td>
+                <td>Mark-of-the-Web verification on finished files</td>
+                <td>Zone.Identifier stream verified with ZoneId=3 for SmartScreen inspection</td>
+                <td><span class="badge badge-green">Passed</span></td>
+              </tr>
+              <tr>
+                <td>14</td>
+                <td>Codebase vulnerability review</td>
+                <td>Zero <code>os.system</code>, <code>startfile</code>, or <code>eval</code> calls anywhere in source</td>
+                <td><span class="badge badge-green">Passed</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- User Best Practices -->
+        <h2 style="margin-top: 3.5rem;">Your Security Best Practices</h2>
+        <div class="card" style="margin-top: 1.5rem; background: var(--bg1);">
+          <ul style="list-style: none;">
+            <li style="margin-bottom: 1rem;"><strong>1. Obtain Torrents from Official Sources:</strong> Download torrents and magnet links directly from the author or legitimate distribution portal rather than unvetted aggregator mirrors.</li>
+            <li style="margin-bottom: 1rem;"><strong>2. Keep Real-Time Protection &amp; SmartScreen Enabled:</strong> Ensure Windows SmartScreen ("Check apps and files") and your active antivirus remain enabled.</li>
+            <li style="margin-bottom: 1rem;"><strong>3. Test Unknown Installers in Windows Sandbox:</strong> For unfamiliar installers or programs, open Windows Sandbox (Windows 10/11 Pro) to test run them in a disposable, isolated environment.</li>
+            <li style="margin-bottom: 1rem;"><strong>4. Respect Security Badges:</strong> If NEON displays <strong>&#9888; risky files skipped</strong> or <strong>&#9763; THREAT</strong>, heed the warning.</li>
+            <li style="margin-bottom: 0;"><strong>5. Swarm Visibility:</strong> Remember that in the BitTorrent protocol, peers in the swarm can see your IP address by design. Use the Shield to prevent contact with flagged VPN/datacenter actors.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="index.html" class="brand" aria-label="NEON Torrent Home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="#22d3ee" stroke="#22d3ee"/>
+            </svg>
+            <span>NEON <span class="brand-accent">TORRENT</span></span>
+          </a>
+          <p>Defensive BitTorrent client for Windows 10/11. Zero ads, zero miners, intelligent peer filtering and file verification.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul>
+            <li><a href="index.html">Overview</a></li>
+            <li><a href="download.html">Download</a></li>
+            <li><a href="docs.html">Documentation</a></li>
+            <li><a href="security.html">Security Model</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="/legal/privacy.html">Privacy Policy</a></li>
+            <li><a href="/legal/terms.html">Terms of Service</a></li>
+            <li><a href="/legal/refund.html">Refund Policy</a></li>
+            <li><a href="/legal/abuse.html">Abuse / DMCA</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Platform</h4>
+          <ul>
+            <li>Windows 10 / 11 (64-bit)</li>
+            <li>14/14 Attack Tests Passed</li>
+            <li>Download Guard Enabled</li>
+            <li>Cyberpunk Palette</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div>&copy; 2026 NEON Torrent. Built for performance and security on Windows.</div>
+        <div>Audited 2026-10-23 · Reproducible via <code>tools/security_audit.py</code></div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <!-- Cloudflare Web Analytics -->
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "{{CF_ANALYTICS_TOKEN}}"}'></script>
+</body>
+</html>

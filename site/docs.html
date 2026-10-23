@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentation &amp; User Guide | NEON Torrent</title>
+  <meta name="description" content="Complete documentation and user guide for NEON Torrent. Learn about Shield connection mapping, Download Guard, FLASH MODE, keyboard shortcuts, and disk full handling.">
+  <link rel="canonical" href="https://{{DOMAIN}}/docs.html">
+  <meta property="og:title" content="NEON Torrent Documentation">
+  <meta property="og:description" content="Quick start, peer management, speed optimization, and keyboard shortcuts guide.">
+  <meta property="og:image" content="assets/og.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <header class="navbar">
+    <div class="container nav-inner">
+      <a href="index.html" class="brand" aria-label="NEON Torrent Home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="#22d3ee" stroke="#22d3ee"/>
+        </svg>
+        <span>NEON <span class="brand-accent">TORRENT</span></span>
+      </a>
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/>
+        </svg>
+      </button>
+      <nav>
+        <ul class="nav-links" id="navLinks">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="index.html#features">Features</a></li>
+          <li><a href="index.html#shield">Shield</a></li>
+          <li><a href="index.html#guard">Download Guard</a></li>
+          <li><a href="index.html#pricing">Pricing</a></li>
+          <li><a href="docs.html" class="active">Docs</a></li>
+          <li><a href="security.html">Security</a></li>
+          <li><a href="download.html" class="btn btn-primary btn-sm">Download</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Docs Hero -->
+    <section class="hero" style="padding-bottom: 2rem;">
+      <div class="container container-narrow">
+        <span class="badge badge-cyan">Documentation &amp; Reference</span>
+        <h1>NEON Torrent <span class="hero-highlight">User Guide</span></h1>
+        <p class="hero-sub">Everything you need to master NEON Torrent: quick start, transfer controls, the Shield connection map, speed tuning, and keyboard shortcuts.</p>
+      </div>
+    </section>
+
+    <!-- Quick Navigation Index -->
+    <section style="padding: 1rem 0 3rem 0;">
+      <div class="container container-narrow">
+        <div class="card" style="margin-bottom: 3rem; background: var(--bg1);">
+          <h3>Table of Contents</h3>
+          <div class="grid grid-2" style="margin-top: 1rem;">
+            <ul style="list-style: none;">
+              <li style="margin-bottom: 0.5rem;"><a href="#adding-torrents">&#8594; Adding Torrents &amp; Transfers</a></li>
+              <li style="margin-bottom: 0.5rem;"><a href="#pause-vs-stop">&#8594; Pause vs. Stop Behavior</a></li>
+              <li style="margin-bottom: 0.5rem;"><a href="#disk-full">&#8594; Disk Full &amp; Moving Data</a></li>
+              <li style="margin-bottom: 0.5rem;"><a href="#speed-tuning">&#8594; Speed &amp; FLASH MODE</a></li>
+            </ul>
+            <ul style="list-style: none;">
+              <li style="margin-bottom: 0.5rem;"><a href="#connection-map">&#8594; Shield Connection Map</a></li>
+              <li style="margin-bottom: 0.5rem;"><a href="#torrent-settings">&#8594; Per-Torrent Settings</a></li>
+              <li style="margin-bottom: 0.5rem;"><a href="#keyboard-shortcuts">&#8594; Keyboard Shortcuts</a></li>
+              <li style="margin-bottom: 0.5rem;"><a href="#storage-paths">&#8594; Data Storage &amp; Files</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Adding Torrents -->
+        <div id="adding-torrents" style="margin-bottom: 3.5rem;">
+          <h2>Adding Torrents</h2>
+          <p>NEON Torrent supports multiple flexible ingestion paths:</p>
+          <ul>
+            <li style="margin-bottom: 0.6rem;"><strong>Drag and Drop:</strong> Drag one or more <code>.torrent</code> files directly onto the transfer table.</li>
+            <li style="margin-bottom: 0.6rem;"><strong>Direct Paste (Ctrl+V):</strong> Copy a magnet link or HTTP(S) torrent URL anywhere and press <kbd>Ctrl+V</kbd> inside the app window.</li>
+            <li style="margin-bottom: 0.6rem;"><strong>Link Dialog (Ctrl+N):</strong> Opens the link input bar to accept magnet links, bare info-hashes (40-character hex or 32-character base32), or web URLs.</li>
+            <li style="margin-bottom: 0.6rem;"><strong>File Picker (Ctrl+O):</strong> Standard multi-select file dialog for local <code>.torrent</code> files.</li>
+            <li style="margin-bottom: 0.6rem;"><strong>CLI / Automation:</strong> Pass URLs via command line: <code>run.bat "magnet:?xt=urn:btih:..."</code>. If NEON is already running, arguments are safely routed to the active window via a local user socket.</li>
+          </ul>
+        </div>
+
+        <!-- Pause vs Stop -->
+        <div id="pause-vs-stop" style="margin-bottom: 3.5rem;">
+          <h2>Pause vs. Stop</h2>
+          <p>Unlike clients that blur the distinction between pausing and stopping, NEON Torrent offers clear, deterministic states:</p>
+          <div class="grid grid-2">
+            <div class="card">
+              <h3>Pause (<kbd>Space</kbd>)</h3>
+              <p>Temporary state. Finishes downloading blocks currently in flight to avoid wasted bandwidth, while holding peer connections ready to resume immediately.</p>
+            </div>
+            <div class="card">
+              <h3>Stop (<kbd>Ctrl+Shift+S</kbd>)</h3>
+              <p>Hard disconnect. Immediately severs all peer connections, closes open file handles on disk, ceases seeding, and persists in the stopped state across app restarts until you manually resume it.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Disk Full -->
+        <div id="disk-full" style="margin-bottom: 3.5rem;">
+          <h2>Disk Full Management &amp; Moving Data</h2>
+          <p>Running out of disk space during massive downloads will never crash NEON Torrent or corrupt files:</p>
+          <div class="card" style="border-left: 4px solid var(--red);">
+            <h3>Automatic Upload-Only Transition</h3>
+            <p>If a target drive fills up, libtorrent immediately stops writing and flips the torrent into upload-only mode. The transfer status displays <strong>Disk full</strong> in red, reporting both the space required and space remaining.</p>
+            <p>Once you clear disk space, the torrent resumes downloading automatically. Alternatively, right-click the item and choose <em>Move data</em> (or open Torrent settings) to seamlessly relocate the files to another drive without re-downloading.</p>
+          </div>
+        </div>
+
+        <!-- Speed Tuning & Flash Mode -->
+        <div id="speed-tuning" style="margin-bottom: 3.5rem;">
+          <h2>Speed Optimizations &amp; FLASH MODE</h2>
+          <p>Built from the ground up for maximum throughput without compromising privacy:</p>
+          <ul>
+            <li style="margin-bottom: 0.75rem;"><strong>Multi-Tier Tracker Announcing:</strong> Standard libtorrent implementations stop querying trackers after the first responsive tier. NEON announces to <em>every tracker in every tier</em> simultaneously, unlocking swarms where primary trackers are blocked.</li>
+            <li style="margin-bottom: 0.75rem;"><strong>Payload-Only Upload Cap:</strong> TCP/IP download acknowledgments (ACKs) are excluded from the upload limiter. Setting a strict upload cap (default 24 KiB/s) will never starve your incoming download piece requests.</li>
+            <li style="margin-bottom: 0.75rem;"><strong>Rapid Peer Ramp-Up:</strong> Optimized connection rate parameters, short connect timeouts, and multi-threaded piece hashing ensure swarms reach peak speed in seconds.</li>
+          </ul>
+
+          <div class="card" style="background: var(--bg1); border-color: var(--yellow); margin-top: 1.5rem;">
+            <h3 style="color: var(--yellow); display: flex; align-items: center; gap: 0.5rem;">
+              <span>&#9889; FLASH MODE (<kbd>Ctrl+Shift+F</kbd>)</span>
+            </h3>
+            <p>A manual, one-click accelerator designed for large or stubborn torrents. FLASH MODE turns on read-only DHT (serving no lookup requests for external swarms), enables Local Peer Discovery (LSD), injects high-availability public booster trackers, and raises connection capacity up to 1,500 peers.</p>
+            <p style="margin-bottom: 0; font-size: 0.88rem; color: var(--muted);"><em>Note: FLASH MODE automatically resets to off when the application restarts to maintain default file-only network hygiene.</em></p>
+          </div>
+        </div>
+
+        <!-- Shield Connection Map -->
+        <div id="connection-map" style="margin-bottom: 3.5rem;">
+          <h2>The Shield Connection Map (<kbd>Ctrl+M</kbd>)</h2>
+          <p>Press <kbd>Ctrl+M</kbd> or click the Shield icon on the title bar to open the live Connection Map. This window gives you transparent visibility into every packet:</p>
+          <ul>
+            <li style="margin-bottom: 0.6rem;"><strong>Live Peer Table:</strong> View active peers, IP, Autonomous System Number (ASN), network owner, country flag, BitTorrent client identification, connection source (Tracker, PEX, or DHT), direction (incoming/outgoing), and live transfer rates.</li>
+            <li style="margin-bottom: 0.6rem;"><strong>Refused Peers Log:</strong> Inspect refused connections and see the exact defensive rule triggered (e.g. Datacenter IP, VPN exit range, or Malwarebytes detection).</li>
+            <li style="margin-bottom: 0.6rem;"><strong>Learned Block Management:</strong> Browse all addresses and subnets absorbed from Malwarebytes with a one-click unblock option.</li>
+            <li style="margin-bottom: 0.6rem;"><strong>Network Data:</strong> ASN and IP intelligence powered by the public iptoasn.com dataset, refreshed weekly in the background.</li>
+          </ul>
+        </div>
+
+        <!-- Torrent Settings -->
+        <div id="torrent-settings" style="margin-bottom: 3.5rem;">
+          <h2>Per-Torrent Controls (<kbd>Ctrl+T</kbd>)</h2>
+          <p>Click any torrent's name or press <kbd>Ctrl+T</kbd> to access granular settings that apply instantly:</p>
+          <div class="grid grid-2">
+            <div class="card">
+              <h3>Bandwidth &amp; Limits</h3>
+              <p>Individual download/upload limits, maximum peer connection caps, and upload slot throttling.</p>
+            </div>
+            <div class="card">
+              <h3>Priority &amp; Streaming</h3>
+              <p>Sequential downloading (ideal for previewing video streams), first and last pieces prioritized, and queue prioritization (top, up, down, bottom).</p>
+            </div>
+            <div class="card">
+              <h3>Seeding &amp; Ratio Rules</h3>
+              <p>Configurable share ratio stop thresholds, super-seeding mode for initial releases, and force start overrides.</p>
+            </div>
+            <div class="card">
+              <h3>Integrity &amp; Trackers</h3>
+              <p>Force recheck, re-announce to all tiers, add custom trackers, and "Skip hash check" to verify existing files directly upon seeding.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Keyboard Shortcuts Table -->
+        <div id="keyboard-shortcuts" style="margin-bottom: 3.5rem;">
+          <h2>Keyboard Shortcuts Reference</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Shortcut</th>
+                  <th>Action</th>
+                  <th>Context</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><kbd>Ctrl+O</kbd></td><td>Open <code>.torrent</code> file picker</td><td>Global</td></tr>
+                <tr><td><kbd>Ctrl+N</kbd></td><td>Focus magnet / URL input box</td><td>Global</td></tr>
+                <tr><td><kbd>Ctrl+F</kbd></td><td>Focus search filter box</td><td>Global</td></tr>
+                <tr><td><kbd>Ctrl+M</kbd></td><td>Open Shield Connection Map</td><td>Global</td></tr>
+                <tr><td><kbd>Ctrl+Shift+F</kbd></td><td>Toggle FLASH MODE speed boost</td><td>Global</td></tr>
+                <tr><td><kbd>Ctrl+T</kbd></td><td>Open Torrent Settings dialog</td><td>Selected Torrent</td></tr>
+                <tr><td><kbd>Ctrl+,</kbd></td><td>Open Preferences dialog</td><td>Global</td></tr>
+                <tr><td><kbd>Space</kbd></td><td>Pause / Resume selected transfer</td><td>Selected Torrent</td></tr>
+                <tr><td><kbd>Ctrl+Shift+S</kbd></td><td>Stop selected transfer completely</td><td>Selected Torrent</td></tr>
+                <tr><td><kbd>Del</kbd></td><td>Remove torrent (keep downloaded files)</td><td>Selected Torrent</td></tr>
+                <tr><td><kbd>Shift+Del</kbd></td><td>Delete torrent and remove files from disk</td><td>Selected Torrent</td></tr>
+                <tr><td><kbd>Enter</kbd></td><td>Open detailed Transfer Inspector</td><td>Selected Torrent</td></tr>
+                <tr><td><kbd>Alt+1</kbd> … <kbd>Alt+8</kbd></td><td>Switch status filter chips (All, Downloading, Seeding...)</td><td>Main Window</td></tr>
+                <tr><td><kbd>Ctrl+Q</kbd></td><td>Save state and quit application</td><td>Global</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Storage & Locations -->
+        <div id="storage-paths" style="margin-bottom: 3.5rem;">
+          <h2>Data Storage &amp; File Locations</h2>
+          <p>All application state, resume data, and filter rules are stored under <code>%APPDATA%\NeonTorrent\</code>:</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>File / Directory</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>settings.json</code></td><td>Application preferences, UI theme selection, and bandwidth limits.</td></tr>
+                <tr><td><code>session\*.fastresume</code></td><td>Libtorrent fastresume metadata; preserves completion states across reboots without rechecking.</td></tr>
+                <tr><td><code>session\meta.json</code></td><td>Per-torrent custom flags, ratio stop thresholds, and queue orders.</td></tr>
+                <tr><td><code>shield\learned.json</code></td><td>IP and subnet blocks automatically absorbed from Malwarebytes detections.</td></tr>
+                <tr><td><code>shield\ip2asn.cache</code></td><td>Cached ASN database for fast offline peer attribution.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- FAQ from README -->
+        <div id="faq" style="margin-bottom: 3.5rem;">
+          <h2>Frequently Asked Questions</h2>
+          <div class="faq-list" style="margin-top: 1.5rem;">
+            <div class="faq-item">
+              <button class="faq-question" aria-expanded="false">
+                <span>Why does my antivirus flag torrent connections, and how does NEON fix this?</span>
+                <svg class="faq-icon" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+              </button>
+              <div class="faq-answer">
+                BitTorrent connections are bound to specific torrents by their info-hash and hash-verified piece-by-piece. Antivirus web protection products (like Malwarebytes) do not inspect BitTorrent piece payload data; instead, they flag IPs by private reputation lists. Public swarms frequently include VPN and datacenter nodes that trigger alerts. NEON's Shield pre-filters known VPN and datacenter ranges before packets are transmitted (refusing 12 of 13 flagged peers in real testing) and automatically absorbs new detections into libtorrent within 2 seconds.
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <button class="faq-question" aria-expanded="false">
+                <span>Does NEON Torrent include any ads, bundled offers, or miners?</span>
+                <svg class="faq-icon" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+              </button>
+              <div class="faq-answer">
+                None. NEON Torrent has zero advertisements, zero sponsored installer bundles, zero background crypto miners, and zero telemetry tracking. It is a clean desktop client designed for Windows.
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <button class="faq-question" aria-expanded="false">
+                <span>What is the difference between Cyberpunk and other themes?</span>
+                <svg class="faq-icon" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+              </button>
+              <div class="faq-answer">
+                NEON Torrent includes four handcrafted palettes in <code>src/neontorrent/theme.py</code>: Cyberpunk (default neon cyan and magenta glow), Synthwave, Dark, and Solarized. All UI painters use unified tokens, ensuring pixel-perfect contrast across themes.
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <button class="faq-question" aria-expanded="false">
+                <span>Can I control NEON Torrent via command line?</span>
+                <svg class="faq-icon" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+              </button>
+              <div class="faq-answer">
+                Yes. You can pass magnet links, torrent file paths, or URLs via <code>run.bat &quot;magnet:...&quot;</code>. Global controls such as <code>run.bat --pause-all</code>, <code>run.bat --stop-all</code>, and <code>run.bat --resume-all</code> allow external scripts and shortcuts to control the running instance. The channel restricts access strictly to your own Windows user account.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="index.html" class="brand" aria-label="NEON Torrent Home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="#22d3ee" stroke="#22d3ee"/>
+            </svg>
+            <span>NEON <span class="brand-accent">TORRENT</span></span>
+          </a>
+          <p>Defensive BitTorrent client for Windows 10/11. Zero ads, zero miners, intelligent peer filtering and file verification.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul>
+            <li><a href="index.html">Overview</a></li>
+            <li><a href="download.html">Download</a></li>
+            <li><a href="docs.html">Documentation</a></li>
+            <li><a href="security.html">Security Model</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="/legal/privacy.html">Privacy Policy</a></li>
+            <li><a href="/legal/terms.html">Terms of Service</a></li>
+            <li><a href="/legal/refund.html">Refund Policy</a></li>
+            <li><a href="/legal/abuse.html">Abuse / DMCA</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Platform</h4>
+          <ul>
+            <li>Windows 10 / 11 (64-bit)</li>
+            <li>libtorrent 2.1 engine</li>
+            <li>libtorrent 2.x</li>
+            <li>Cyberpunk Palette</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div>&copy; 2026 NEON Torrent. Built for performance and security on Windows.</div>
+        <div>Config Path: <code>%APPDATA%\NeonTorrent</code></div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <!-- Cloudflare Web Analytics -->
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "{{CF_ANALYTICS_TOKEN}}"}'></script>
+</body>
+</html>
