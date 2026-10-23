@@ -49,8 +49,9 @@ Read AGENTS.md and BOARD.md in F:\neon-torrent. Do task <ID> exactly as its card
 | C-07 | Status filter chips with live counts (All, Downloading, Seeding, Completed, Active, Paused, Stopped, Errors) | Claude | done |
 | C-08 | Dev tools into `F:\neon-build\tools`: Windows SDK BuildTools 10.0.28000.2705 (makeappx/signtool, nuget.org, 21.3 MB), gitleaks 8.30.1 (secret scan, SHA256-checked, 8.4 MB), ruff (lint, into `.venv`), Token Savior (MCP code navigation, own venv, `optimized` profile, project `.mcp.json`) | Claude | done, hash-checked; Token Savior skipped (not needed to ship) |
 | D-01 | Website | Antigravity · Claude Opus 4.6 | doing |
-| D-02 | Launch copy pack | Codex · GPT-6 Luna | review |
+| D-02 | Launch copy pack | Codex · GPT-6 Luna | done: reviewed, 4 fixes, in `marketing/` |
 | D-03 | Outreach list | Antigravity · Gemini 3.1 Pro | todo |
+| D-05 | Unit tests for `guard.py` and `theme.py` | Codex · GPT-6 Luna | todo |
 | U-01 | Install GitHub CLI and log in | You | done |
 | U-02 | Partner Center individual account (ID + selfie) | You | todo |
 | U-03 | Dodo Payments signup + KYC | You | todo |
@@ -62,8 +63,7 @@ Read AGENTS.md and BOARD.md in F:\neon-torrent. Do task <ID> exactly as its card
 
 **Next up** (cards are written when they start):
 - D-04 legal drafts (Codex), after you decide the refund window
-- D-05 unit tests for `guard.py` and `theme.py` (Codex)
-- Claude: Store package, website checkout wiring, Show HN write-up
+- Claude: C-02 licence keys, C-03 first-run and About, C-04 Store images, website checkout wiring, Show HN write-up
 
 ## Task cards
 
@@ -147,3 +147,20 @@ Use public information only. Give every row its source URL and the date you chec
 **Done when:**
 - every URL opens
 - every email address comes from an official contact page; collect none from anywhere else
+
+### D-05 Unit tests for guard.py and theme.py
+
+- **App:** Codex app · GPT-6 Luna, reasoning High.
+- **Output:** `inbox/D-05/test_guard.py` and `inbox/D-05/test_theme.py`. They move to `tests/` once accepted.
+
+Use the standard-library `unittest` only (no pytest). Put `src` on `sys.path` relative to the test file, so
+`from neontorrent import guard, theme` works from `inbox/D-05/`.
+- **guard.py:** every rule in `classify()` and `inspect()`: programs, scripts, shortcuts and macro documents, double
+  extensions, hidden direction characters (`TRICK_CHARS`), programs inside media torrents, Strict mode, Windows device
+  names (`RESERVED`, with and without an extension) and symlinks. Test `mark_of_the_web()` and `has_mark_of_the_web()`
+  on a file in `tempfile.TemporaryDirectory(dir=<the test file's folder>)`.
+- **theme.py:** every palette in `THEMES` has the same keys; `set_theme()` with an unknown name falls back to a valid
+  theme; `state_color()` returns a valid colour for every state in `STATE_COLORS`.
+- Never call Defender, VirusTotal or the network, and do not import `engine.py`.
+- **Done when:** Claude runs `.venv\Scripts\python.exe -m unittest discover -s inbox\D-05 -v` and every test passes.
+  If you think a behaviour is a bug, list it under "Possible bugs" in `DONE.md`; do not change `guard.py`.
