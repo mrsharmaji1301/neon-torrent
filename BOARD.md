@@ -44,11 +44,11 @@ Read AGENTS.md and BOARD.md in this folder. Do task <ID> exactly as its card say
 | C-02 | Licence keys + Free/Pro gating (Dodo test mode) | Claude | todo |
 | C-03 | First-run setup, About + third-party notices, error report | Claude | todo |
 | C-04 | Icons, Store tiles and screenshots rendered from the app | Claude | todo |
-| C-05 | GitHub: private repo, first push | Claude | blocked by U-01 |
+| C-05 | GitHub: private repo [mrsharmaji1301/neon-torrent](https://github.com/mrsharmaji1301/neon-torrent), first push | Claude | done |
 | D-01 | Website | Antigravity · Claude Opus 4.6 | todo |
 | D-02 | Launch copy pack | Codex · GPT-6 Luna | todo |
 | D-03 | Outreach list | Antigravity · Gemini 3.1 Pro | todo |
-| U-01 | Install GitHub CLI and log in | You | todo |
+| U-01 | Install GitHub CLI and log in | You | done |
 | U-02 | Partner Center individual account (ID + selfie) | You | todo |
 | U-03 | Dodo Payments signup + KYC | You | todo |
 | U-04 | Buy the domain | You | todo |
