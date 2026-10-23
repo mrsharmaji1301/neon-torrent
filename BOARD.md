@@ -40,13 +40,14 @@ Read AGENTS.md and BOARD.md in this folder. Do task <ID> exactly as its card say
 
 | ID | Task | Owner | Status |
 |---|---|---|---|
-| C-01 | MSIX packaging spike: app folder → MSIX → install test in Windows Sandbox | Claude | doing |
+| C-01 | MSIX packaging spike: app folder → MSIX → install test in Windows Sandbox | Claude | blocked by C-08 (needs makeappx) |
 | C-02 | Licence keys + Free/Pro gating (Dodo test mode) | Claude | todo |
 | C-03 | First-run setup, About + third-party notices, error report | Claude | todo |
 | C-04 | Icons, Store tiles and screenshots rendered from the app | Claude | todo |
 | C-05 | GitHub: private repo [mrsharmaji1301/neon-torrent](https://github.com/mrsharmaji1301/neon-torrent), first push | Claude | done |
 | C-06 | Bug: quitting freezes the window for several seconds. Hide it at once, finish shutdown in the background | Claude | done |
 | C-07 | Status filter chips with live counts (All, Downloading, Seeding, Completed, Active, Paused, Stopped, Errors) | Claude | done |
+| C-08 | Dev tools into `F:\neon-build\tools`: Windows SDK BuildTools 10.0.28000.2705 (makeappx/signtool, nuget.org, 21.3 MB), gitleaks 8.30.1 (secret scan, SHA256-checked, 8.4 MB), ruff (lint, into `.venv`), Token Savior (MCP code navigation, own venv, `optimized` profile, project `.mcp.json`) | Claude | blocked: auto mode refused the install; needs your permission |
 | D-01 | Website | Antigravity · Claude Opus 4.6 | todo |
 | D-02 | Launch copy pack | Codex · GPT-6 Luna | todo |
 | D-03 | Outreach list | Antigravity · Gemini 3.1 Pro | todo |
@@ -54,6 +55,11 @@ Read AGENTS.md and BOARD.md in this folder. Do task <ID> exactly as its card say
 | U-02 | Partner Center individual account (ID + selfie) | You | todo |
 | U-03 | Dodo Payments signup + KYC | You | todo |
 | U-04 | Buy the domain | You | todo |
+
+**Open questions for you:**
+1. Allow the C-08 installs: switch this session's permission mode from Auto to Ask, then say "install kar". Every
+   install command will come up for your approval.
+2. Refund window: 14 days or 7 days (needed for D-04 legal drafts).
 
 **Next up** (cards are written when they start):
 - D-04 legal drafts (Codex), after you decide the refund window
