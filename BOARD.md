@@ -48,10 +48,11 @@ Read AGENTS.md and BOARD.md in F:\neon-torrent. Do task <ID> exactly as its card
 | C-06 | Bug: quitting freezes the window for several seconds. Hide it at once, finish shutdown in the background | Claude | done |
 | C-07 | Status filter chips with live counts (All, Downloading, Seeding, Completed, Active, Paused, Stopped, Errors) | Claude | done |
 | C-08 | Dev tools into `F:\neon-build\tools`: Windows SDK BuildTools 10.0.28000.2705 (makeappx/signtool, nuget.org, 21.3 MB), gitleaks 8.30.1 (secret scan, SHA256-checked, 8.4 MB), ruff (lint, into `.venv`), Token Savior (MCP code navigation, own venv, `optimized` profile, project `.mcp.json`) | Claude | done, hash-checked; Token Savior skipped (not needed to ship) |
-| D-01 | Website | Antigravity · Claude Opus 4.6 | done: reviewed, overclaims fixed, pricing matched to SHIP_PLAN; in `site/` with placeholder images until C-04 |
+| D-01 | Website | Antigravity · Gemini 3.8 Flash | replaced by D-01b: it read like a spec sheet, with empty image boxes |
+| D-01b | Website rebuild around the real screenshots | Antigravity · Claude Opus 4.6 (Thinking) | doing |
 | D-02 | Launch copy pack | Codex · GPT-6 Luna | done: reviewed, 4 fixes, in `marketing/` |
 | D-03 | Outreach list | Antigravity · Gemini 3.8 Flash (3.1 Pro is not in the dropdown) | doing |
-| D-05 | Unit tests for `guard.py` and `theme.py` | Codex · GPT-6 Luna | doing |
+| D-05 | Unit tests for `guard.py` and `theme.py` | Codex · GPT-6 Luna | done: 22 tests in `tests/` pass (`python -m unittest discover -s tests`); one wrong expectation fixed |
 | U-01 | Install GitHub CLI and log in | You | done |
 | U-02 | Partner Center individual account (ID + selfie) | You | todo |
 | U-03 | Dodo Payments signup + KYC | You | todo |
@@ -61,6 +62,26 @@ Read AGENTS.md and BOARD.md in F:\neon-torrent. Do task <ID> exactly as its card
 1. Refund window: 14 days or 7 days (needed for D-04 legal drafts).
 2. The Store submission on Sun 25 needs your Partner Center account (U-02) first.
 3. Confirm the Free/Pro split in SHIP_PLAN ("Free vs Pro in v1.0"). The website shows it now, and C-02 builds it.
+
+## Night shift (24 Oct): Claude works alone while the user sleeps
+
+Every session on this shift: read CLAUDE.md and this board first, write in English, never write to drive C:, and make
+no purchases, posts, account or settings changes. A scheduled session cannot drive Codex or Antigravity (no desktop
+access), so skip anything that needs them. Do the first open item, tick it here, commit and push, then the next.
+
+- [x] Real screenshots from the app (`tools/screenshots.py`); torrent settings no longer overlap
+- [x] D-05 reviewed and accepted into `tests/`
+- [ ] D-03: when `inbox/D-03/DONE.md` exists, open 10 of its URLs, move the files to `marketing/`, mark D-03 done
+- [ ] D-01b: when `inbox/D-01b/DONE.md` exists, copy `site/assets/*.png` into it, serve it on 127.0.0.1 and check it
+  in the built-in browser at 1280×800 and 375 px wide (no empty boxes, no console errors except the Cloudflare
+  beacon), fix small issues, then replace `site/` with it and mark D-01b done
+- [ ] C-03a: `THIRD-PARTY-NOTICES.md` built from the real licence files (Python PSF; PySide6, Qt and shiboken6 LGPLv3
+  with the note that users may swap the Qt DLLs; libtorrent BSD-3; OpenSSL Apache-2.0; libffi MIT; bzip2, xz, zlib;
+  Microsoft VC++ runtime). `tools/make_msix.py` copies it into the package. An About dialog (version, licence,
+  notices) opens from the settings dialog. Run the tests and the security audit, rebuild the MSIX, repeat the
+  Sandbox test.
+- [ ] C-03b: first run asks for the download folder (default `Downloads\NEON`) on one screen that also explains
+  File-only mode; nothing else.
 
 **Next up** (cards are written when they start):
 - D-04 legal drafts (Codex), after you decide the refund window
@@ -148,6 +169,35 @@ Use public information only. Give every row its source URL and the date you chec
 **Done when:**
 - every URL opens
 - every email address comes from an official contact page; collect none from anywhere else
+
+### D-01b Website rebuild
+
+- **App:** Antigravity · Claude Opus 4.6 (Thinking); if it is missing, Claude Sonnet 4.6 (Thinking).
+- **Output:** every page of the site in `inbox/D-01b/`. It replaces `site/` once accepted.
+
+The first version reads like a spec sheet: feature tables, grids of small cards, empty image boxes. The new one must
+sell the product in ten seconds, like the best product sites (Linear, Raycast, Warp): one idea per screen, big real
+product images, a lot of space, short copy.
+- **Hero:** a headline of at most 8 words, a one-line subhead, two buttons (Download free, See pricing), and
+  `assets/screenshot-1.png` large in a floating window frame with the app's neon glow (slow CSS pulse). Nothing else.
+- **Proof strip:** "From a 2-minute test download of Ubuntu 26.04 and Debian 13.7: Shield refused 1,080 peers from
+  VPN, datacenter and flagged networks, while 495 live peers in 48 countries kept it moving."
+- **Three story sections**, image and text alternating sides: Shield connection map (`screenshot-2.png`), torrent
+  details (`screenshot-3.png`), per-torrent control (`screenshot-4.png`). Each: a title of 4–6 words, at most two
+  sentences, at most three short bullets.
+- **Then:** pricing (plans and prices exactly as in the current `site/index.html`), six FAQ questions, a final call to
+  action, footer.
+- **Remove:** feature tables, the "how the Shield works" tables, the roadmap grid and stacks of small cards. The only
+  table left on the site is the audit table on `security.html`.
+- **Images:** use `assets/screenshot-1.png` to `assets/screenshot-4.png` and `assets/og.png` by these names. Claude
+  copies the real files in; do not create image files.
+- **Keep from D-01:** no external fonts, CDNs or trackers except the Cloudflare beacon placeholder; vanilla JS under
+  5 KB; every `{{PLACEHOLDER}}`; facts only from README.md, SECURITY.md and `marketing/store.md`; the neon palette
+  from `src/neontorrent/theme.py`; responsive down to 360 px; `prefers-reduced-motion` turns animation off.
+- **Other pages** (`download.html`, `docs.html`, `security.html`, `404.html`) get the new header, footer and type;
+  their content stays.
+- **Done when:** no empty boxes, nothing looks like a spreadsheet, and `DONE.md` lists each section of the landing
+  page with one line on what it shows.
 
 ### D-05 Unit tests for guard.py and theme.py
 
