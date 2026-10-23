@@ -13,6 +13,7 @@
 - Start the app detached, so it survives session restarts: `explorer.exe "F:\neon-torrent\run.bat"`.
 - Only Claude commits and pushes (private repo `mrsharmaji1301/neon-torrent`).
 - Claude Pro plan: the weekly limit is the bottleneck, so keep the context small.
+- Never clear, reset or restart the chat on your own, even to save tokens. Ask first: the user reads the history.
 
 ## Token discipline
 
