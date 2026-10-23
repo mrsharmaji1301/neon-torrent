@@ -15,10 +15,10 @@ comes next, and commits every update. The plan behind it is [SHIP_PLAN.md](SHIP_
 - **Review depth:** public claims (copy, legal) are reviewed in full; the website and research get a spot check; tests
   are checked by running them.
 
-Prompt to paste (replace `<ID>`):
+Open the folder `F:\neon-torrent` in the app (never a new project), then paste this prompt (replace `<ID>`):
 
 ```
-Read AGENTS.md and BOARD.md in this folder. Do task <ID> exactly as its card says. Write only inside inbox/<ID>/. Do not run git or edit any other file. When finished, write inbox/<ID>/DONE.md.
+Read AGENTS.md and BOARD.md in F:\neon-torrent. Do task <ID> exactly as its card says. Write only inside F:\neon-torrent\inbox\<ID>\. Never write anything on drive C:. Before running any command, set TEMP, TMP, npm_config_cache and PIP_CACHE_DIR to folders under F:\neon-build\<ID>\. Do not install software, run git or edit any other file. If a check needs a tool that is not installed, skip it and say so in DONE.md. When finished, write F:\neon-torrent\inbox\<ID>\DONE.md.
 ```
 
 ## Apps and models (checked 23 Oct 2026)
