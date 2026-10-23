@@ -6,21 +6,26 @@ import threading
 import time
 from pathlib import Path
 
+import libtorrent as lt
+from PySide6 import __version__ as pyside_version
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, QRectF, QSortFilterProxyModel, Qt, QTimer, Signal
 from PySide6.QtGui import QFont, QPainter
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
                                QFileDialog, QFormLayout, QFrame, QGridLayout, QHBoxLayout, QHeaderView, QLabel,
                                QLineEdit, QPlainTextEdit, QScrollArea, QSizeGrip, QSpinBox, QTableView, QTableWidget,
-                               QTableWidgetItem, QTabWidget, QVBoxLayout, QWidget)
+                               QTableWidgetItem, QTabWidget, QTextBrowser, QVBoxLayout, QWidget)
 
+from . import APP_NAME, APP_VERSION
 from . import theme as T
 from .engine import DEFAULT_BLOCKED
 from .shield import MB_DETECTIONS
-from .icons import paint_badge
+from .icons import paint_badge, paint_logo
 from .widgets import GlowButton, NeonBackground, NeonPanel, WindowButton
 
 KEY_ROLE = Qt.ItemDataRole.UserRole + 10
 SORT_ROLE = Qt.ItemDataRole.UserRole + 11
+# the project root in a checkout, the package root in the MSIX (tools/make_msix.py copies the file there)
+NOTICES_FILE = Path(__file__).resolve().parents[2] / "THIRD-PARTY-NOTICES.md"
 
 
 class NeonDialog(QDialog):
@@ -389,6 +394,10 @@ class SettingsDialog(NeonDialog):
         self.root.addWidget(tabs)
 
         buttons = QHBoxLayout()
+        about = GlowButton("ABOUT", "info", "muted", "outline")
+        about.setMinimumWidth(130)
+        about.clicked.connect(lambda: AboutDialog(self).exec())
+        buttons.addWidget(about)
         buttons.addStretch(1)
         cancel = GlowButton("CANCEL", "", "muted", "outline")
         cancel.clicked.connect(self.reject)
@@ -447,6 +456,126 @@ class SettingsDialog(NeonDialog):
             "guard_pause_threat": self.g_pause.isChecked(), "guard_vt_key": self.g_vt.text().strip(),
             "blocked_hosts": [line.strip() for line in self.blocked.toPlainText().splitlines() if line.strip()],
         }
+
+
+class LogoMark(QWidget):
+    def __init__(self, side: int, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(side, side)
+
+    def paintEvent(self, _event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        paint_logo(p, QRectF(self.rect()), T.c("cyan"), T.c("magenta"))
+        p.end()
+
+
+class AboutDialog(NeonDialog):
+    """Version, licence summary and the full third-party notices that ship with the app."""
+
+    def __init__(self, parent=None):
+        super().__init__("About", parent, resizable=True)
+        self.resize(760, 640)
+        head = QHBoxLayout()
+        head.setSpacing(16)
+        head.addWidget(LogoMark(56))
+        name = QLabel(APP_NAME.upper())
+        name.setFont(T.head_font(18, QFont.Weight.Bold, 3))
+        version = QLabel(f"Version {APP_VERSION} · Python {sys.version.split()[0]} · Qt {pyside_version} · "
+                         f"libtorrent {lt.__version__.rsplit('.', 1)[0]}")
+        version.setObjectName("muted")
+        version.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        titles = QVBoxLayout()
+        titles.setSpacing(2)
+        titles.addWidget(name)
+        titles.addWidget(version)
+        head.addLayout(titles, 1)
+        self.root.addLayout(head)
+        summary = QLabel("NEON Torrent is built on open-source software, each part under its own licence: Qt and "
+                         "PySide6 (LGPL-3.0, loaded as separate files you may replace), libtorrent (BSD-3-Clause), "
+                         "Boost (BSL-1.0), Python (PSF 2.0), OpenSSL (Apache-2.0), and libffi, bzip2, zlib, expat "
+                         "and others (MIT, BSD-style, zlib). The full notices and licence texts follow.")
+        summary.setWordWrap(True)
+        summary.setObjectName("muted")
+        self.root.addWidget(summary)
+        self.notices = QTextBrowser()
+        self.notices.setObjectName("notices")
+        self.notices.setOpenExternalLinks(True)
+        self.notices.setPlainText("Loading the notices…")
+        self.root.addWidget(self.notices, 1)
+        buttons = QHBoxLayout()
+        buttons.addStretch(1)
+        close = GlowButton("CLOSE", "check", "cyan", "solid", "cyan2")
+        close.setMinimumWidth(130)
+        close.clicked.connect(self.accept)
+        close.setDefault(True)
+        buttons.addWidget(close)
+        self.root.addLayout(buttons)
+        QTimer.singleShot(0, self._load_notices)   # 120 KB of Markdown: show the window first
+
+    def _load_notices(self) -> None:
+        try:
+            self.notices.setMarkdown(NOTICES_FILE.read_text(encoding="utf-8"))
+        except OSError:
+            self.notices.setPlainText(f"{NOTICES_FILE.name} is missing from this installation.")
+
+
+class FirstRunDialog(NeonDialog):
+    """Shown once, before the main window, when settings.json has no download folder yet."""
+
+    def __init__(self, default_dir: str, parent=None):
+        super().__init__("Setup", parent)
+        self.setFixedWidth(600)
+        head = QHBoxLayout()
+        head.setSpacing(16)
+        head.addWidget(LogoMark(48))
+        name = QLabel(f"WELCOME TO {APP_NAME.upper()}")
+        name.setFont(T.head_font(15, QFont.Weight.Bold, 2.4))
+        head.addWidget(name, 1)
+        self.root.addLayout(head)
+        ask = QLabel("WHERE SHOULD DOWNLOADS GO?")
+        ask.setObjectName("formLabel")
+        self.root.addWidget(ask)
+        row = QHBoxLayout()
+        row.setSpacing(8)
+        self.folder = QLineEdit(default_dir)
+        self.folder.setReadOnly(True)
+        browse = GlowButton("BROWSE", "folder", "cyan", "outline")
+        browse.setFixedHeight(40)
+        browse.icon_size = 16
+        browse.clicked.connect(self._browse)
+        row.addWidget(self.folder, 1)
+        row.addWidget(browse)
+        self.root.addLayout(row)
+        panel = NeonPanel("cyan", 0.6)
+        pl = QVBoxLayout(panel)
+        pl.setContentsMargins(18, 14, 18, 14)
+        pl.setSpacing(6)
+        mode = QLabel("FILE-ONLY NETWORK IS ON")
+        mode.setFont(T.head_font(10, QFont.Weight.DemiBold, 1.6))
+        mode.setStyleSheet(f"color: {T.hexc('cyan')};")
+        text = QLabel("NEON talks only to your torrents' trackers and peers. DHT and Local Peer Discovery are off, "
+                      "so it never contacts nodes unrelated to your downloads, and the Shield filters every peer "
+                      "before it connects. Magnets with no trackers may find no peers; you can turn DHT back on, "
+                      "and change this folder, in Preferences.")
+        text.setWordWrap(True)
+        text.setObjectName("muted")
+        pl.addWidget(mode)
+        pl.addWidget(text)
+        self.root.addWidget(panel)
+        buttons = QHBoxLayout()
+        buttons.addStretch(1)
+        start = GlowButton("START", "check", "cyan", "solid", "cyan2")
+        start.setMinimumWidth(150)
+        start.clicked.connect(self.accept)
+        start.setDefault(True)
+        buttons.addWidget(start)
+        self.root.addLayout(buttons)
+
+    def _browse(self):
+        folder = QFileDialog.getExistingDirectory(self, "Download folder", self.folder.text())
+        if folder:
+            self.folder.setText(str(Path(folder)))
 
 
 class BadgeHeader(QWidget):

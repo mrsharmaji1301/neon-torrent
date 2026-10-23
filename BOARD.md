@@ -42,7 +42,7 @@ Read AGENTS.md and BOARD.md in F:\neon-torrent. Do task <ID> exactly as its card
 |---|---|---|---|
 | C-01 | MSIX packaging spike: app folder → MSIX → install test in Windows Sandbox | Claude | done: 39 MB package (`tools\make_msix.py`); in Sandbox it signs, installs in 5 s, runs and adds its firewall rules |
 | C-02 | Licence keys + Free/Pro gating (Dodo test mode) | Claude | todo |
-| C-03 | First-run setup, About + third-party notices, error report | Claude | todo |
+| C-03 | First-run setup, About + third-party notices, error report | Claude | doing: C-03a About + `THIRD-PARTY-NOTICES.md` (`tools\make_notices.py`, in the MSIX) and C-03b first-run folder dialog done, Sandbox install shows it; error report open |
 | C-04 | Icons, Store tiles and screenshots rendered from the app | Claude | todo |
 | C-05 | GitHub: private repo [mrsharmaji1301/neon-torrent](https://github.com/mrsharmaji1301/neon-torrent), first push | Claude | done |
 | C-06 | Bug: quitting freezes the window for several seconds. Hide it at once, finish shutdown in the background | Claude | done |
@@ -75,17 +75,17 @@ access), so skip anything that needs them. Do the first open item, tick it here,
 - [ ] D-01b: when `inbox/D-01b/DONE.md` exists, copy `site/assets/*.png` into it, serve it on 127.0.0.1 and check it
   in the built-in browser at 1280×800 and 375 px wide (no empty boxes, no console errors except the Cloudflare
   beacon), fix small issues, then replace `site/` with it and mark D-01b done
-- [ ] C-03a: `THIRD-PARTY-NOTICES.md` built from the real licence files (Python PSF; PySide6, Qt and shiboken6 LGPLv3
+- [x] C-03a: `THIRD-PARTY-NOTICES.md` built from the real licence files (Python PSF; PySide6, Qt and shiboken6 LGPLv3
   with the note that users may swap the Qt DLLs; libtorrent BSD-3; OpenSSL Apache-2.0; libffi MIT; bzip2, xz, zlib;
   Microsoft VC++ runtime). `tools/make_msix.py` copies it into the package. An About dialog (version, licence,
   notices) opens from the settings dialog. Run the tests and the security audit, rebuild the MSIX, repeat the
   Sandbox test.
-- [ ] C-03b: first run asks for the download folder (default `Downloads\NEON`) on one screen that also explains
+- [x] C-03b: first run asks for the download folder (default `Downloads\NEON`) on one screen that also explains
   File-only mode; nothing else.
 
 **Next up** (cards are written when they start):
 - D-04 legal drafts (Codex), after you decide the refund window
-- Claude: C-02 licence keys, C-03 first-run and About, C-04 Store images, website checkout wiring, Show HN write-up
+- Claude: C-02 licence keys, C-03 error report, C-04 Store images, website checkout wiring, Show HN write-up
 
 ## Task cards
 

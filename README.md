@@ -7,6 +7,8 @@ A Windows desktop BitTorrent client in Python, using PySide6 for the interface a
 1. Install 64-bit Python 3.13 if it is not already installed.
 2. Run `setup.bat` once. It installs the packages into `.venv` and builds `runtime\NeonTorrent.exe`.
 3. Run `run.bat` to start the app. No console window opens; startup errors go to `%APPDATA%\NeonTorrent\error.log`.
+   The first start asks where downloads go (default `Downloads\NEON`) and explains File-only mode; change either
+   later in Preferences.
 
 You can also pass magnet links, `.torrent` paths, or URLs on the command line:
 `run.bat "magnet:?xt=urn:btih:..."`. If the app is already running, the links are sent to that window.
@@ -133,6 +135,7 @@ Flash mode resets to off when the app restarts.
 | `src/neontorrent/icons.py` | Vector icons, logo and file-type badges painted in code |
 | `src/neontorrent/theme.py` | Palettes, fonts, formatting, settings storage |
 | `tools/make_runtime.py` | Builds `runtime\NeonTorrent.exe` |
+| `tools/make_notices.py` | Builds `THIRD-PARTY-NOTICES.md` from the real licence files of Python, Qt, libtorrent and the rest |
 | `tools/security_audit.py` | Offline security self-test (malicious torrents, injection, SSRF, Mark-of-the-Web) |
 
 ## Features
@@ -155,6 +158,8 @@ Flash mode resets to off when the app restarts.
 - System tray with pause all/resume all, optional close-to-tray, and download-complete notifications.
 - Quitting hides the window at once; state is saved in the background and the app exits within seconds.
 - Cyberpunk (default), Synthwave, Dark, and Solarized themes.
+- Preferences → About shows the version and the open-source licences (`THIRD-PARTY-NOTICES.md`, shipped in the Store
+  package).
 
 ## Keyboard
 

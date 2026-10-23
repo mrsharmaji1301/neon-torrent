@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QEvent, QPoint, QThread, QTimer, Qt, Signal, Slot
+from PySide6.QtCore import QEvent, QPoint, QStandardPaths, QThread, QTimer, Qt, Signal, Slot
 from PySide6.QtGui import QAction, QFont, QGuiApplication, QKeySequence, QShortcut
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QLabel, QMainWindow, QMenu,
@@ -19,8 +19,8 @@ from neontorrent import theme as T  # noqa: E402
 if sys.stderr is None:  # pythonw.exe: no console, so keep errors in a log file
     sys.stderr = open(T.app_data_dir() / "error.log", "a", encoding="utf-8", buffering=1)
     sys.stdout = sys.stderr
-from neontorrent.dialogs import (DetailsDialog, NeonDialog, SettingsDialog, ShieldDialog,  # noqa: E402
-                                 SpeedLimitsDialog, TorrentOptionsDialog)
+from neontorrent.dialogs import (DetailsDialog, FirstRunDialog, NeonDialog, SettingsDialog,  # noqa: E402
+                                 ShieldDialog, SpeedLimitsDialog, TorrentOptionsDialog)
 from neontorrent.engine import DEFAULT_BLOCKED, TorrentEngine  # noqa: E402
 from neontorrent.icons import logo_icon, make_icon  # noqa: E402
 from neontorrent.transfers import STATUS_FILTERS, TransfersView, status_counts  # noqa: E402
@@ -51,6 +51,8 @@ def build_qss() -> str:
     QPlainTextEdit#blocklist {{ background: {c['input']}; border: 1px solid {c['line']}; border-radius: 9px;
         padding: 6px 8px; color: {c['text']}; font-family: Consolas; font-size: 9.5pt; }}
     QPlainTextEdit#blocklist:focus {{ border-color: {c['cyan']}; }}
+    QTextBrowser#notices {{ background: {c['input']}; border: 1px solid {c['line']}; border-radius: 9px;
+        padding: 8px 10px; color: {c['text']}; font-size: 9pt; selection-background-color: {c['cyan2']}; }}
     QAbstractSpinBox QLineEdit, QComboBox QLineEdit {{ min-height: 0; padding: 0; border: none; background: transparent; }}
     QAbstractSpinBox::up-button, QAbstractSpinBox::down-button {{ subcontrol-origin: border; width: 0px; border: none; }}
     QLineEdit:hover, QComboBox:hover, QAbstractSpinBox:hover {{ border-color: {c['cyan2']}; }}
@@ -1033,6 +1035,19 @@ def send_to_running_instance(args: list[str]) -> bool:
     return True
 
 
+def first_run() -> None:
+    """Ask for the download folder once, before the engine starts; closing the dialog keeps the default."""
+    prefs = T.load_preferences()
+    if prefs.get("download_dir"):
+        return
+    downloads = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DownloadLocation)
+    QApplication.instance().setStyleSheet(build_qss())
+    dialog = FirstRunDialog(str(Path(downloads or Path.home() / "Downloads") / "NEON"))
+    dialog.exec()
+    prefs["download_dir"] = dialog.folder.text()
+    T.save_preferences(prefs)
+
+
 def main() -> int:
     if sys.platform == "win32":
         import ctypes  # own taskbar identity/icon instead of grouping with python.exe
@@ -1053,6 +1068,7 @@ def main() -> int:
     server.setSocketOptions(QLocalServer.SocketOption.UserAccessOption)   # only this Windows user may send links
     server.listen(SERVER_NAME)
     app.setQuitOnLastWindowClosed(False)
+    first_run()
     window = TorrentWindow()
 
     def on_connection():

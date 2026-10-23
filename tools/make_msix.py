@@ -74,6 +74,8 @@ def copy_app() -> None:
     shutil.copy2(ROOT / "src" / "neon_torrent.py", LAYOUT / "src" / "neon_torrent.py")
     shutil.copytree(ROOT / "src" / "neontorrent", LAYOUT / "src" / "neontorrent",
                     ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.rs", "graphify-out"))
+    # licence texts for everything above (tools/make_notices.py); the About dialog shows this file
+    shutil.copy2(ROOT / "THIRD-PARTY-NOTICES.md", LAYOUT / "THIRD-PARTY-NOTICES.md")
 
 
 def render_assets() -> None:
