@@ -45,6 +45,7 @@ Read AGENTS.md and BOARD.md in this folder. Do task <ID> exactly as its card say
 | C-03 | First-run setup, About + third-party notices, error report | Claude | todo |
 | C-04 | Icons, Store tiles and screenshots rendered from the app | Claude | todo |
 | C-05 | GitHub: private repo [mrsharmaji1301/neon-torrent](https://github.com/mrsharmaji1301/neon-torrent), first push | Claude | done |
+| C-06 | Bug: quitting freezes the window for several seconds. Hide it at once, finish shutdown in the background | Claude | todo |
 | D-01 | Website | Antigravity · Claude Opus 4.6 | todo |
 | D-02 | Launch copy pack | Codex · GPT-6 Luna | todo |
 | D-03 | Outreach list | Antigravity · Gemini 3.1 Pro | todo |
