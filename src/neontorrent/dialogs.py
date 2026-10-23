@@ -8,10 +8,10 @@ from pathlib import Path
 
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, QRectF, QSortFilterProxyModel, Qt, QTimer, Signal
 from PySide6.QtGui import QFont, QPainter
-from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog, QDoubleSpinBox, QFileDialog,
-                               QFormLayout, QGridLayout, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QPlainTextEdit,
-                               QSizeGrip, QSpinBox, QTableView, QTableWidget, QTableWidgetItem, QTabWidget,
-                               QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
+                               QFileDialog, QFormLayout, QFrame, QGridLayout, QHBoxLayout, QHeaderView, QLabel,
+                               QLineEdit, QPlainTextEdit, QScrollArea, QSizeGrip, QSpinBox, QTableView, QTableWidget,
+                               QTableWidgetItem, QTabWidget, QVBoxLayout, QWidget)
 
 from . import theme as T
 from .engine import DEFAULT_BLOCKED
@@ -827,8 +827,6 @@ class TorrentOptionsDialog(NeonDialog):
         super().__init__("Torrent settings", parent, resizable=True)
         self.key = row["key"]
         self.row = row
-        self.resize(900, 720)
-        self.setMinimumSize(760, 600)
         self._edited: dict[str, float] = {}
         self._pending: dict[str, object] = {}
         self._debounce = QTimer(self)
@@ -836,13 +834,19 @@ class TorrentOptionsDialog(NeonDialog):
         self._debounce.setInterval(350)
         self._debounce.timeout.connect(self._flush)
 
+        # everything above the CLOSE row scrolls, so the dialog fits 768-pixel-high screens
+        body = QWidget()
+        body.setObjectName("optionsBody")
+        content = QVBoxLayout(body)
+        content.setContentsMargins(0, 0, 0, 0)
+        content.setSpacing(self.root.spacing())
         self.header = BadgeHeader()
         self.header.setCursor(Qt.CursorShape.ArrowCursor)
-        self.root.addWidget(self.header)
+        content.addWidget(self.header)
         self.info = QLabel("—")
         self.info.setTextFormat(Qt.TextFormat.PlainText)
         self.info.setObjectName("muted")
-        self.root.addWidget(self.info)
+        content.addWidget(self.info)
 
         grid = QGridLayout()
         grid.setHorizontalSpacing(14)
@@ -882,7 +886,7 @@ class TorrentOptionsDialog(NeonDialog):
         bf.addRow(_form_label("Stop seeding at ratio"), self.ratio)
         grid.addWidget(behaviour, 0, 1)
         self.bg.register(behaviour)
-        self.root.addLayout(grid)
+        content.addLayout(grid)
 
         actions = NeonPanel("green", 0.45)
         self.bg.register(actions)
@@ -920,7 +924,7 @@ class TorrentOptionsDialog(NeonDialog):
             else:
                 button.clicked.connect(lambda _=False, n=name: self.action.emit(self.key, n))
             al.addWidget(button, i // 4, i % 4)
-        self.root.addWidget(actions)
+        content.addWidget(actions)
 
         trackers = NeonPanel("blue", 0.4)
         self.bg.register(trackers)
@@ -936,7 +940,20 @@ class TorrentOptionsDialog(NeonDialog):
         add.clicked.connect(self._add_trackers)
         tl.addWidget(self.tracker_box, 1)
         tl.addWidget(add)
-        self.root.addWidget(trackers)
+        content.addWidget(trackers)
+        scroll = QScrollArea()
+        scroll.setObjectName("optionsScroll")
+        scroll.setStyleSheet("#optionsScroll, #optionsScroll > QWidget, #optionsBody "
+                             "{ background: transparent; border: none; }")
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(body)
+        scroll.verticalScrollBar().valueChanged.connect(self.bg.update)  # panel glows follow the scroll
+        screen = self.screen() or QApplication.primaryScreen()
+        room = screen.availableGeometry().height() - 260 if screen else 600
+        scroll.setMinimumHeight(max(320, min(body.sizeHint().height(), room)))
+        self.root.addWidget(scroll, 1)
 
         bottom = QHBoxLayout()
         live = QLabel("Changes apply instantly.")
@@ -949,6 +966,9 @@ class TorrentOptionsDialog(NeonDialog):
         bottom.addWidget(close)
         bottom.addSpacing(14)
         self.root.addLayout(bottom)
+        # the layout sets the minimum: a fixed smaller one made the speed rows overlap
+        hint = self.minimumSizeHint()
+        self.resize(max(900, hint.width()), hint.height())
 
         for name, spin in (("download_limit", self.down), ("upload_limit", self.up),
                            ("max_connections", self.conns), ("max_uploads", self.slots), ("ratio_limit", self.ratio)):

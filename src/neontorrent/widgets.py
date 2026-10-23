@@ -54,10 +54,17 @@ class NeonBackground(QWidget):
             p.fillRect(r, g)
         # glow halos behind panels
         for panel in self.panels:
-            if not panel.isVisible():
+            seen = panel.visibleRegion().boundingRect()  # partial or empty when scrolled inside a QScrollArea
+            if not panel.isVisible() or seen.isEmpty():
                 continue
             top_left = panel.mapTo(self, panel.rect().topLeft())
             pr = QRectF(top_left.x(), top_left.y(), panel.width(), panel.height())
+            # the halo spills past an edge only where that edge of the panel is actually on screen
+            clip = QRectF(seen.translated(top_left)).adjusted(
+                -12 if seen.left() <= 0 else 0, -12 if seen.top() <= 0 else 0,
+                12 if seen.right() >= panel.width() - 1 else 0, 12 if seen.bottom() >= panel.height() - 1 else 0)
+            p.save()
+            p.setClipRect(clip, Qt.ClipOperation.IntersectClip)
             color = QColor(panel.glow_color)
             level = panel.glow_strength + panel.hover_level * 0.9
             for spread, alpha in ((9, 10), (6, 18), (3.5, 30), (1.5, 48)):
@@ -65,6 +72,7 @@ class NeonBackground(QWidget):
                 p.setPen(QPen(color, spread * 2))
                 p.setBrush(Qt.BrushStyle.NoBrush)
                 p.drawRoundedRect(pr, panel.radius, panel.radius)
+            p.restore()
         p.setClipping(False)
         p.setPen(QPen(T.c("cyan", 70), 1.0))
         p.setBrush(Qt.BrushStyle.NoBrush)

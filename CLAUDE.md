@@ -3,7 +3,8 @@
 ## For Claude: working with this user
 
 - Start every session by reading [BOARD.md](BOARD.md): live tasks, statuses and open questions.
-- Reply in short, serious, to-the-point Hinglish. Do the work yourself instead of explaining how. Ask only for
+- Reply in short, serious, conversational English, even when the user writes or dictates in Hindi or Hinglish.
+  Do the work yourself instead of explaining how. Ask only for
   vision, money, accounts or consent decisions, and never assume those.
 - Check the PC before claiming anything about it (installed tools, paths, drives). The user's terminal is PowerShell.
 - Market or business claims need real data with source links; label your own estimates.
