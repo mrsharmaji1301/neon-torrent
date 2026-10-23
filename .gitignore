@@ -1,0 +1,34 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# Built app runtime (tools/make_runtime.py) and packaging output
+runtime/
+build/
+dist/
+*.msix
+*.appx
+
+# Scratch work, toolchains, test logs
+work/
+*.log
+
+# Delegated work waiting for Claude's review (see BOARD.md)
+inbox/
+
+# Generated knowledge graph
+graphify-out/
+
+# Legacy Codex prototype in Rust (eframe + librqbit), not shipped
+Cargo.toml
+Cargo.lock
+.cargo/
+target/
+src/main.rs
+outputs/
+
+# Secrets
+.env
+*.pfx
+*.pem
