@@ -18,7 +18,7 @@ comes next, and commits every update. The plan behind it is [SHIP_PLAN.md](SHIP_
 Open the folder `F:\neon-torrent` in the app (never a new project), then paste this prompt (replace `<ID>`):
 
 ```
-Read AGENTS.md and BOARD.md in F:\neon-torrent. Do task <ID> exactly as its card says. Write only inside F:\neon-torrent\inbox\<ID>\. Never write anything on drive C:. Before running any command, set TEMP, TMP, npm_config_cache and PIP_CACHE_DIR to folders under F:\neon-build\<ID>\. Do not install software, run git or edit any other file. If a check needs a tool that is not installed, skip it and say so in DONE.md. When finished, write F:\neon-torrent\inbox\<ID>\DONE.md.
+Read AGENTS.md and BOARD.md in F:\neon-torrent. Do task <ID> exactly as its card says, start to finish, without stopping. Do not ask me questions: when something is unclear, pick the safest sensible option and list it under "Assumptions" in DONE.md. Create and edit files only inside F:\neon-torrent\inbox\<ID>\. Do not run terminal commands, install software, run git, edit any other file or write anything on drive C:. If a check needs a command or a tool, skip it and say so in DONE.md. When finished, write F:\neon-torrent\inbox\<ID>\DONE.md.
 ```
 
 ## Apps and models (checked 23 Oct 2026)
