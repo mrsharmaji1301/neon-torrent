@@ -144,14 +144,17 @@ Flash mode resets to off when the app restarts.
 - Tracker and IP blocklist (Preferences → Shield), plus everything learned from Malwarebytes.
 - Live speed sparklines, connection state, ETA, ratio, seeds/peers tooltips.
 - Sorting by any column; filter box matches name and status.
+- Status chips above the list: All, Downloading, Seeding, Completed, Active, Paused, Stopped and Errors, each with a
+  live count. The chosen chip is remembered.
 - System tray with pause all/resume all, optional close-to-tray, and download-complete notifications.
+- Quitting hides the window at once; state is saved in the background and the app exits within seconds.
 - Cyberpunk (default), Synthwave, Dark, and Solarized themes.
 
 ## Keyboard
 
 `Ctrl+O` open file · `Ctrl+N` focus link box · `Ctrl+F` filter · `Ctrl+M` Shield map · `Ctrl+Shift+F` FLASH MODE ·
 `Ctrl+T` torrent settings · `Ctrl+,` preferences · `Space` pause/resume · `Ctrl+Shift+S` stop · `Del` remove · `Shift+Del` delete data ·
-`Enter` details · `Ctrl+Q` quit.
+`Enter` details · `Alt+1` … `Alt+8` status chips · `Ctrl+Q` quit.
 
 ## Data
 

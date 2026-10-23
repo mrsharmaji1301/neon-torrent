@@ -17,6 +17,33 @@ COLUMNS = ["NAME", "STATUS", "PROGRESS", "SIZE", "↓  SPEED", "↑  SPEED", ""]
 COL_NAME, COL_STATUS, COL_PROGRESS, COL_SIZE, COL_DOWN, COL_UP, COL_MENU = range(7)
 STATE_ORDER = {"Downloading": 0, "Metadata": 1, "Checking": 2, "Seeding": 3, "Queued": 4, "Paused": 5, "Stopped": 6,
                "Error": 7, "Disk full": 8}
+# Status filter chips above the list, in display order: (key, label, palette colour)
+STATUS_FILTERS = [("all", "ALL", "cyan"), ("downloading", "DOWNLOADING", "cyan2"), ("seeding", "SEEDING", "green"),
+                  ("completed", "COMPLETED", "green"), ("active", "ACTIVE", "magenta"), ("paused", "PAUSED", "yellow"),
+                  ("stopped", "STOPPED", "muted"), ("errors", "ERRORS", "red")]
+
+
+def status_matches(key: str, row: dict) -> bool:
+    state = row["state"]
+    if key == "downloading":
+        return row["progress"] < 1 and state in ("Downloading", "Metadata", "Checking", "Queued")
+    if key == "seeding":
+        return state == "Seeding"
+    if key == "completed":
+        return row["progress"] >= 1
+    if key == "active":
+        return row["down"] > 0 or row["up"] > 0
+    if key == "paused":
+        return state == "Paused"
+    if key == "stopped":
+        return state == "Stopped"
+    if key == "errors":
+        return state in ("Error", "Disk full") or bool(row["error"])
+    return True
+
+
+def status_counts(rows: list[dict]) -> dict[str, int]:
+    return {key: sum(1 for row in rows if status_matches(key, row)) for key, _label, _color in STATUS_FILTERS}
 
 
 def guard_badge(guard: dict) -> tuple[str, str] | None:
@@ -122,6 +149,7 @@ class TorrentFilter(QSortFilterProxyModel):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.query = ""
+        self.status = "all"
         self.setSortRole(SORT_ROLE)
         self.setDynamicSortFilter(True)
 
@@ -129,10 +157,16 @@ class TorrentFilter(QSortFilterProxyModel):
         self.query = text.strip().casefold()
         self.invalidateFilter()
 
+    def set_status(self, key: str) -> None:
+        self.status = key
+        self.invalidateFilter()
+
     def filterAcceptsRow(self, source_row, source_parent):
+        row = self.sourceModel().rows[source_row]
+        if not status_matches(self.status, row):
+            return False
         if not self.query:
             return True
-        row = self.sourceModel().rows[source_row]
         hay = f"{row['title']} {row['name']} {row['state']}".casefold()
         return all(part in hay for part in self.query.split())
 

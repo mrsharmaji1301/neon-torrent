@@ -716,7 +716,117 @@ class StatusLine(QWidget):
             x += fm.horizontalAdvance(text)
 
 
+# ------------------------------------------------------------------ status filter chips
+
+class FilterChip(QPushButton):
+    """Neon pill with a label and a live count. Glows in its own colour when selected; dims when empty."""
+
+    PAD = 4.0                                   # room around the pill for the glow
+
+    def __init__(self, label: str, color_key: str, parent=None):
+        super().__init__(parent)
+        self.label = label
+        self.color_key = color_key
+        self.count = 0
+        self._hover = False
+        self.setCheckable(True)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setFixedHeight(36)
+        self._fit()
+
+    def set_count(self, count: int) -> None:
+        if count != self.count:
+            self.count = count
+            self._fit()
+            self.update()
+
+    def _badge_width(self) -> float:
+        return max(22.0, QFontMetricsF(T.head_font(8, QFont.Weight.Bold, 0.4)).horizontalAdvance(str(self.count)) + 12)
+
+    def _fit(self) -> None:
+        label = QFontMetricsF(T.head_font(8.5)).horizontalAdvance(self.label)
+        self.setFixedWidth(int(2 * self.PAD + 14 + label + 10 + self._badge_width() + 5))
+
+    def enterEvent(self, event):
+        self._hover = True
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self._hover = False
+        self.update()
+        super().leaveEvent(event)
+
+    def paintEvent(self, _event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        r = QRectF(self.rect()).adjusted(self.PAD, self.PAD, -self.PAD, -self.PAD)
+        pill = rounded(r, r.height() / 2)
+        key, on = self.color_key, self.isChecked()
+        empty = self.count == 0 and not on
+        if on:
+            for width, alpha in ((7.0, 28), (4.0, 60)):          # soft outer glow
+                p.setPen(QPen(T.c(key, alpha), width))
+                p.drawPath(pill)
+            fill = QLinearGradient(r.topLeft(), r.bottomLeft())
+            fill.setColorAt(0, T.c(key, 85))
+            fill.setColorAt(1, T.c(key, 30))
+            p.fillPath(pill, fill)
+        else:
+            p.fillPath(pill, T.c("panel", 170))
+        p.setPen(QPen(T.c(key, 255 if on else (190 if self._hover else (55 if empty else 110))), 1.2))
+        p.drawPath(pill)
+
+        p.setFont(T.head_font(8.5))
+        p.setPen(QColor("white") if on else T.c("muted" if empty else "text", 235 if self._hover else 200))
+        text_rect = QRectF(r.left() + 14, r.top(), r.width(), r.height())
+        p.drawText(text_rect, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft, self.label)
+
+        bw = self._badge_width()
+        badge = QRectF(r.right() - bw - 4, r.top() + 4, bw, r.height() - 8)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(T.c(key, 235 if on else (35 if empty else 95)))
+        p.drawRoundedRect(badge, badge.height() / 2, badge.height() / 2)
+        p.setFont(T.head_font(8, QFont.Weight.Bold, 0.4))
+        p.setPen(T.c("bg0") if on else (T.c("muted") if empty else QColor("white")))
+        p.drawText(badge, Qt.AlignmentFlag.AlignCenter, str(self.count))
+
+
+class FilterBar(QWidget):
+    """One row of status chips; exactly one is selected at a time."""
+    changed = Signal(str)
+
+    def __init__(self, filters: list[tuple[str, str, str]], parent=None):
+        super().__init__(parent)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(2)
+        self.chips: dict[str, FilterChip] = {}
+        for key, label, color_key in filters:
+            chip = FilterChip(label, color_key, self)
+            chip.clicked.connect(lambda _checked=False, k=key: self.select(k))
+            layout.addWidget(chip)
+            self.chips[key] = chip
+        layout.addStretch(1)
+        self.current = filters[0][0]
+        self.chips[self.current].setChecked(True)
+
+    def select(self, key: str) -> None:
+        if key not in self.chips:
+            return
+        for k, chip in self.chips.items():
+            chip.setChecked(k == key)            # clicking the selected chip again keeps it selected
+        if key != self.current:
+            self.current = key
+            self.changed.emit(key)
+
+    def set_counts(self, counts: dict[str, int]) -> None:
+        for key, chip in self.chips.items():
+            chip.set_count(counts.get(key, 0))
+
+
 __all__ = [
     "NeonBackground", "NeonPanel", "GlowButton", "WindowButton", "BrandTitle", "StatusDot", "NeonLineEdit",
-    "StatCard", "SectionTitle", "Logo", "VSeparator", "StatusLine", "make_icon", "Signal",
+    "StatCard", "SectionTitle", "Logo", "VSeparator", "StatusLine", "FilterChip", "FilterBar", "make_icon", "Signal",
 ]

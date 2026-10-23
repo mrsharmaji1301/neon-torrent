@@ -23,9 +23,9 @@ from neontorrent.dialogs import (DetailsDialog, NeonDialog, SettingsDialog, Shie
                                  SpeedLimitsDialog, TorrentOptionsDialog)
 from neontorrent.engine import DEFAULT_BLOCKED, TorrentEngine  # noqa: E402
 from neontorrent.icons import logo_icon, make_icon  # noqa: E402
-from neontorrent.transfers import TransfersView  # noqa: E402
-from neontorrent.widgets import (BrandTitle, GlowButton, Logo, NeonBackground, NeonLineEdit, NeonPanel,  # noqa: E402
-                                 SectionTitle, StatCard, StatusDot, StatusLine, VSeparator, WindowButton)
+from neontorrent.transfers import STATUS_FILTERS, TransfersView, status_counts  # noqa: E402
+from neontorrent.widgets import (BrandTitle, FilterBar, GlowButton, Logo, NeonBackground, NeonLineEdit,  # noqa: E402
+                                 NeonPanel, SectionTitle, StatCard, StatusDot, StatusLine, VSeparator, WindowButton)
 
 SERVER_NAME = "NeonTorrent-single-instance"
 RESIZE_MARGIN = 8
@@ -177,6 +177,7 @@ class TorrentWindow(QMainWindow):
         self.prefs = self._load_prefs()
         T.set_theme(self.prefs["theme"])
         self.quitting = False
+        self.shutting_down = False
         self.details: DetailsDialog | None = None
         self.shield_dialog: ShieldDialog | None = None
         self.options_dialog: TorrentOptionsDialog | None = None
@@ -189,6 +190,7 @@ class TorrentWindow(QMainWindow):
         self.setWindowTitle(APP_NAME)
         self.setWindowIcon(logo_icon(T.c("cyan"), T.c("magenta")))
         self._build_ui()
+        self.filter_bar.select(self.prefs.get("status_filter", "all"))
         self._build_shortcuts()
         self._build_tray()
         self._apply_theme()
@@ -349,7 +351,13 @@ class TorrentWindow(QMainWindow):
         self.search.textChanged.connect(self._on_filter)
         head.addWidget(self.search)
         tl2.addLayout(head)
+        chips = QHBoxLayout()
+        chips.setContentsMargins(16, 0, 18, 0)
+        self.filter_bar = FilterBar(STATUS_FILTERS)
+        chips.addWidget(self.filter_bar)
+        tl2.addLayout(chips)
         self.table = TransfersView()
+        self.filter_bar.changed.connect(self._on_status_filter)
         self.table.selectionModel().selectionChanged.connect(self._update_actions)
         self.table.menu_requested.connect(self.show_menu)
         self.table.details_requested.connect(self.show_details)
@@ -404,6 +412,8 @@ class TorrentWindow(QMainWindow):
         sc("Ctrl+P", self.pause_selected)
         sc("Ctrl+Shift+S", self.stop_selected)
         sc("Ctrl+R", self.resume_selected)
+        for number, (key, _label, _color) in enumerate(STATUS_FILTERS, 1):     # Alt+1 … Alt+8: status chips
+            sc(f"Alt+{number}", lambda k=key: self.filter_bar.select(k))
         table_ctx = Qt.ShortcutContext.WidgetShortcut
         for keys, fn in (("Delete", self.remove_selected), ("Shift+Delete", self.delete_selected),
                          ("Space", self.toggle_selected), ("Return", self.show_details),
@@ -455,7 +465,7 @@ class TorrentWindow(QMainWindow):
         self.engine.finished.connect(self._on_finished)
         self.engine.magnet.connect(self._on_magnet)
         self.engine.threat.connect(self._on_threat)
-        # direct: the GUI thread is blocked in engine_thread.wait() during close, so a queued quit would never run
+        # direct: ends the engine thread's event loop from inside it, with no round trip through the GUI thread
         self.engine.stopped.connect(self.engine_thread.quit, Qt.ConnectionType.DirectConnection)
         for sig, slot in ((self.sig_add_uri, self.engine.add_uri), (self.sig_add_file, self.engine.add_file),
                           (self.sig_pause, self.engine.pause), (self.sig_resume, self.engine.resume),
@@ -487,6 +497,7 @@ class TorrentWindow(QMainWindow):
         rows = data.get("rows", [])
         self.table.update_rows(rows)
         self.transfers_title.set_text(f"TRANSFERS ({len(rows)})")
+        self.filter_bar.set_counts(status_counts(rows))
         history = data.get("history", [])
         self.down_card.value.setText(T.fmt_speed(data.get("down", 0)))
         self.down_card.spark.set_values([d for d, _ in history])
@@ -870,6 +881,13 @@ class TorrentWindow(QMainWindow):
         self.table.proxy.set_query(text)
         self.table.viewport().update()
 
+    def _on_status_filter(self, key: str):
+        self.table.proxy.set_status(key)
+        self.table.viewport().update()
+        if self.prefs.get("status_filter") != key:
+            self.prefs["status_filter"] = key
+            T.save_preferences(self.prefs)
+
     # ------------------------------------------------------------ window chrome
     def toggle_maximized(self):
         if self.isMaximized():
@@ -970,20 +988,24 @@ class TorrentWindow(QMainWindow):
             self.tray.showMessage(APP_NAME, "Still running in the tray. Right-click the icon to quit.",
                                   self.windowIcon(), 3000)
             return
-        if self.details is not None:
-            self.details.close()
-        if self.shield_dialog is not None:
-            self.shield_dialog.close()
-        if self.options_dialog is not None:
-            self.options_dialog.close()
-        self._on_notice("SAVING STATE…", "info")
-        QApplication.processEvents()
-        if self.engine_thread.isRunning():
-            self.sig_shutdown.emit()
-            self.engine_thread.wait(9000)
+        event.ignore()
+        if self.shutting_down:
+            return
+        self.shutting_down = True
+        for dialog in (self.details, self.shield_dialog, self.options_dialog):
+            if dialog is not None:
+                dialog.close()
+        # Saving resume data and telling trackers we stopped takes a few seconds. Hide at once and let the engine
+        # finish in its own thread: blocking the GUI thread for it made Windows mark the window "Not responding".
+        self.hide()
         self.tray.hide()
-        event.accept()
-        QApplication.instance().quit()
+        app = QApplication.instance()
+        if self.engine_thread.isRunning():
+            self.engine_thread.finished.connect(app.quit)
+            QTimer.singleShot(15000, app.quit)            # never linger in the background
+            self.sig_shutdown.emit()
+        else:
+            app.quit()
 
 
 def explorer_command(save_path: str, name: str) -> list[str] | None:
@@ -1034,6 +1056,8 @@ def main() -> int:
         sock = server.nextPendingConnection()
 
         def read():
+            if window.shutting_down:
+                return
             payload = bytes(sock.readAll()).decode("utf-8", "replace")
             lines = payload.splitlines()
             commands = {"--pause-all": window.sig_pause_all.emit, "--resume-all": window.sig_resume_all.emit,
@@ -1051,7 +1075,11 @@ def main() -> int:
     for arg in args:
         if not arg.startswith("--"):
             QTimer.singleShot(1500, lambda a=arg: window.add_any(a))
-    return app.exec()
+    code = app.exec()
+    thread = window.engine_thread
+    if thread.isRunning() and not thread.wait(2000):
+        os._exit(code)            # engine stuck (e.g. a tracker that never answers); resume data is already saved
+    return code
 
 
 if __name__ == "__main__":
