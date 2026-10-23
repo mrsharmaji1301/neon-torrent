@@ -65,6 +65,12 @@ Read AGENTS.md and BOARD.md in F:\neon-torrent. Do task <ID> exactly as its card
 
 ## Night shift (24 Oct): Claude works alone while the user sleeps
 
+**24 Oct 05:00, Claude:** C-03a and C-03b done and pushed (About in Preferences, `THIRD-PARTY-NOTICES.md` in the MSIX,
+first-run folder screen). Tests 22/22, audit 14/14, and the Sandbox install shows the first-run screen. Still open: D-01b
+(no `DONE.md`; Antigravity's last write was at 03:57 and there is no `assets/` folder) and D-03 (no `inbox/D-03/`). Both
+look stalled in Antigravity. Please review the LGPL wording in the notices. `APP_VERSION` is now 1.0.0, but the engine's
+user agent still says `NeonTorrent/2.0`.
+
 Every session on this shift: read CLAUDE.md and this board first, write in English, never write to drive C:, and make
 no purchases, posts, account or settings changes. A scheduled session cannot drive Codex or Antigravity (no desktop
 access), so skip anything that needs them. Do the first open item, tick it here, commit and push, then the next.
