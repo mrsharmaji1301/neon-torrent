@@ -23,6 +23,12 @@ another drive.
 shared `python.exe`, so the app can be allowed or blocked without affecting other Python programs. Run `setup.bat`
 again after upgrading Python. Windows Firewall asks once for the new exe: allow it on Private networks.
 
+**Store package.** `.venv\Scripts\python.exe tools\make_msix.py` builds `NeonTorrent.msix` (about 40 MB): the app with
+its own interpreter, the standard library and only the Qt parts it uses. Add `--sandbox` to sign it with a throwaway
+certificate, install it and start it in Windows Sandbox; the report goes to `F:\neon-build\msix\results`. The package
+adds inbound firewall rules for NeonTorrent.exe on install. Windows keeps the Store version's data under
+`%LOCALAPPDATA%\Packages\NeonTorrent_…\LocalCache\Roaming\NeonTorrent` instead of `%APPDATA%\NeonTorrent`.
+
 ## Shield: peer filtering and antivirus alerts
 
 Every peer connection is bound to one torrent by its info-hash, and every piece is hash-checked before it is

@@ -1036,7 +1036,10 @@ def send_to_running_instance(args: list[str]) -> bool:
 def main() -> int:
     if sys.platform == "win32":
         import ctypes  # own taskbar identity/icon instead of grouping with python.exe
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("NeonTorrent.Client")
+        length = ctypes.c_uint32(0)
+        # an MSIX install already has its package identity; 15700 = APPMODEL_ERROR_NO_PACKAGE (plain folder)
+        if ctypes.windll.kernel32.GetCurrentPackageFullName(ctypes.byref(length), None) == 15700:
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("NeonTorrent.Client")
     QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)
