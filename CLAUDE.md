@@ -15,6 +15,8 @@
 - Only Claude commits and pushes (private repo `mrsharmaji1301/neon-torrent`).
 - Claude Pro plan: the weekly limit is the bottleneck, so keep the context small.
 - Never clear, reset or restart the chat on your own, even to save tokens. Ask first: the user reads the history.
+- Never buy anything: no credits, overages, upgrades, subscriptions or "buy" buttons in any app. The user makes every
+  purchase personally.
 
 ## Token discipline
 
