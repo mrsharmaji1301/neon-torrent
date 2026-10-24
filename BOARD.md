@@ -53,7 +53,7 @@ Read AGENTS.md and BOARD.md in F:\neon-torrent. Do task <ID> exactly as its card
 | D-01 | Website | Antigravity · Gemini 3.8 Flash | replaced by D-01b: it read like a spec sheet, with empty image boxes |
 | D-01b | Website rebuild around the real screenshots | Codex · GPT-6 Luna (Antigravity ran out of quota at 03:57) | done: checked at 1280×800 and 375 px, now `site/`. Fixed: invisible nav Download text, placeholder `og.png` (now a 1200×630 crop of screenshot 1), five claims not in the sources ("zero trackers", "own all Pro updates forever", "no data is lost", "never crash", FLASH as "read-only LSD"). `/legal/refund.html` is still a dead link until D-04 |
 | D-02 | Launch copy pack | Codex · GPT-6 Luna | done: reviewed, 4 fixes, in `marketing/` |
-| D-03 | Outreach list | Codex · GPT-6 Luna (Antigravity ran out of quota before saving anything) | doing |
+| D-03 | Outreach list | Codex · GPT-6 Luna (Antigravity ran out of quota before saving anything) | done: 50 rows in `marketing/outreach.md` and `.csv`, each with a source URL and a checked date, no emails. Spot check of 10 URLs: 8 fine, 2 dead links fixed (Softpedia 410, SnapFiles soft 404). Reddit blocks automated reads, so its member counts and YouTube subscriber counts are unverified estimates: refresh before outreach |
 | D-05 | Unit tests for `guard.py` and `theme.py` | Codex · GPT-6 Luna | done: 22 tests in `tests/` pass (`python -m unittest discover -s tests`); one wrong expectation fixed |
 | D-04a | Privacy policy, terms and abuse page (refund page waits for your decision) | Codex · GPT-6 Luna | done: in `site/legal/` (`.md` in `marketing/legal/`). Privacy rewritten against the code: it now lists .torrent URL fetches, UPnP/NAT-PMP, DHT/LPD/FLASH, X4BNet lists on GitHub, iptoasn.com, VirusTotal hashes, Defender, Cloudflare Pages hosting. New placeholders `{{LICENCE_CHECK_DETAILS}}` (fill in with C-02) and `{{OFFLINE_GRACE_DAYS}}`. Needs a lawyer before launch |
 | U-01 | Install GitHub CLI and log in | You | done |
@@ -85,7 +85,7 @@ access), so skip anything that needs them. Do the first open item, tick it here,
 
 - [x] Real screenshots from the app (`tools/screenshots.py`); torrent settings no longer overlap
 - [x] D-05 reviewed and accepted into `tests/`
-- [ ] D-03: when `inbox/D-03/DONE.md` exists, open 10 of its URLs, move the files to `marketing/`, mark D-03 done
+- [x] D-03: when `inbox/D-03/DONE.md` exists, open 10 of its URLs, move the files to `marketing/`, mark D-03 done
 - [x] D-01b: when `inbox/D-01b/DONE.md` exists, copy `site/assets/*.png` into it, serve it on 127.0.0.1 and check it
   in the built-in browser at 1280×800 and 375 px wide (no empty boxes, no console errors except the Cloudflare
   beacon), fix small issues, then replace `site/` with it and mark D-01b done
