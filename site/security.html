@@ -6,9 +6,15 @@
   <title>Security Model &amp; Audit | NEON Torrent</title>
   <meta name="description" content="Detailed security architecture and offline attack audit of NEON Torrent. Built-in Shield peer filter, Download Guard file inspection, and Mark-of-the-Web enforcement.">
   <link rel="canonical" href="https://{{DOMAIN}}/security.html">
-  <meta property="og:title" content="NEON Torrent Security Model &amp; Audit">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Security Model &amp; Audit | NEON Torrent">
   <meta property="og:description" content="14/14 offline attack tests passed. Read how NEON Torrent protects Windows users from swarm hazards and malicious payloads.">
   <meta property="og:image" content="assets/og.png">
+  <meta property="og:url" content="https://{{DOMAIN}}/security.html">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Security Model &amp; Audit | NEON Torrent">
+  <meta name="twitter:description" content="14/14 offline attack tests passed. Read how NEON Torrent protects Windows users from swarm hazards and malicious payloads.">
+  <meta name="twitter:image" content="assets/og.png">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -29,9 +35,6 @@
       <nav>
         <ul class="nav-links" id="navLinks">
           <li><a href="index.html">Home</a></li>
-          <li><a href="index.html#features">Features</a></li>
-          <li><a href="index.html#shield">Shield</a></li>
-          <li><a href="index.html#guard">Download Guard</a></li>
           <li><a href="index.html#pricing">Pricing</a></li>
           <li><a href="docs.html">Docs</a></li>
           <li><a href="security.html" class="active">Security</a></li>
@@ -257,7 +260,7 @@
             </svg>
             <span>NEON <span class="brand-accent">TORRENT</span></span>
           </a>
-          <p>Defensive BitTorrent client for Windows 10/11. Zero ads, zero miners, intelligent peer filtering and file verification.</p>
+          <p>Defensive BitTorrent client for Windows 10 &amp; 11.</p>
         </div>
         <div class="footer-col">
           <h4>Navigation</h4>
@@ -278,7 +281,7 @@
           </ul>
         </div>
         <div class="footer-col">
-          <h4>Platform</h4>
+          <h4>Technology</h4>
           <ul>
             <li>Windows 10 / 11 (64-bit)</li>
             <li>14/14 Attack Tests Passed</li>
@@ -289,13 +292,11 @@
       </div>
       <div class="footer-bottom">
         <div>&copy; 2026 NEON Torrent. Built for performance and security on Windows.</div>
-        <div>Audited 2026-10-23 · Reproducible via <code>tools/security_audit.py</code></div>
+        <div>Audited 2026-10-23 &middot; Reproducible via <code>tools/security_audit.py</code></div>
       </div>
     </div>
   </footer>
-
   <script src="script.js"></script>
-  <!-- Cloudflare Web Analytics -->
-  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "{{CF_ANALYTICS_TOKEN}}"}'></script>
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "{{CF_ANALYTICS_TOKEN}}"}}'></script>
 </body>
 </html>

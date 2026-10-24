@@ -51,11 +51,11 @@ Read AGENTS.md and BOARD.md in F:\neon-torrent. Do task <ID> exactly as its card
 | C-07 | Status filter chips with live counts (All, Downloading, Seeding, Completed, Active, Paused, Stopped, Errors) | Claude | done |
 | C-08 | Dev tools into `F:\neon-build\tools`: Windows SDK BuildTools 10.0.28000.2705 (makeappx/signtool, nuget.org, 21.3 MB), gitleaks 8.30.1 (secret scan, SHA256-checked, 8.4 MB), ruff (lint, into `.venv`), Token Savior (MCP code navigation, own venv, `optimized` profile, project `.mcp.json`) | Claude | done, hash-checked; Token Savior skipped (not needed to ship) |
 | D-01 | Website | Antigravity · Gemini 3.8 Flash | replaced by D-01b: it read like a spec sheet, with empty image boxes |
-| D-01b | Website rebuild around the real screenshots | Codex · GPT-6 Luna (Antigravity ran out of quota at 03:57) | doing |
+| D-01b | Website rebuild around the real screenshots | Codex · GPT-6 Luna (Antigravity ran out of quota at 03:57) | done: checked at 1280×800 and 375 px, now `site/`. Fixed: invisible nav Download text, placeholder `og.png` (now a 1200×630 crop of screenshot 1), five claims not in the sources ("zero trackers", "own all Pro updates forever", "no data is lost", "never crash", FLASH as "read-only LSD"). `/legal/refund.html` is still a dead link until D-04 |
 | D-02 | Launch copy pack | Codex · GPT-6 Luna | done: reviewed, 4 fixes, in `marketing/` |
 | D-03 | Outreach list | Codex · GPT-6 Luna (Antigravity ran out of quota before saving anything) | doing |
 | D-05 | Unit tests for `guard.py` and `theme.py` | Codex · GPT-6 Luna | done: 22 tests in `tests/` pass (`python -m unittest discover -s tests`); one wrong expectation fixed |
-| D-04a | Privacy policy, terms and abuse page (refund page waits for your decision) | Codex · GPT-6 Luna | doing |
+| D-04a | Privacy policy, terms and abuse page (refund page waits for your decision) | Codex · GPT-6 Luna | done: in `site/legal/` (`.md` in `marketing/legal/`). Privacy rewritten against the code: it now lists .torrent URL fetches, UPnP/NAT-PMP, DHT/LPD/FLASH, X4BNet lists on GitHub, iptoasn.com, VirusTotal hashes, Defender, Cloudflare Pages hosting. New placeholders `{{LICENCE_CHECK_DETAILS}}` (fill in with C-02) and `{{OFFLINE_GRACE_DAYS}}`. Needs a lawyer before launch |
 | U-01 | Install GitHub CLI and log in | You | done |
 | U-02 | Partner Center individual account (ID + selfie) | You | todo |
 | U-03 | Dodo Payments signup + KYC | You | todo |
@@ -86,7 +86,7 @@ access), so skip anything that needs them. Do the first open item, tick it here,
 - [x] Real screenshots from the app (`tools/screenshots.py`); torrent settings no longer overlap
 - [x] D-05 reviewed and accepted into `tests/`
 - [ ] D-03: when `inbox/D-03/DONE.md` exists, open 10 of its URLs, move the files to `marketing/`, mark D-03 done
-- [ ] D-01b: when `inbox/D-01b/DONE.md` exists, copy `site/assets/*.png` into it, serve it on 127.0.0.1 and check it
+- [x] D-01b: when `inbox/D-01b/DONE.md` exists, copy `site/assets/*.png` into it, serve it on 127.0.0.1 and check it
   in the built-in browser at 1280×800 and 375 px wide (no empty boxes, no console errors except the Cloudflare
   beacon), fix small issues, then replace `site/` with it and mark D-01b done
 - [x] C-03a: `THIRD-PARTY-NOTICES.md` built from the real licence files (Python PSF; PySide6, Qt and shiboken6 LGPLv3

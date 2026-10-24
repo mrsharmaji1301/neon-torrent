@@ -29,9 +29,6 @@
       <nav>
         <ul class="nav-links" id="navLinks">
           <li><a href="index.html">Home</a></li>
-          <li><a href="index.html#features">Features</a></li>
-          <li><a href="index.html#shield">Shield</a></li>
-          <li><a href="index.html#guard">Download Guard</a></li>
           <li><a href="index.html#pricing">Pricing</a></li>
           <li><a href="docs.html" class="active">Docs</a></li>
           <li><a href="security.html">Security</a></li>
@@ -104,7 +101,7 @@
         <!-- Disk Full -->
         <div id="disk-full" style="margin-bottom: 3.5rem;">
           <h2>Disk Full Management &amp; Moving Data</h2>
-          <p>Running out of disk space during massive downloads will never crash NEON Torrent or corrupt files:</p>
+          <p>When a drive fills up during a large download, NEON Torrent stops writing and tells you what it needs:</p>
           <div class="card" style="border-left: 4px solid var(--red);">
             <h3>Automatic Upload-Only Transition</h3>
             <p>If a target drive fills up, libtorrent immediately stops writing and flips the torrent into upload-only mode. The transfer status displays <strong>Disk full</strong> in red, reporting both the space required and space remaining.</p>
@@ -118,7 +115,7 @@
           <p>Built from the ground up for maximum throughput without compromising privacy:</p>
           <ul>
             <li style="margin-bottom: 0.75rem;"><strong>Multi-Tier Tracker Announcing:</strong> Standard libtorrent implementations stop querying trackers after the first responsive tier. NEON announces to <em>every tracker in every tier</em> simultaneously, unlocking swarms where primary trackers are blocked.</li>
-            <li style="margin-bottom: 0.75rem;"><strong>Payload-Only Upload Cap:</strong> TCP/IP download acknowledgments (ACKs) are excluded from the upload limiter. Setting a strict upload cap (default 24 KiB/s) will never starve your incoming download piece requests.</li>
+            <li style="margin-bottom: 0.75rem;"><strong>Payload-Only Upload Cap:</strong> TCP/IP download acknowledgments (ACKs) are excluded from the upload limiter. A small upload cap such as the default 24 KiB/s no longer starves your own piece requests.</li>
             <li style="margin-bottom: 0.75rem;"><strong>Rapid Peer Ramp-Up:</strong> Optimized connection rate parameters, short connect timeouts, and multi-threaded piece hashing ensure swarms reach peak speed in seconds.</li>
           </ul>
 
@@ -170,56 +167,14 @@
         <!-- Keyboard Shortcuts Table -->
         <div id="keyboard-shortcuts" style="margin-bottom: 3.5rem;">
           <h2>Keyboard Shortcuts Reference</h2>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Shortcut</th>
-                  <th>Action</th>
-                  <th>Context</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td><kbd>Ctrl+O</kbd></td><td>Open <code>.torrent</code> file picker</td><td>Global</td></tr>
-                <tr><td><kbd>Ctrl+N</kbd></td><td>Focus magnet / URL input box</td><td>Global</td></tr>
-                <tr><td><kbd>Ctrl+F</kbd></td><td>Focus search filter box</td><td>Global</td></tr>
-                <tr><td><kbd>Ctrl+M</kbd></td><td>Open Shield Connection Map</td><td>Global</td></tr>
-                <tr><td><kbd>Ctrl+Shift+F</kbd></td><td>Toggle FLASH MODE speed boost</td><td>Global</td></tr>
-                <tr><td><kbd>Ctrl+T</kbd></td><td>Open Torrent Settings dialog</td><td>Selected Torrent</td></tr>
-                <tr><td><kbd>Ctrl+,</kbd></td><td>Open Preferences dialog</td><td>Global</td></tr>
-                <tr><td><kbd>Space</kbd></td><td>Pause / Resume selected transfer</td><td>Selected Torrent</td></tr>
-                <tr><td><kbd>Ctrl+Shift+S</kbd></td><td>Stop selected transfer completely</td><td>Selected Torrent</td></tr>
-                <tr><td><kbd>Del</kbd></td><td>Remove torrent (keep downloaded files)</td><td>Selected Torrent</td></tr>
-                <tr><td><kbd>Shift+Del</kbd></td><td>Delete torrent and remove files from disk</td><td>Selected Torrent</td></tr>
-                <tr><td><kbd>Enter</kbd></td><td>Open detailed Transfer Inspector</td><td>Selected Torrent</td></tr>
-                <tr><td><kbd>Alt+1</kbd> … <kbd>Alt+8</kbd></td><td>Switch status filter chips (All, Downloading, Seeding...)</td><td>Main Window</td></tr>
-                <tr><td><kbd>Ctrl+Q</kbd></td><td>Save state and quit application</td><td>Global</td></tr>
-              </tbody>
-            </table>
-          </div>
+          <ul class="shortcut-list"><li><kbd>Ctrl+O</kbd><span>Open <code>.torrent</code> file picker</span><small>Global</small></li><li><kbd>Ctrl+N</kbd><span>Focus magnet / URL input box</span><small>Global</small></li><li><kbd>Ctrl+F</kbd><span>Focus search filter box</span><small>Global</small></li><li><kbd>Ctrl+M</kbd><span>Open Shield Connection Map</span><small>Global</small></li><li><kbd>Ctrl+Shift+F</kbd><span>Toggle FLASH MODE speed boost</span><small>Global</small></li><li><kbd>Ctrl+T</kbd><span>Open Torrent Settings dialog</span><small>Selected Torrent</small></li><li><kbd>Ctrl+,</kbd><span>Open Preferences dialog</span><small>Global</small></li><li><kbd>Space</kbd><span>Pause / Resume selected transfer</span><small>Selected Torrent</small></li><li><kbd>Ctrl+Shift+S</kbd><span>Stop selected transfer completely</span><small>Selected Torrent</small></li><li><kbd>Del</kbd><span>Remove torrent (keep downloaded files)</span><small>Selected Torrent</small></li><li><kbd>Shift+Del</kbd><span>Delete torrent and remove files from disk</span><small>Selected Torrent</small></li><li><kbd>Enter</kbd><span>Open detailed Transfer Inspector</span><small>Selected Torrent</small></li><li><kbd>Alt+1 … Alt+8</kbd><span>Switch status filter chips (All, Downloading, Seeding...)</span><small>Main Window</small></li><li><kbd>Ctrl+Q</kbd><span>Save state and quit application</span><small>Global</small></li></ul>
         </div>
 
         <!-- Storage & Locations -->
         <div id="storage-paths" style="margin-bottom: 3.5rem;">
           <h2>Data Storage &amp; File Locations</h2>
           <p>All application state, resume data, and filter rules are stored under <code>%APPDATA%\NeonTorrent\</code>:</p>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>File / Directory</th>
-                  <th>Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td><code>settings.json</code></td><td>Application preferences, UI theme selection, and bandwidth limits.</td></tr>
-                <tr><td><code>session\*.fastresume</code></td><td>Libtorrent fastresume metadata; preserves completion states across reboots without rechecking.</td></tr>
-                <tr><td><code>session\meta.json</code></td><td>Per-torrent custom flags, ratio stop thresholds, and queue orders.</td></tr>
-                <tr><td><code>shield\learned.json</code></td><td>IP and subnet blocks automatically absorbed from Malwarebytes detections.</td></tr>
-                <tr><td><code>shield\ip2asn.cache</code></td><td>Cached ASN database for fast offline peer attribution.</td></tr>
-              </tbody>
-            </table>
-          </div>
+          <ul class="shortcut-list"><li><kbd><code>settings.json</code></kbd><span>Application preferences, UI theme selection, and bandwidth limits.</span><small>undefined</small></li><li><kbd><code>session\*.fastresume</code></kbd><span>Libtorrent fastresume metadata; preserves completion states across reboots without rechecking.</span><small>undefined</small></li><li><kbd><code>session\meta.json</code></kbd><span>Per-torrent custom flags, ratio stop thresholds, and queue orders.</span><small>undefined</small></li><li><kbd><code>shield\learned.json</code></kbd><span>IP and subnet blocks automatically absorbed from Malwarebytes detections.</span><small>undefined</small></li><li><kbd><code>shield\ip2asn.cache</code></kbd><span>Cached ASN database for fast offline peer attribution.</span><small>undefined</small></li></ul>
         </div>
 
         <!-- FAQ from README -->
@@ -242,7 +197,7 @@
                 <svg class="faq-icon" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
               </button>
               <div class="faq-answer">
-                None. NEON Torrent has zero advertisements, zero sponsored installer bundles, zero background crypto miners, and zero telemetry tracking. It is a clean desktop client designed for Windows.
+                None. NEON Torrent has zero advertisements, zero sponsored installer bundles, zero background crypto miners, and no telemetry. It is a clean desktop client designed for Windows.
               </div>
             </div>
 
@@ -282,7 +237,7 @@
             </svg>
             <span>NEON <span class="brand-accent">TORRENT</span></span>
           </a>
-          <p>Defensive BitTorrent client for Windows 10/11. Zero ads, zero miners, intelligent peer filtering and file verification.</p>
+          <p>Defensive BitTorrent client for Windows 10 &amp; 11.</p>
         </div>
         <div class="footer-col">
           <h4>Navigation</h4>
@@ -303,12 +258,12 @@
           </ul>
         </div>
         <div class="footer-col">
-          <h4>Platform</h4>
+          <h4>Technology</h4>
           <ul>
             <li>Windows 10 / 11 (64-bit)</li>
-            <li>libtorrent 2.1 engine</li>
             <li>libtorrent 2.x</li>
             <li>Cyberpunk Palette</li>
+            <li>No ads, telemetry or bundled offers</li>
           </ul>
         </div>
       </div>
@@ -318,9 +273,7 @@
       </div>
     </div>
   </footer>
-
   <script src="script.js"></script>
-  <!-- Cloudflare Web Analytics -->
-  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "{{CF_ANALYTICS_TOKEN}}"}'></script>
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "{{CF_ANALYTICS_TOKEN}}"}}'></script>
 </body>
 </html>

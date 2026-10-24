@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEON Torrent Privacy Policy | NEON Torrent</title>
+  <link rel="canonical" href="https://{{DOMAIN}}/legal/privacy.html">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="container nav-inner">
+      <a href="../index.html" class="brand" aria-label="NEON Torrent Home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="#22d3ee" stroke="#22d3ee"/>
+        </svg>
+        <span>NEON <span class="brand-accent">TORRENT</span></span>
+      </a>
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/>
+        </svg>
+      </button>
+      <nav>
+        <ul class="nav-links" id="navLinks">
+          <li><a href="../index.html">Home</a></li>
+          <li><a href="../index.html#pricing">Pricing</a></li>
+          <li><a href="../docs.html">Docs</a></li>
+          <li><a href="../security.html">Security</a></li>
+          <li><a href="../download.html" class="btn btn-primary btn-sm">Download</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="legal-page">
+      <div class="container container-narrow">
+        <article class="legal">
+          <h1>NEON Torrent Privacy Policy</h1>
+          <p><strong>Effective date:</strong> {{EFFECTIVE_DATE}}</p>
+          <p>This policy explains what information NEON Torrent ("NEON") handles when you use the Windows app and the NEON website. The app has no account and sends no usage analytics or telemetry. It only makes the connections listed below.</p>
+          <h2>Connections the app makes</h2>
+          <ul>
+            <li><strong>Peers and trackers of your torrents.</strong> NEON connects to the trackers, peers and web seeds of the torrents you add, and looks up tracker host names through your normal DNS resolver. Peers in a swarm can see your IP address and which torrent you are sharing; that is how BitTorrent works.</li>
+            <li><strong>Torrent links you add.</strong> When you paste an HTTP(S) link to a .torrent file, NEON downloads the file from that address.</li>
+            <li><strong>Your router.</strong> While "Accept incoming peers" is on (the default), NEON asks your router to forward a port using UPnP or NAT-PMP.</li>
+            <li><strong>DHT, Local Peer Discovery and FLASH mode.</strong> File-only mode is on by default and turns DHT and Local Peer Discovery off. If you turn DHT on, turn File-only mode off, or use FLASH mode, NEON also contacts DHT nodes and announces your torrents on your local network. FLASH mode also adds a few public booster trackers.</li>
+            <li><strong>Shield lists.</strong> The Shield downloads public lists of VPN and datacenter IP ranges (the X4BNet lists, from raw.githubusercontent.com, about once a day) and the iptoasn.com network dataset (about once a week). These are plain downloads: those servers see your IP address and the request, not your torrents.</li>
+            <li><strong>VirusTotal, only if you add your own API key.</strong> With a key entered and scans on, NEON sends the SHA-256 hash of up to 8 programs or scripts in a finished download to VirusTotal, together with your key. It sends hashes, not files. VirusTotal's own terms and privacy policy apply.</li>
+            <li><strong>Antivirus on your PC.</strong> NEON reads Malwarebytes' detection records on your PC to learn which IP addresses and trackers to block, and asks Microsoft Defender on your PC to scan finished downloads. NEON itself sends nothing for these. Defender's cloud protection and sample submission settings in Windows Security apply as they do to any file.</li>
+            <li><strong>Microsoft Store.</strong> The Store installs and updates the app under Microsoft's terms and privacy statement.</li>
+            <li><strong>Pro licence keys.</strong> Activating a Pro licence key checks it with Dodo Payments. {{LICENCE_CHECK_DETAILS}}</li>
+          </ul>
+          <h2>Information stored on your PC</h2>
+          <p>NEON keeps these files on your PC: settings (including your VirusTotal key, if you entered one), torrent resume data, per-torrent settings, Shield blocks learned from Malwarebytes, the cached network database, and an error log. The folder is %APPDATA%\NeonTorrent, or for the Microsoft Store version %LOCALAPPDATA%\Packages\NeonTorrent_…\LocalCache\Roaming\NeonTorrent.</p>
+          <p>To delete this data, close NEON and delete that folder; uninstalling the Store version also removes its folder. Your downloaded files are kept in your download folder until you delete them.</p>
+          <h2>Website</h2>
+          <p>The website is hosted on Cloudflare Pages, so Cloudflare processes your IP address and requests to deliver the pages. Cloudflare Web Analytics counts visits without cookies.</p>
+          <h2>Purchases</h2>
+          <p>Dodo Payments sells NEON Pro as merchant of record: it collects your payment and billing details, handles tax, and applies its own privacy policy. We receive the details needed to issue and support your licence, such as your email address, country and the plan you bought.</p>
+          <h2>Email</h2>
+          <p>If you email us, we use your address and message to reply, and keep them as long as needed for support, refunds or legal obligations.</p>
+          <h2>Your rights</h2>
+          <p>Depending on where you live, you may have the right to access, correct or delete personal information we hold about you, to withdraw consent, and to complain to a data protection authority. This includes rights under the EU and UK GDPR and India's Digital Personal Data Protection Act, 2023. To make a request, write to {{CONTACT_EMAIL}}. We will answer as the applicable law requires.</p>
+          <h2>Changes</h2>
+          <p>If this policy changes, we will publish the new version on this page with a new effective date.</p>
+          <h2>Contact</h2>
+          <p>Privacy contact: {{CONTACT_EMAIL}}<br>
+          Owner: {{OWNER_NAME}}<br>
+          Postal address: {{POSTAL_ADDRESS}}</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+
+        <div class="footer-col footer-brand">
+          <a href="/" class="nav-brand" aria-label="NEON Torrent home">
+            <svg class="nav-brand-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M13 2L4 14h7v8l9-12h-7V2z" fill="currentColor"/>
+            </svg>
+            <span class="nav-brand-text">NEON <span class="cyan">TORRENT</span></span>
+          </a>
+          <p>Defensive BitTorrent client for Windows 10 &amp; 11.</p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul>
+            <li><a href="/">Overview</a></li>
+            <li><a href="../download.html">Download</a></li>
+            <li><a href="../docs.html">Documentation</a></li>
+            <li><a href="../security.html">Security Model</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="/legal/privacy.html">Privacy Policy</a></li>
+            <li><a href="/legal/terms.html">Terms of Service</a></li>
+            <li><a href="/legal/refund.html">Refund Policy</a></li>
+            <li><a href="/legal/abuse.html">Abuse/DMCA</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Technology</h4>
+          <ul>
+            <li>Windows 10/11 (64-bit)</li>
+            <li>libtorrent 2.x</li>
+            <li>Four interface themes</li>
+            <li>No ads, telemetry or bundled offers</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; 2026 NEON Torrent &middot; Offline Security Audited &middot; Microsoft Store Distribution</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../script.js"></script>
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "{{CF_ANALYTICS_TOKEN}}"}'></script>
+</body>
+</html>

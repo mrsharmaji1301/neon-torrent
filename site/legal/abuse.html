@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEON Torrent Abuse Reporting | NEON Torrent</title>
+  <link rel="canonical" href="https://{{DOMAIN}}/legal/abuse.html">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="container nav-inner">
+      <a href="../index.html" class="brand" aria-label="NEON Torrent Home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="#22d3ee" stroke="#22d3ee"/>
+        </svg>
+        <span>NEON <span class="brand-accent">TORRENT</span></span>
+      </a>
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/>
+        </svg>
+      </button>
+      <nav>
+        <ul class="nav-links" id="navLinks">
+          <li><a href="../index.html">Home</a></li>
+          <li><a href="../index.html#pricing">Pricing</a></li>
+          <li><a href="../docs.html">Docs</a></li>
+          <li><a href="../security.html">Security</a></li>
+          <li><a href="../download.html" class="btn btn-primary btn-sm">Download</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="legal-page">
+      <div class="container container-narrow">
+        <article class="legal">
+          <h1>NEON Torrent Abuse Reporting</h1>
+          <p><strong>Effective date:</strong> {{EFFECTIVE_DATE}}</p>
+          <p>NEON Torrent is a BitTorrent client. NEON does not host torrent files or other content, does not run trackers, and has no catalogue or search service. Content is supplied and shared by users through the BitTorrent network.</p>
+          <h2>Report suspected misuse</h2>
+          <p>Rights holders and other concerned people can send a report to {{ABUSE_EMAIL}}. Include enough information for us to understand the concern, such as the relevant torrent or info-hash, the material involved, the rights or safety issue, and a way to contact you. Do not send sensitive personal information that is not needed to explain the report.</p>
+          <h2>What we can do</h2>
+          <p>We can review information sent to us and take steps within NEON or services we operate where the issue is within our control. We may ask for clarification if a report does not identify the concern clearly. We will assess reports individually and act as required by applicable law.</p>
+          <h2>What we cannot do</h2>
+          <p>NEON does not possess or host the reported files. We cannot remove content from other users’ computers, control peers or trackers, or make a third-party site remove material. A report to NEON does not itself remove or disable a torrent on the wider BitTorrent network. If the content is hosted by another service, contact that service or the relevant host directly.</p>
+          <h2>Contact</h2>
+          <p>Abuse reports: {{ABUSE_EMAIL}}<br>
+          General contact: {{CONTACT_EMAIL}}<br>
+          Owner: {{OWNER_NAME}}<br>
+          Postal address: {{POSTAL_ADDRESS}}</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+
+        <div class="footer-col footer-brand">
+          <a href="/" class="nav-brand" aria-label="NEON Torrent home">
+            <svg class="nav-brand-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M13 2L4 14h7v8l9-12h-7V2z" fill="currentColor"/>
+            </svg>
+            <span class="nav-brand-text">NEON <span class="cyan">TORRENT</span></span>
+          </a>
+          <p>Defensive BitTorrent client for Windows 10 &amp; 11.</p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul>
+            <li><a href="/">Overview</a></li>
+            <li><a href="../download.html">Download</a></li>
+            <li><a href="../docs.html">Documentation</a></li>
+            <li><a href="../security.html">Security Model</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="/legal/privacy.html">Privacy Policy</a></li>
+            <li><a href="/legal/terms.html">Terms of Service</a></li>
+            <li><a href="/legal/refund.html">Refund Policy</a></li>
+            <li><a href="/legal/abuse.html">Abuse/DMCA</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Technology</h4>
+          <ul>
+            <li>Windows 10/11 (64-bit)</li>
+            <li>libtorrent 2.x</li>
+            <li>Four interface themes</li>
+            <li>No ads, telemetry or bundled offers</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; 2026 NEON Torrent &middot; Offline Security Audited &middot; Microsoft Store Distribution</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../script.js"></script>
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "{{CF_ANALYTICS_TOKEN}}"}'></script>
+</body>
+</html>

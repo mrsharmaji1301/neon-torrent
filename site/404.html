@@ -4,12 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>404 - Swarm Not Found | NEON Torrent</title>
-  <meta name="description" content="The requested piece or page was not found in the swarm.">
+  <meta name="description" content="The requested piece or URL was not found on NEON Torrent. Return to the home swarm or browse documentation.">
   <link rel="canonical" href="https://{{DOMAIN}}/404.html">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Navigation -->
   <header class="navbar">
     <div class="container nav-inner">
       <a href="index.html" class="brand" aria-label="NEON Torrent Home">
@@ -26,9 +25,6 @@
       <nav>
         <ul class="nav-links" id="navLinks">
           <li><a href="index.html">Home</a></li>
-          <li><a href="index.html#features">Features</a></li>
-          <li><a href="index.html#shield">Shield</a></li>
-          <li><a href="index.html#guard">Download Guard</a></li>
           <li><a href="index.html#pricing">Pricing</a></li>
           <li><a href="docs.html">Docs</a></li>
           <li><a href="security.html">Security</a></li>
@@ -39,9 +35,9 @@
   </header>
 
   <main>
-    <section class="hero">
-      <div class="container container-narrow">
-        <span class="badge badge-red">Error 404 · Missing Piece</span>
+    <section class="hero hero-404">
+      <div class="container">
+        <div class="badge-red">Error 404 &middot; Missing Piece</div>
         <h1>Swarm Piece <span class="hero-highlight">Not Found</span></h1>
         <p class="hero-sub">The URL or resource you requested is missing from the local tree and could not be retrieved from any connected peer.</p>
         <div class="hero-cta">
@@ -63,7 +59,7 @@
             </svg>
             <span>NEON <span class="brand-accent">TORRENT</span></span>
           </a>
-          <p>Clean, defensive BitTorrent client for Windows. Pre-filters malicious peers and verifies file safety before writing to disk.</p>
+          <p>Defensive BitTorrent client for Windows 10 &amp; 11.</p>
         </div>
         <div class="footer-col">
           <h4>Navigation</h4>
@@ -84,24 +80,22 @@
           </ul>
         </div>
         <div class="footer-col">
-          <h4>Platform</h4>
+          <h4>Technology</h4>
           <ul>
             <li>Windows 10 / 11 (64-bit)</li>
-            <li>libtorrent 2.1 engine</li>
             <li>libtorrent 2.x</li>
-            <li>Zero Adware &amp; Zero Trackers</li>
+            <li>Cyberpunk Palette</li>
+            <li>No ads, telemetry or bundled offers</li>
           </ul>
         </div>
       </div>
       <div class="footer-bottom">
         <div>&copy; 2026 NEON Torrent. Built for performance and security on Windows.</div>
-        <div>Cyberpunk Palette · Offline Security Audited</div>
+        <div>Cyberpunk Palette &middot; Offline Security Audited</div>
       </div>
     </div>
   </footer>
-
   <script src="script.js"></script>
-  <!-- Cloudflare Web Analytics -->
-  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "{{CF_ANALYTICS_TOKEN}}"}'></script>
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "{{CF_ANALYTICS_TOKEN}}"}}'></script>
 </body>
 </html>

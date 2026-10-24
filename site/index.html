@@ -4,21 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NEON Torrent | Fast, Defensive BitTorrent Client for Windows</title>
-  <meta name="description" content="A modern Windows desktop BitTorrent client engineered for speed and defense. Pre-filters malicious peers, learns from your antivirus, and blocks hidden threats before writing to disk.">
+  <meta name="description" content="NEON Torrent filters known VPN and datacenter peers, checks risky file names before download, and gives you detailed transfer controls. No ads, no telemetry, no miners.">
   <link rel="canonical" href="https://{{DOMAIN}}/">
   <meta property="og:type" content="website">
   <meta property="og:title" content="NEON Torrent | Fast, Defensive BitTorrent Client for Windows">
-  <meta property="og:description" content="Pre-filters hostile peers, blocks disguised malware before downloading, and gives you pure BitTorrent performance on Windows 10 & 11.">
+  <meta property="og:description" content="NEON Torrent filters known VPN and datacenter peers, checks risky file names before download, and gives you detailed transfer controls.">
   <meta property="og:image" content="assets/og.png">
   <meta property="og:url" content="https://{{DOMAIN}}/">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="NEON Torrent - Defensive Windows BitTorrent Client">
-  <meta name="twitter:description" content="Zero adware, zero miners, intelligent peer filtering and file verification for Windows 10 and 11.">
+  <meta name="twitter:title" content="NEON Torrent | Fast, Defensive BitTorrent Client for Windows">
+  <meta name="twitter:description" content="The Windows BitTorrent client that filters hostile peers and blocks disguised malware before anything hits your drive.">
   <meta name="twitter:image" content="assets/og.png">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Navigation Bar -->
+
+  <!-- ========== HEADER ========== -->
   <header class="navbar">
     <div class="container nav-inner">
       <a href="index.html" class="brand" aria-label="NEON Torrent Home">
@@ -34,11 +35,8 @@
       </button>
       <nav>
         <ul class="nav-links" id="navLinks">
-          <li><a href="index.html" class="active">Home</a></li>
-          <li><a href="#features">Features</a></li>
-          <li><a href="#shield">Shield</a></li>
-          <li><a href="#guard">Download Guard</a></li>
-          <li><a href="#pricing">Pricing</a></li>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="index.html#pricing">Pricing</a></li>
           <li><a href="docs.html">Docs</a></li>
           <li><a href="security.html">Security</a></li>
           <li><a href="download.html" class="btn btn-primary btn-sm">Download</a></li>
@@ -48,639 +46,299 @@
   </header>
 
   <main>
-    <!-- Hero Section -->
+
+    <!-- ========== HERO ========== -->
     <section class="hero">
       <div class="container">
-        <span class="badge badge-cyan">Windows 10 &amp; 11 (64-bit) · Offline Security Audited</span>
-        <h1>The BitTorrent Client That <span class="hero-highlight">Filters Swarm Threats</span> Before They Hit Your Drive</h1>
-        <p class="hero-sub">Pre-filters datacenter and VPN peers, learns from Malwarebytes blocks, and skips disguised programs before a single block is requested. No ads, no miners.</p>
-        
+        <h1 class="hero-headline">Torrents, With More Control</h1>
+        <p class="hero-sub">Filter known hostile peers. Check files before download. Manage every transfer from one place.</p>
         <div class="hero-cta">
-          <a href="download.html" class="btn btn-primary btn-lg">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
-            Download for Windows
-          </a>
-          <a href="{{STORE_URL}}" class="btn btn-secondary btn-lg">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 3h9v9H2V3zm11 0h9v9h-9V3zM2 13h9v9H2v-9zm11 0h9v9h-9v-9z"/></svg>
-            Microsoft Store
-          </a>
-          <a href="security.html" class="btn btn-outline-cyan btn-lg">
-            View 14/14 Attack Audit
-          </a>
+          <a href="download.html" class="btn btn-primary btn-lg">Download free</a>
+          <a href="#pricing" class="btn btn-secondary btn-lg">See pricing</a>
         </div>
-
-        <!-- Window Mockup / Hero Preview -->
         <div class="hero-preview">
           <div class="hero-window">
             <div class="window-titlebar">
-              <div class="window-dots">
-                <div class="window-dot" style="background: #ff4d7d;"></div>
-                <div class="window-dot" style="background: #ffc83d;"></div>
-                <div class="window-dot" style="background: #22e5a0;"></div>
-              </div>
-              <div class="window-title">NEON Torrent - Active Swarms (Cyberpunk Palette)</div>
-              <div style="font-size: 0.75rem; color: var(--cyan); font-family: var(--font-mono);">⚡ FLASH READY</div>
+              <span class="window-dot red"></span>
+              <span class="window-dot yellow"></span>
+              <span class="window-dot green"></span>
+              <span class="window-title">NEON Torrent</span>
+              <span class="window-label cyan">&#9889; FLASH</span>
             </div>
             <div class="hero-img-wrap">
-              <img src="assets/screenshot-1.png" alt="NEON Torrent desktop application interface showing transfers table and speed cards" width="1280" height="800" loading="eager">
+              <img src="assets/screenshot-1.png" width="1280" height="800" loading="eager" alt="NEON Torrent main window showing active downloads with Shield protection enabled">
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Key Stats Strip -->
-    <div class="container">
-      <div class="stats-strip">
-        <div class="stat-item">
-          <div class="stat-val">12 of 13</div>
-          <div class="stat-label">Flagged peers blocked before contact</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-val">2 sec</div>
-          <div class="stat-label">Antivirus detection learning loop</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-val">14 / 14</div>
-          <div class="stat-label">Offline attack audit tests passed</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-val">0</div>
-          <div class="stat-label">Ads, miners, or telemetry trackers</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- The Problem Section -->
-    <section id="problem">
+    <!-- ========== PROOF STRIP ========== -->
+    <section class="proof-strip">
       <div class="container">
-        <div class="section-head">
-          <span class="badge badge-yellow">The Problem</span>
-          <h2>Why Torrenting on Windows Feels Broken</h2>
-          <p>Public swarms have become hostile terrain. Outdated clients pass every bad packet straight to your operating system.</p>
+        <p>From a 2-minute test download of Ubuntu 26.04 and Debian 13.7: Shield refused 1,080 peers from VPN, datacenter and flagged networks, while 495 live peers in 48 countries kept it moving.</p>
+      </div>
+    </section>
+
+    <!-- ========== STORY 1 — See Every Peer Connection ========== -->
+    <section class="story">
+      <div class="container story-grid">
+        <div class="story-content">
+          <h2>See Every Connection</h2>
+          <p>The Shield connection map shows every live peer with its network, country and client &mdash; and every peer it refused, with the reason.</p>
+          <ul class="story-bullets">
+            <li>Refuses VPN and datacenter peers before contact</li>
+            <li>Learns from Malwarebytes blocks within 2 seconds</li>
+            <li>Shows live peers, refused peers and learned blocks</li>
+          </ul>
         </div>
-
-        <div class="grid grid-4">
-          <div class="card">
-            <div class="card-icon yellow">
-              <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
-            </div>
-            <h3>Antivirus Alert Fatigue</h3>
-            <p>Every public torrent swarm is filled with flagged datacenter and commercial VPN exit nodes. Your antivirus triggers constant intrusive popups, interrupting your work and gaming.</p>
-          </div>
-
-          <div class="card">
-            <div class="card-icon" style="color: var(--red);">
-              <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-            </div>
-            <h3>Disguised Malware Payloads</h3>
-            <p>Malicious uploaders pack executables disguised as videos (<code>movie.mp4.exe</code>), Windows shortcuts (<code>.lnk</code>), or use hidden Unicode direction tricks (RTLO) that bypass visual scrutiny.</p>
-          </div>
-
-          <div class="card">
-            <div class="card-icon magenta">
-              <svg viewBox="0 0 24 24"><path d="M13 2.05v3.03c3.39.49 6 3.39 6 6.92 0 .9-.18 1.75-.48 2.54l2.6 1.53c.56-1.24.88-2.62.88-4.07 0-5.18-3.95-9.45-9-9.95zM12 19c-3.87 0-7-3.13-7-7 0-3.53 2.61-6.43 6-6.92V2.05c-5.06.5-9 4.76-9 9.95 0 5.52 4.47 10 9.99 10 3.31 0 6.28-1.61 8.07-4.11l-2.54-1.47C15.96 17.81 14.11 19 12 19z"/></svg>
-            </div>
-            <h3>Choked Speeds &amp; Single Trackers</h3>
-            <p>Standard BitTorrent clients announce to only the first responsive tracker tier, ignoring dozens of active tracker mirrors. Furthermore, low upload caps penalize download ACK packets, starving your speed.</p>
-          </div>
-
-          <div class="card">
-            <div class="card-icon" style="color: var(--orange);">
-              <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/></svg>
-            </div>
-            <h3>Bloatware &amp; Silent Freezes</h3>
-            <p>Mainstream clients have devolved into bloated adware containers packed with bundled software, trackers, and miners. When you try to quit, the UI freezes for seconds while closing sockets.</p>
-          </div>
+        <div class="story-media">
+          <img src="assets/screenshot-2.png" width="1280" height="800" loading="lazy" alt="Shield connection map displaying live peers, refused peers and block reasons across a world view">
         </div>
       </div>
     </section>
 
-    <!-- How Shield Works -->
-    <section id="shield" style="background: var(--bg1); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);">
-      <div class="container">
-        <div class="section-head">
-          <span class="badge badge-cyan">Defense Layer 1 · Network</span>
-          <h2>The Shield: Intelligent Swarm Filtering</h2>
-          <p>Antivirus web protection blocks IP addresses based on reputation, not downloaded file bytes. The Shield neutralizes dirty peers before your system even dials them.</p>
+    <!-- ========== STORY 2 — Files Checked Before Download ========== -->
+    <section class="story reverse">
+      <div class="container story-grid">
+        <div class="story-media">
+          <img src="assets/screenshot-3.png" width="1280" height="800" loading="lazy" alt="Download Guard inspecting torrent file list, flagging disguised executables and double extensions">
         </div>
-
-        <div class="spotlight-row">
-          <div class="spotlight-content">
-            <span class="badge badge-cyan">Pre-Contact Inspection</span>
-            <h3>Refuses VPN &amp; Datacenter Peers Before Contact</h3>
-            <p>Using the verified X4BNet VPN and datacenter range lists (refreshed daily) plus Cloudflare WARP, NEON Torrent rejects flagged peer connections before transmitting a single network packet.</p>
-            <ul>
-              <li>
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span><strong>Real-World Benchmark:</strong> On real alert histories, 12 of 13 peers flagged by Malwarebytes were refused before any contact occurred.</span>
-              </li>
-              <li>
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span><strong>Seedbox Whitelist:</strong> Legitimate high-speed hosting nodes (Hetzner, OVH, Scaleway) remain fully whitelisted, and web-seed mirrors stay reachable.</span>
-              </li>
-              <li>
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span><strong>Automated Subnet Neutralization:</strong> Flagged IPs cause their entire /24 subnet to be blocked. Hosting-sized networks (&le; 2M IPs) are blocked whole; major ISPs (Jio, Airtel, BSNL) and CDNs are protected.</span>
-              </li>
-            </ul>
-            <a href="security.html#shield" class="btn btn-secondary">Explore Shield Architecture &#8594;</a>
-          </div>
-          <div class="spotlight-media">
-            <img src="assets/screenshot-2.png" alt="NEON Torrent Shield Connection Map showing live peers, ASN, country flags and refused connections" width="1280" height="800" loading="lazy">
-          </div>
-        </div>
-
-        <div class="spotlight-row reverse" style="margin-bottom: 0;">
-          <div class="spotlight-content">
-            <span class="badge badge-magenta">Real-Time Sync</span>
-            <h3>Learns from Malwarebytes Every 2 Seconds</h3>
-            <p>NEON Torrent continuously reads <code>C:\ProgramData\Malwarebytes\MBAMService\MwacDetections</code> every 2 seconds. When your antivirus flags an IP or tracker for any torrent client, NEON instantly imports it into libtorrent's filter.</p>
-            <ul>
-              <li>
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span><strong>Instant Ingestion:</strong> Blocked IPs and trackers are never dialled again by any active or future transfer.</span>
-              </li>
-              <li>
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span><strong>One Unified Filter:</strong> Applies across trackers, PEX, DHT, and incoming UPnP / NAT-PMP peer handshakes.</span>
-              </li>
-              <li>
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span><strong>Shield Connection Map (<kbd>Ctrl+M</kbd>):</strong> Inspect live peers with ASN network owner, country, client name, discovery method, and refused connection logs with unblock controls.</span>
-              </li>
-            </ul>
-            <a href="docs.html#connection-map" class="btn btn-secondary">View Connection Map Guide &#8594;</a>
-          </div>
-          <div class="spotlight-media">
-            <img src="assets/screenshot-3.png" alt="NEON Torrent Download Guard inspection view with skipped malicious files" width="1280" height="800" loading="lazy">
-          </div>
+        <div class="story-content">
+          <h2>Files Checked Before Download</h2>
+          <p>Download Guard skips disguised programs, shortcuts and hidden Unicode tricks before a single byte is requested.</p>
+          <ul class="story-bullets">
+            <li>Skips double extensions like movie.mp4.exe</li>
+            <li>Adds Mark-of-the-Web so SmartScreen checks programs</li>
+            <li>Optional Defender and VirusTotal hash scans</li>
+          </ul>
         </div>
       </div>
     </section>
 
-    <!-- How Download Guard Works -->
-    <section id="guard">
-      <div class="container">
-        <div class="section-head">
-          <span class="badge badge-magenta">Defense Layer 2 · Filesystem</span>
-          <h2>Download Guard: Verified File Safety</h2>
-          <p>Pieces are verified against the torrent hash, meaning you get exactly what was uploaded. The Guard intercepts what a client can control before hostile bytes touch your disk.</p>
+    <!-- ========== STORY 3 — Full Control, Every Torrent ========== -->
+    <section class="story">
+      <div class="container story-grid">
+        <div class="story-content">
+          <h2>Full Control, Every Torrent</h2>
+          <p>Per-torrent speed limits, queue controls, sequential download and FLASH MODE for big transfers &mdash; all applied instantly.</p>
+          <ul class="story-bullets">
+            <li>Per-torrent download and upload caps</li>
+            <li>&#9889; FLASH MODE: read-only DHT, LSD and 1,500 connections</li>
+            <li>Announces to every tracker in every tier</li>
+          </ul>
         </div>
-
-        <div class="grid grid-3">
-          <div class="card">
-            <div class="card-icon" style="color: var(--red);">
-              <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-            </div>
-            <h3>Pre-Download Rejection</h3>
-            <p>The Guard sets priority 0 (never requests or writes) for disguised programs (<code>movie.mp4.exe</code>), Windows shortcuts (<code>.lnk</code>, <code>.url</code>), hidden Unicode RTLO characters, trailing dots, device names (<code>CON</code>, <code>AUX</code>), symlinks, and scripts inside media torrents.</p>
-          </div>
-
-          <div class="card">
-            <div class="card-icon cyan">
-              <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
-            </div>
-            <h3>Mark-of-the-Web (ZoneId=3)</h3>
-            <p>Finished files automatically receive Windows Zone Identifier metadata. Just like browser downloads, Windows SmartScreen and Office Protected View inspect programs before they are allowed to execute.</p>
-          </div>
-
-          <div class="card">
-            <div class="card-icon green">
-              <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-            </div>
-            <h3>Defender &amp; VirusTotal Scanning</h3>
-            <p>Microsoft Defender scans completed downloads when active. Add an optional free VirusTotal key for automated SHA-256 hash queries across ~70 engines (only the hash is sent, never your file). Threats stop seeding immediately.</p>
-          </div>
-        </div>
-
-        <div class="security-banner" style="margin-top: 3.5rem;">
-          <div class="security-banner-info">
-            <h3>
-              <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: currentColor;"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
-              14/14 Offline Attack Checks Verified
-            </h3>
-            <p>Includes tests against directory traversal, alternate data stream hiding, reserved Windows names, RTLO spoofs, SSRF exploits, and malformed bencode.</p>
-          </div>
-          <a href="security.html" class="btn btn-secondary">Read Full Audit Report</a>
+        <div class="story-media">
+          <img src="assets/screenshot-4.png" width="1280" height="800" loading="lazy" alt="Torrent detail view with per-torrent speed controls, FLASH MODE toggle and multi-tier tracker list">
         </div>
       </div>
     </section>
 
-    <!-- Speed & Features -->
-    <section id="features" style="background: var(--bg1); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+    <!-- ========== PRICING ========== -->
+    <section class="pricing" id="pricing">
       <div class="container">
         <div class="section-head">
-          <span class="badge badge-cyan">Performance &amp; Interface</span>
-          <h2>Engineered for Raw BitTorrent Speed</h2>
-          <p>Built on the libtorrent 2.1 engine, with per-torrent limits, queueing and an optional FLASH mode for big downloads.</p>
-        </div>
-
-        <div class="grid grid-3">
-          <div class="card">
-            <div class="card-icon">
-              <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-            </div>
-            <h3>Multi-Tier Tracker Announcing</h3>
-            <p>Announces to every tracker across all tiers simultaneously. Torrents with 50+ trackers utilize every single one instead of stalling on the first unresponsive tier.</p>
-          </div>
-
-          <div class="card">
-            <div class="card-icon green">
-              <svg viewBox="0 0 24 24"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z"/></svg>
-            </div>
-            <h3>Payload-Only Upload Limiter</h3>
-            <p>TCP/IP acknowledgment overhead (download ACKs) is excluded from the upload cap. Setting a conservative 24 KiB/s upload cap will never choke your download speeds.</p>
-          </div>
-
-          <div class="card">
-            <div class="card-icon yellow">
-              <svg viewBox="0 0 24 24"><path d="M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66.19-.34.05-.08.07-.12C8.48 10.94 10.42 7.54 13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-.07.15C12.96 17.55 11 21 11 21z"/></svg>
-            </div>
-            <h3>⚡ FLASH MODE (<kbd>Ctrl+Shift+F</kbd>)</h3>
-            <p>Manual boost for massive torrents. Enables read-only DHT, Local Peer Discovery, high-capacity public booster trackers, and up to 1,500 connections. Resets safely on restart.</p>
-          </div>
-
-          <div class="card">
-            <div class="card-icon magenta">
-              <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
-            </div>
-            <h3>Live Status Filter Chips</h3>
-            <p>Filter transfers instantly with live counts: All, Downloading, Seeding, Completed, Active, Paused, Stopped, and Errors. Shortcuts <kbd>Alt+1</kbd> through <kbd>Alt+8</kbd>.</p>
-          </div>
-
-          <div class="card">
-            <div class="card-icon cyan">
-              <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
-            </div>
-            <h3>Disk Full Safeguard</h3>
-            <p>If a target drive fills up, transfers switch to upload-only, warning with <strong>Disk full</strong> in red. They resume automatically when space clears, or relocate files via <em>Move data</em>.</p>
-          </div>
-
-          <div class="card">
-            <div class="card-icon" style="color: var(--blue);">
-              <svg viewBox="0 0 24 24"><path d="M13 3h-2v10h2V3zm4.83 2.17l-1.42 1.42C17.99 7.86 19 9.81 19 12c0 3.87-3.13 7-7 7s-7-3.13-7-7c0-2.19 1.01-4.14 2.58-5.42L6.17 5.17C4.23 6.82 3 9.26 3 12c0 4.97 4.03 9 9 9s9-4.03 9-9c0-2.74-1.23-5.18-3.17-6.83z"/></svg>
-            </div>
-            <h3>Instant Background Shutdown</h3>
-            <p>Quitting hides the UI window immediately. Fastresume states and cache data are cleanly written in the background within seconds—no lingering frozen UI windows.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Screenshots Carousel / Tabs Section -->
-    <section class="screenshots-section">
-      <div class="container">
-        <div class="section-head">
-          <span class="badge badge-cyan">Visual Tour</span>
-          <h2>A Look Inside the Interface</h2>
-          <p>Handcrafted Cyberpunk neon aesthetic with responsive typography and vector iconography painted in code.</p>
-        </div>
-
-        <div class="gallery-tabs">
-          <button class="gallery-tab active" data-slide="1">Transfers Table</button>
-          <button class="gallery-tab" data-slide="2">Shield Connection Map</button>
-          <button class="gallery-tab" data-slide="3">Download Guard Inspection</button>
-          <button class="gallery-tab" data-slide="4">Torrent Settings &amp; Bandwidth</button>
-        </div>
-
-        <div class="gallery-viewport">
-          <div class="gallery-slide active" id="slide-1">
-            <img src="assets/screenshot-1.png" alt="NEON Torrent Transfers Table with status filter chips and live sparklines" width="1280" height="800" loading="lazy">
-            <div class="gallery-caption">
-              <strong>Transfers Table:</strong> Frameless window with live speed sparklines, ETA, ratio, seeds/peers tooltips, and status filter chips.
-            </div>
-          </div>
-          <div class="gallery-slide" id="slide-2">
-            <img src="assets/screenshot-2.png" alt="Shield Connection Map displaying peer ASN, country flags and refused peer log" width="1280" height="800" loading="lazy">
-            <div class="gallery-caption">
-              <strong>Shield Connection Map (<kbd>Ctrl+M</kbd>):</strong> Full peer transparency showing ASN network names, country flags, connection origin, and refused peer logs.
-            </div>
-          </div>
-          <div class="gallery-slide" id="slide-3">
-            <img src="assets/screenshot-3.png" alt="Download Guard inspecting files inside a torrent and auto-skipping disguised executables" width="1280" height="800" loading="lazy">
-            <div class="gallery-caption">
-              <strong>Download Guard:</strong> Disguised executables, shortcuts, and device names are automatically set to skip before downloading starts.
-            </div>
-          </div>
-          <div class="gallery-slide" id="slide-4">
-            <img src="assets/screenshot-4.png" alt="Per-torrent settings dialog with sequential download and ratio limits" width="1280" height="800" loading="lazy">
-            <div class="gallery-caption">
-              <strong>Torrent Settings (<kbd>Ctrl+T</kbd>):</strong> Granular download/upload caps, sequential download toggles, first/last piece priority, and ratio stop rules.
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Pricing Section -->
-    <section id="pricing">
-      <div class="container">
-        <div class="section-head">
-          <span class="badge badge-cyan">Transparent Pricing</span>
           <h2>Simple, Honest Plans</h2>
-          <p>No advertisements, no data harvesting, no hidden subscriptions. Choose the tier that fits your setup.</p>
-          
-          <div style="display: inline-flex; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 4px; margin-top: 1.5rem;">
-            <button class="gallery-tab active" data-billing-toggle="yearly" style="margin-bottom: 0;">Yearly Billing</button>
-            <button class="gallery-tab" data-billing-toggle="monthly" style="margin-bottom: 0;">Monthly Billing</button>
-          </div>
+          <p>Start free. Upgrade when Pro features fit your workflow.</p>
+        </div>
+
+        <div class="billing-toggle">
+          <button class="gallery-tab active" data-billing-toggle="yearly">Yearly</button>
+          <button class="gallery-tab" data-billing-toggle="monthly">Monthly</button>
         </div>
 
         <div class="pricing-grid">
-          <!-- Free Plan -->
-          <div class="pricing-card">
-            <div class="pricing-header">
-              <h3>Free</h3>
-              <div class="pricing-desc">The complete, uncompromised BitTorrent desktop client.</div>
-            </div>
-            <div class="pricing-cost">
+
+          <!-- FREE -->
+          <div class="price-card">
+            <h3 class="price-card-title">Free</h3>
+            <p class="price-card-desc">The complete BitTorrent client.</p>
+            <div class="price-card-price">
               <span class="price-amount">$0</span>
               <span class="price-period">/ forever</span>
             </div>
-            <ul class="pricing-features">
-              <li class="included">
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span>Full BitTorrent &amp; Magnet engine</span>
-              </li>
-              <li class="included">
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span>Shield VPN/Datacenter pre-filter</span>
-              </li>
-              <li class="included">
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span>Download Guard pre-download file skip</span>
-              </li>
-              <li class="included">
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span>Mark-of-the-Web (ZoneId=3)</span>
-              </li>
-              <li class="included">
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span>Malwarebytes learning (every 2 s)</span>
-              </li>
-              <li class="included">
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span>Shield connection map</span>
-              </li>
-              <li class="included">
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span>Zero ads, trackers, or miners</span>
-              </li>
+            <ul class="price-card-features">
+              <li>Full BitTorrent &amp; Magnet engine</li>
+              <li>Shield VPN/Datacenter pre-filter</li>
+              <li>Download Guard file inspection</li>
+              <li>Mark-of-the-Web</li>
+              <li>Malwarebytes learning</li>
+              <li>Shield connection map</li>
+              
             </ul>
-            <div class="pricing-cta">
-              <a href="download.html" class="btn btn-secondary">Download Free</a>
-            </div>
+            <a href="download.html" class="btn btn-secondary price-card-btn">Download Free</a>
           </div>
 
-          <!-- Pro Plan -->
-          <div class="pricing-card">
-            <div class="pricing-header">
-              <h3>Pro</h3>
-              <div class="pricing-desc">FLASH speed, file scans and every future Pro feature.</div>
-            </div>
-            <div class="pricing-cost">
+          <!-- PRO -->
+          <div class="price-card">
+            <h3 class="price-card-title">Pro</h3>
+            <p class="price-card-desc">FLASH mode and optional file scans.</p>
+            <div class="price-card-price">
               <span class="price-amount" id="proPriceAmount">$24.99</span>
               <span class="price-period" id="proPricePeriod">/ year</span>
-              <div class="regional-price">India Regional: &#8377;1,499 / year</div>
             </div>
-            <ul class="pricing-features">
-              <li class="included">
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span>Everything in Free</span>
-              </li>
-              <li class="included">
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span>⚡ FLASH MODE for big downloads</span>
-              </li>
-              <li class="included">
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span>Guard scans: Microsoft Defender and VirusTotal hash lookups</span>
-              </li>
-              <li class="included">
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span>All 4 Neon themes</span>
-              </li>
-              <li class="included">
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span>Phone Remote, Send links and Shield Cloud at no extra cost when they ship</span>
-              </li>
-              <li class="included">
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span>Priority developer support</span>
-              </li>
+            <p class="price-card-regional">India &#8377;1,499/yr</p>
+            <ul class="price-card-features">
+              <li>Everything in Free</li>
+              <li>&#9889; FLASH MODE for big downloads</li>
+              <li>Guard scans: Microsoft Defender and VirusTotal hash lookups</li>
+              <li>All 4 Neon themes</li>
+              
+              <li>Priority developer support</li>
             </ul>
-            <div class="pricing-cta">
-              <a href="{{CHECKOUT_PRO_YEARLY}}" class="btn btn-primary" id="proCheckoutBtn">Get Pro Yearly ($24.99/yr)</a>
-              <div class="pricing-alt-links">
-                <a href="{{CHECKOUT_PRO_INDIA}}">India Checkout (&#8377;1,499/yr) &#8594;</a>
-              </div>
-            </div>
+            <a href="{{CHECKOUT_PRO_YEARLY}}" class="btn btn-primary price-card-btn" id="proCheckoutBtn">Get Pro Yearly ($24.99/yr)</a>
+            <a href="{{CHECKOUT_PRO_INDIA}}" class="price-card-alt">India Checkout (&#8377;1,499/yr)</a>
           </div>
 
-          <!-- Founder Lifetime Plan -->
-          <div class="pricing-card featured">
-            <div class="pricing-ribbon">
-              <span class="badge badge-magenta">First 500 Buyers</span>
-            </div>
-            <div class="pricing-header">
-              <h3>Founder Lifetime</h3>
-              <div class="pricing-desc">Pay once, own all Pro updates forever. Back early development.</div>
-            </div>
-            <div class="pricing-cost">
+          <!-- FOUNDER LIFETIME -->
+          <div class="price-card featured">
+            <span class="badge badge-magenta">First 500 Buyers</span>
+            <h3 class="price-card-title">Founder Lifetime</h3>
+            <p class="price-card-desc">Pay once for Pro, including every later Pro feature.</p>
+            <div class="price-card-price">
               <span class="price-amount">$39</span>
-              <span class="price-period">/ lifetime ($49 after 500)</span>
+              <span class="price-period">/ lifetime</span>
             </div>
-            <ul class="pricing-features">
-              <li class="included">
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span>All Pro features forever with zero recurring fees</span>
-              </li>
-              <li class="included">
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span>Includes upcoming v1.1 and v1.2 releases</span>
-              </li>
-              <li class="included">
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span>Founder title badge in app About screen</span>
-              </li>
-              <li class="included">
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span>Early access to beta builds</span>
-              </li>
-              <li class="included">
-                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                <span>Direct product feedback channel with developer</span>
-              </li>
+            <p class="price-card-regional">$49 after 500</p>
+            <ul class="price-card-features">
+              <li>Everything in Pro, paid once</li>
+              
+              
+              
+              
             </ul>
-            <div class="pricing-cta">
-              <a href="{{CHECKOUT_FOUNDER}}" class="btn btn-magenta">Claim Founder Access ($39)</a>
-            </div>
+            <a href="{{CHECKOUT_FOUNDER}}" class="btn btn-magenta price-card-btn">Claim Founder Access ($39)</a>
           </div>
+
         </div>
       </div>
     </section>
 
-    <!-- Product Roadmap -->
-    <section id="roadmap" style="background: var(--bg1); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);">
-      <div class="container">
+    <!-- ========== FAQ ========== -->
+    <section class="faq" id="faq">
+      <div class="container narrow">
         <div class="section-head">
-          <span class="badge badge-cyan">Future Releases</span>
-          <h2>Product Roadmap</h2>
-          <p>Unreleased features are clearly tracked here. Shipped features in v1.0 are available today.</p>
-        </div>
-
-        <div class="roadmap-grid">
-          <div class="roadmap-card active">
-            <div class="roadmap-ver">v1.0 (Current)</div>
-            <div class="roadmap-status badge badge-green">Shipped &amp; Active</div>
-            <p>Windows 10/11 x64 client, Shield peer pre-filtering, Malwarebytes 2s detection sync, Download Guard pre-download checks, Mark-of-the-Web, multi-tier announcing, payload-only upload cap, FLASH MODE, 4 Neon palettes.</p>
-          </div>
-
-          <div class="roadmap-card">
-            <div class="roadmap-ver">v1.1</div>
-            <div class="roadmap-status badge badge-cyan">In Development</div>
-            <p><strong>Phone Remote:</strong> Secure local web companion interface to monitor transfers, view active speeds, and pause/resume torrents from your mobile browser on your local Wi-Fi.</p>
-          </div>
-
-          <div class="roadmap-card">
-            <div class="roadmap-ver">v1.2</div>
-            <div class="roadmap-status badge badge-yellow">Planned</div>
-            <p><strong>Send to Phone:</strong> One-click local transfer to push completed downloaded files straight to your Android or iOS device over local high-speed network connections.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- FAQ Section -->
-    <section id="faq">
-      <div class="container container-narrow">
-        <div class="section-head">
-          <span class="badge badge-cyan">Answers</span>
-          <h2>Frequently Asked Questions</h2>
-          <p>Technical clarity on how NEON Torrent works under the hood.</p>
+          <h2>Questions &amp; Answers</h2>
         </div>
 
         <div class="faq-list">
-          <div class="faq-item">
-            <button class="faq-question" aria-expanded="false">
-              <span>How does the Shield stop antivirus alert popups?</span>
-              <svg class="faq-icon" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
-            </button>
-            <div class="faq-answer">
-              Antivirus web protection monitors peer IPs against proprietary threat lists. Swarms contain many VPN and hosting exits that trigger warnings. The Shield blocks known datacenter and VPN ranges using daily refreshed X4BNet lists before packets leave your PC. In test benchmarks, 12 of 13 flagged peers were refused prior to contact. When new alerts occur in Malwarebytes, NEON absorbs the IP and /24 subnet within 2 seconds into libtorrent's filter.
-            </div>
-          </div>
 
-          <div class="faq-item">
-            <button class="faq-question" aria-expanded="false">
-              <span>Can NEON Torrent guarantee 100% virus-free downloads?</span>
-              <svg class="faq-icon" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
-            </button>
+          <details class="faq-item">
+            <summary class="faq-question">How does the Shield stop antivirus alerts?</summary>
             <div class="faq-answer">
-              No honest torrent client can guarantee 100% malware immunity, because BitTorrent verifies that pieces match the uploader's hash—if the uploader published a malicious executable, the protocol delivers that exact executable. Download Guard locks down what a client can control: it skips disguised files (<code>movie.mp4.exe</code>), Windows shortcuts, and RTLO unicode overrides before downloading; tags finished files with Mark-of-the-Web so SmartScreen inspects them; and checks program hashes against VirusTotal.
+              <p>Most torrent-triggered antivirus alerts come from connections to VPN exit nodes, datacenter IPs and flagged networks &mdash; not from actual malware in your files. By default the Shield refuses peers in the X4BNet VPN and datacenter ranges before contact. On a real alert history, 12 of 13 flagged peers would have been refused this way. The Shield also reads Malwarebytes&rsquo; detection log every 2 seconds, so an IP it flags is never contacted again. A new address can still cause one alert before the Shield learns it.</p>
             </div>
-          </div>
+          </details>
 
-          <div class="faq-item">
-            <button class="faq-question" aria-expanded="false">
-              <span>What is FLASH MODE and when should I use it?</span>
-              <svg class="faq-icon" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
-            </button>
+          <details class="faq-item">
+            <summary class="faq-question">Can NEON guarantee 100% virus-free downloads?</summary>
             <div class="faq-answer">
-              FLASH MODE (<kbd>Ctrl+Shift+F</kbd>) is a manual swarm accelerator for large or slow downloads. It enables read-only DHT (querying for your own torrents only), Local Peer Discovery, high-throughput booster trackers, and raises connection limits to 1,500. It resets to off on application restart to preserve strict network hygiene.
+              <p>No &mdash; and any client that claims otherwise is misleading you. BitTorrent piece verification confirms data integrity (the file matches the torrent hash), but it cannot tell you whether the original file is safe. What NEON Torrent does control: Download Guard inspects every file name for disguised executables, double extensions, hidden Unicode direction overrides and shortcut files &mdash; and skips them before a single byte is requested. It also applies Mark-of-the-Web so Windows SmartScreen checks any program you do run. Pro users get optional Microsoft Defender and VirusTotal hash scans for an extra layer.</p>
             </div>
-          </div>
+          </details>
 
-          <div class="faq-item">
-            <button class="faq-question" aria-expanded="false">
-              <span>What happens if my hard drive fills up during a download?</span>
-              <svg class="faq-icon" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
-            </button>
+          <details class="faq-item">
+            <summary class="faq-question">What is FLASH MODE?</summary>
             <div class="faq-answer">
-              NEON Torrent safely stops writing to disk and puts the torrent into upload-only mode, showing <strong>Disk full</strong> in red with the required space and available space. Once you free up disk space, it automatically resumes downloading. You can also right-click and choose <em>Move data</em> to transfer the files to another drive.
+              <p>FLASH MODE is a one-click speed boost you activate with Ctrl+Shift+F (or the toolbar button). It adds every file source at once: read-only DHT (it asks about your own torrents and serves nobody else&rsquo;s lookups), Local Peer Discovery, a few public booster trackers and up to 1,500 connections. Peers found this way are still Shield-filtered. The mode resets automatically on restart so your everyday settings stay untouched. FLASH MODE is a Pro feature.</p>
             </div>
-          </div>
+          </details>
 
-          <div class="faq-item">
-            <button class="faq-question" aria-expanded="false">
-              <span>Are there any ads, analytics, or bundled offers?</span>
-              <svg class="faq-icon" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
-            </button>
+          <details class="faq-item">
+            <summary class="faq-question">What happens if my drive fills up?</summary>
             <div class="faq-answer">
-              None. NEON Torrent has zero advertisements, zero third-party installer bundles, zero background crypto miners, and zero telemetry tracking. It runs as a clean, native desktop application on Windows 10 and 11.
+              <p>NEON Torrent switches to upload-only mode and shows a red &ldquo;Disk full&rdquo; status on affected torrents, with the space needed and the space free. Once you free space, downloading resumes automatically. You can also use Move data to relocate files to another drive without re-downloading.</p>
             </div>
-          </div>
+          </details>
+
+          <details class="faq-item">
+            <summary class="faq-question">Does VirusTotal upload my files?</summary>
+            <div class="faq-answer">
+              <p>No. With your own VirusTotal API key, NEON sends only the SHA-256 hash of a program for lookup; the file itself is never sent.</p>
+            </div>
+          </details>
+
+          <details class="faq-item">
+            <summary class="faq-question">Does it work with Malwarebytes?</summary>
+            <div class="faq-answer">
+              <p>Yes. Shield reads the MwacDetections log every 2 seconds and absorbs any IPs that Malwarebytes flags. The blocked address is never contacted again. If you want Malwarebytes to stay completely silent about NEON Torrent network activity, add NeonTorrent.exe to the Malwarebytes allow list (Settings &#8594; Allow List).</p>
+            </div>
+          </details>
+
         </div>
       </div>
     </section>
 
-    <!-- Download CTA Callout -->
-    <section style="padding: 1rem 0 5rem 0;">
-      <div class="container container-narrow">
+    <!-- ========== FINAL CTA ========== -->
+    <section class="cta">
+      <div class="container">
         <div class="cta-box">
-          <span class="badge badge-cyan" style="margin-bottom: 1rem;">Ready for Clean Torrents</span>
-          <h2>Experience Modern BitTorrent on Windows</h2>
-          <p>Fewer antivirus alerts, disguised programs skipped before download, and full control over every transfer.</p>
-          <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;">
-            <a href="download.html" class="btn btn-primary btn-lg">Download NEON Torrent</a>
-            <a href="{{STORE_URL}}" class="btn btn-secondary btn-lg">Get on Microsoft Store</a>
+          <h2>Download NEON Torrent</h2>
+          <p>Peer filtering, file checks, detailed transfer controls.</p>
+          <div class="cta-actions">
+            <a href="download.html" class="btn btn-primary btn-lg">Download for Windows</a>
+            <a href="{{STORE_URL}}" class="btn btn-secondary btn-lg">Microsoft Store</a>
           </div>
         </div>
       </div>
     </section>
+
   </main>
 
-  <!-- Footer -->
-  <footer>
+  <!-- ========== FOOTER ========== -->
+  <footer class="site-footer">
     <div class="container">
       <div class="footer-grid">
-        <div class="footer-brand">
-          <a href="index.html" class="brand" aria-label="NEON Torrent Home">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="#22d3ee" stroke="#22d3ee"/>
+
+        <div class="footer-col footer-brand">
+          <a href="/" class="nav-brand" aria-label="NEON Torrent home">
+            <svg class="nav-brand-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M13 2L4 14h7v8l9-12h-7V2z" fill="currentColor"/>
             </svg>
-            <span>NEON <span class="brand-accent">TORRENT</span></span>
+            <span class="nav-brand-text">NEON <span class="cyan">TORRENT</span></span>
           </a>
-          <p>Defensive BitTorrent client for Windows 10 &amp; 11, built on libtorrent 2.1.</p>
+          <p>Defensive BitTorrent client for Windows 10 &amp; 11.</p>
         </div>
+
         <div class="footer-col">
           <h4>Navigation</h4>
           <ul>
-            <li><a href="index.html">Overview</a></li>
+            <li><a href="/">Overview</a></li>
             <li><a href="download.html">Download</a></li>
             <li><a href="docs.html">Documentation</a></li>
             <li><a href="security.html">Security Model</a></li>
           </ul>
         </div>
+
         <div class="footer-col">
           <h4>Legal</h4>
           <ul>
             <li><a href="/legal/privacy.html">Privacy Policy</a></li>
             <li><a href="/legal/terms.html">Terms of Service</a></li>
             <li><a href="/legal/refund.html">Refund Policy</a></li>
-            <li><a href="/legal/abuse.html">Abuse / DMCA</a></li>
+            <li><a href="/legal/abuse.html">Abuse/DMCA</a></li>
           </ul>
         </div>
+
         <div class="footer-col">
           <h4>Technology</h4>
           <ul>
-            <li>Windows 10 / 11 (64-bit)</li>
+            <li>Windows 10/11 (64-bit)</li>
             <li>libtorrent 2.x</li>
-            <li>Cyberpunk Palette</li>
-            <li>Zero Adware &amp; Zero Trackers</li>
+            <li>Four interface themes</li>
+            <li>No ads, telemetry or bundled offers</li>
           </ul>
         </div>
+
       </div>
+
       <div class="footer-bottom">
-        <div>&copy; 2026 NEON Torrent. Built for performance and security on Windows.</div>
-        <div>Offline Security Audited · Microsoft Store Distribution</div>
+        <p>&copy; 2026 NEON Torrent &middot; Offline Security Audited &middot; Microsoft Store Distribution</p>
       </div>
     </div>
   </footer>
 
   <script src="script.js"></script>
-  <!-- Cloudflare Web Analytics -->
   <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "{{CF_ANALYTICS_TOKEN}}"}'></script>
 </body>
 </html>

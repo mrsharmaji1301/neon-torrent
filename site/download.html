@@ -29,9 +29,6 @@
       <nav>
         <ul class="nav-links" id="navLinks">
           <li><a href="index.html">Home</a></li>
-          <li><a href="index.html#features">Features</a></li>
-          <li><a href="index.html#shield">Shield</a></li>
-          <li><a href="index.html#guard">Download Guard</a></li>
           <li><a href="index.html#pricing">Pricing</a></li>
           <li><a href="docs.html">Docs</a></li>
           <li><a href="security.html">Security</a></li>
@@ -62,7 +59,7 @@
           <span class="badge badge-green">&#10003; Verified Clean</span>
           <span class="badge badge-cyan">&#10003; Windows 10 / 11 x64</span>
           <span class="badge">&#10003; 14/14 Security Audits Passed</span>
-          <span class="badge badge-magenta">&#10003; Zero Adware / Trackers</span>
+          <span class="badge badge-magenta">&#10003; No ads or telemetry</span>
         </div>
       </div>
     </section>
@@ -71,44 +68,7 @@
     <section style="padding: 2rem 0 4rem 0;">
       <div class="container container-narrow">
         <h2>System Requirements</h2>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Requirement</th>
-                <th>Specification</th>
-                <th>Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>Operating System</strong></td>
-                <td>Windows 10 / 11 (64-bit)</td>
-                <td>Windows 10 64-bit (version 1809 / build 17763 or later) or Windows 11.</td>
-              </tr>
-              <tr>
-                <td><strong>Architecture</strong></td>
-                <td>x64 (AMD64 / Intel 64)</td>
-                <td>Optimized native 64-bit execution for multi-threaded piece hashing.</td>
-              </tr>
-              <tr>
-                <td><strong>Memory (RAM)</strong></td>
-                <td>2 GB minimum (4 GB recommended)</td>
-                <td>Lightweight PySide6 interface with isolated libtorrent session thread.</td>
-              </tr>
-              <tr>
-                <td><strong>Storage</strong></td>
-                <td>150 MB disk space</td>
-                <td>For runtime and core libraries; additional space required for downloaded content.</td>
-              </tr>
-              <tr>
-                <td><strong>Runtime Engine</strong></td>
-                <td>Self-contained interpreter</td>
-                <td>A signed Microsoft Store package with its own runtime. It does not need or change anything else on your PC.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <dl class="spec-list"><div><dt><strong>Operating System</strong></dt><dd class="spec-value">Windows 10 / 11 (64-bit)</dd><dd>Windows 10 64-bit (version 1809 / build 17763 or later) or Windows 11.</dd></div><div><dt><strong>Architecture</strong></dt><dd class="spec-value">x64 (AMD64 / Intel 64)</dd><dd>Optimized native 64-bit execution for multi-threaded piece hashing.</dd></div><div><dt><strong>Memory (RAM)</strong></dt><dd class="spec-value">2 GB minimum (4 GB recommended)</dd><dd>Lightweight PySide6 interface with isolated libtorrent session thread.</dd></div><div><dt><strong>Storage</strong></dt><dd class="spec-value">150 MB disk space</dd><dd>For runtime and core libraries; additional space required for downloaded content.</dd></div><div><dt><strong>Runtime Engine</strong></dt><dd class="spec-value">Self-contained interpreter</dd><dd>A signed Microsoft Store package with its own runtime. It does not need or change anything else on your PC.</dd></div></dl>
 
         <h2 style="margin-top: 3.5rem;">First-Run &amp; Network Setup</h2>
         <div class="grid grid-2" style="margin-top: 1.5rem;">
@@ -171,7 +131,7 @@
             </svg>
             <span>NEON <span class="brand-accent">TORRENT</span></span>
           </a>
-          <p>Defensive BitTorrent client for Windows 10/11. Zero ads, zero miners, intelligent peer filtering and file verification.</p>
+          <p>Defensive BitTorrent client for Windows 10 &amp; 11.</p>
         </div>
         <div class="footer-col">
           <h4>Navigation</h4>
@@ -192,12 +152,12 @@
           </ul>
         </div>
         <div class="footer-col">
-          <h4>Platform</h4>
+          <h4>Technology</h4>
           <ul>
             <li>Windows 10 / 11 (64-bit)</li>
-            <li>Microsoft Store Distribution</li>
-            <li>libtorrent 2.x Engine</li>
+            <li>libtorrent 2.x</li>
             <li>Cyberpunk Palette</li>
+            <li>No ads, telemetry or bundled offers</li>
           </ul>
         </div>
       </div>
@@ -207,9 +167,7 @@
       </div>
     </div>
   </footer>
-
   <script src="script.js"></script>
-  <!-- Cloudflare Web Analytics -->
-  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "{{CF_ANALYTICS_TOKEN}}"}'></script>
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "{{CF_ANALYTICS_TOKEN}}"}}'></script>
 </body>
 </html>
