@@ -31,6 +31,8 @@ Read AGENTS.md and BOARD.md in F:\neon-torrent. Do task <ID> exactly as its card
 
 - If a model is missing from the dropdown, use the fallback and say so in `DONE.md`.
 - The Claude 5.5 models in Antigravity need a non-promotional Pro plan.
+- When Antigravity runs out of quota, Claude hands the task to Codex, which resumes from whatever is already in
+  `inbox/<ID>/`.
 - Google removes the Claude 4.6 models from Antigravity on 2 Nov 2026.
 - OpenCode, Cline and TRAE are not used: more apps means more coordination for little gain.
 
@@ -49,11 +51,11 @@ Read AGENTS.md and BOARD.md in F:\neon-torrent. Do task <ID> exactly as its card
 | C-07 | Status filter chips with live counts (All, Downloading, Seeding, Completed, Active, Paused, Stopped, Errors) | Claude | done |
 | C-08 | Dev tools into `F:\neon-build\tools`: Windows SDK BuildTools 10.0.28000.2705 (makeappx/signtool, nuget.org, 21.3 MB), gitleaks 8.30.1 (secret scan, SHA256-checked, 8.4 MB), ruff (lint, into `.venv`), Token Savior (MCP code navigation, own venv, `optimized` profile, project `.mcp.json`) | Claude | done, hash-checked; Token Savior skipped (not needed to ship) |
 | D-01 | Website | Antigravity · Gemini 3.8 Flash | replaced by D-01b: it read like a spec sheet, with empty image boxes |
-| D-01b | Website rebuild around the real screenshots | Antigravity · Claude Opus 4.6 (Thinking) | doing |
+| D-01b | Website rebuild around the real screenshots | Codex · GPT-6 Luna (Antigravity ran out of quota at 03:57) | doing |
 | D-02 | Launch copy pack | Codex · GPT-6 Luna | done: reviewed, 4 fixes, in `marketing/` |
-| D-03 | Outreach list | Antigravity · Gemini 3.8 Flash (3.1 Pro is not in the dropdown) | doing |
+| D-03 | Outreach list | Codex · GPT-6 Luna (Antigravity ran out of quota before saving anything) | doing |
 | D-05 | Unit tests for `guard.py` and `theme.py` | Codex · GPT-6 Luna | done: 22 tests in `tests/` pass (`python -m unittest discover -s tests`); one wrong expectation fixed |
-| D-04a | Privacy policy, terms and abuse page (refund page waits for your decision) | Codex · GPT-6 Luna | todo: paste the prompt |
+| D-04a | Privacy policy, terms and abuse page (refund page waits for your decision) | Codex · GPT-6 Luna | doing |
 | U-01 | Install GitHub CLI and log in | You | done |
 | U-02 | Partner Center individual account (ID + selfie) | You | todo |
 | U-03 | Dodo Payments signup + KYC | You | todo |
