@@ -19,6 +19,8 @@
   purchase personally.
 - Never add torrents or start test downloads (this includes `tools\screenshots.py`). When a check needs a download,
   ask the user to run it.
+- Never commit or push anything from the user's own profile: no torrent names, no screenshots of their real app.
+  Published images come only from `tools\screenshots.py` (Ubuntu and Debian on a throwaway profile).
 
 ## Token discipline
 
