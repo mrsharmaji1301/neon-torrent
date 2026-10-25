@@ -220,11 +220,10 @@ Use public information only. Give every row its source URL and the date you chec
 5. Update README.md (modes, learner, badge) and SECURITY.md (the learner and Guardian behaviour).
 
 **Testing rules (time-boxed; tokens are scarce):**
-- Total test time at most 10 minutes. No long waits, polling loops or repeated relaunches.
-- Unit tests for pure helpers: mode switching, error-to-learn mapping, the badge condition. Run
+- The agent spends at most 5 minutes testing. No waits, polling loops, relaunches or screenshots.
+- Write unit tests for the pure helpers: mode switching, error-to-learn mapping, the badge condition. Run
   `python -m unittest discover -s tests` and `tools\security_audit.py` once each at the end.
-- One off-screen screenshot of the title bar in each mode (like `tools\screenshots.py`, but no torrents) to check the
-  look.
+- Claude does the visual check (title bar in each mode) once, in review.
 - Never add torrents or download anything. The user tests the real behaviour.
 - Report in five lines. If something is unclear, stop and ask; do not guess.
 

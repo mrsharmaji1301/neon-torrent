@@ -24,8 +24,8 @@
 
 ## Token discipline
 
-- Agent briefs carry a hard test budget (at most 10 minutes, no polling loops or repeated relaunches) and ask for a
-  five-line report. Never send an agent on open-ended testing.
+- Agents run only the fast gates (unit tests and the security audit; at most 5 minutes, no polling loops, relaunches
+  or screenshots) and report in five lines. Claude does the visual and behaviour checks once, in review.
 
 - Grep first, then Read only the line ranges you need. Do not re-read a file you already have unless it changed.
 - Change files with Edit; never rewrite a whole file to change part of it.
