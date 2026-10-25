@@ -24,6 +24,9 @@
 
 ## Token discipline
 
+- Agent briefs carry a hard test budget (at most 10 minutes, no polling loops or repeated relaunches) and ask for a
+  five-line report. Never send an agent on open-ended testing.
+
 - Grep first, then Read only the line ranges you need. Do not re-read a file you already have unless it changed.
 - Change files with Edit; never rewrite a whole file to change part of it.
 - Batch independent tool calls in one message.

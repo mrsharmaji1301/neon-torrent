@@ -51,6 +51,7 @@ Read AGENTS.md and BOARD.md in F:\neon-torrent. Do task <ID> exactly as its card
 | C-07 | Status filter chips with live counts (All, Downloading, Seeding, Completed, Active, Paused, Stopped, Errors) | Claude | done |
 | C-08 | Dev tools into `F:\neon-build\tools`: Windows SDK BuildTools 10.0.28000.2705 (makeappx/signtool, nuget.org, 21.3 MB), gitleaks 8.30.1 (secret scan, SHA256-checked, 8.4 MB), ruff (lint, into `.venv`), Token Savior (MCP code navigation, own venv, `optimized` profile, project `.mcp.json`) | Claude | done, hash-checked; Token Savior skipped (not needed to ship) |
 | C-09 | Choose files and priorities when adding a torrent, and later in any state (card below) | Claude | done 25 Oct: Add dialog on every add, Details → Files priorities; tests 36/36, audit 18/18. Waiting for the user's real add test |
+| C-10 | Three exclusive modes (Default / FLASH / GUARDIAN), universal network learner, Testing-mode badge (card below) | Claude | todo: start after the weekly reset (26 Oct 00:30) |
 | D-01 | Website | Antigravity · Gemini 3.8 Flash | replaced by D-01b: it read like a spec sheet, with empty image boxes |
 | D-01b | Website rebuild around the real screenshots | Codex · GPT-6 Luna (Antigravity ran out of quota at 03:57) | done: checked at 1280×800 and 375 px, now `site/`. Fixed: invisible nav Download text, placeholder `og.png` (now a 1200×630 crop of screenshot 1), five claims not in the sources ("zero trackers", "own all Pro updates forever", "no data is lost", "never crash", FLASH as "read-only LSD"). `/legal/refund.html` is still a dead link until D-04 |
 | D-02 | Launch copy pack | Codex · GPT-6 Luna | done: reviewed, 4 fixes, in `marketing/` |
@@ -184,6 +185,51 @@ Use public information only. Give every row its source URL and the date you chec
 **Done when:**
 - every URL opens
 - every email address comes from an official contact page; collect none from anywhere else
+
+### C-10 Modes, universal learner, Testing badge (user's decisions, 25 Oct)
+
+**What the user decided:**
+- **Default mode:** only the network Shield. Files are never touched: no Guard skips, no scans, no Mark-of-the-Web.
+- **FLASH:** as today.
+- **GUARDIAN:** a new title-bar toggle next to FLASH. Shield plus file protection: skip disguised programs, scan
+  finished files with whatever antivirus is installed, tag Mark-of-the-Web.
+- **Only one at a time:** turning FLASH on turns GUARDIAN off, and the other way round. Default is neither.
+- **Universal network learning, in every mode, with any antivirus:** learn from blocked connections and never dial
+  that IP or network again. The goal is at most one antivirus alert per bad address.
+- **Testing badge:** a "TESTING MODE" badge next to NEON in the header whenever the app runs on a profile that is not
+  the user's own, so a test copy can never be mistaken for the real app.
+
+**Build steps** (one fresh session, in this order, with a commit after each):
+1. **Modes.** `prefs["mode"]` takes "default", "flash" or "guardian"; migrate the existing `flash` flag. Add the
+   GUARDIAN button with a `shield` icon and green colour, built like the FLASH button in `src\neon_torrent.py`.
+   `engine.set_flash` becomes `set_mode`. Every `_guard_*` call in `engine.py`, plus `guard_skip`, `guard_scan` and
+   `guard_motw`, runs only when the mode is "guardian". The Guard section in SettingsDialog says "GUARDIAN mode only".
+2. **Universal scan (GUARDIAN only).** In `guard.py`, scan a finished file through `IAttachmentExecute`
+   (`CLSID_AttachmentServices`, via ctypes/comtypes-free vtable calls). `SetClientGuid`, `SetLocalPath` and
+   `SetSource("about:internet")`, then `Save()`: Windows runs every registered antivirus and writes Mark-of-the-Web.
+   This is the same call browsers use, so it works with any antivirus. Keep `defender_cli` only as a fallback.
+3. **Universal learner.** In `_process_alerts`, a `peer_error_alert` / `peer_connect_alert` failure with Winsock
+   error 10013 (WSAEACCES) on an outgoing connect means an antivirus or firewall blocked it. Teach the Shield that IP,
+   using the same path as a Malwarebytes detection (network scope rules unchanged). Also read Defender's
+   network-protection events (event IDs 1125/1126, `Microsoft-Windows-Windows Defender/Operational`) when readable
+   without admin; skip silently otherwise. The Malwarebytes reader stays. Never learn from timeouts: a silent drop
+   looks like a dead peer.
+4. **Testing badge.** If `APPDATA` differs from the real roaming folder (`SHGetKnownFolderPath(FOLDERID_RoamingAppData)`)
+   or `NEON_PROFILE` is set, show an orange "TESTING MODE" pill next to the NEON title, with a tooltip giving the
+   profile path.
+5. Update README.md (modes, learner, badge) and SECURITY.md (the learner and Guardian behaviour).
+
+**Testing rules (time-boxed; tokens are scarce):**
+- Total test time at most 10 minutes. No long waits, polling loops or repeated relaunches.
+- Unit tests for pure helpers: mode switching, error-to-learn mapping, the badge condition. Run
+  `python -m unittest discover -s tests` and `tools\security_audit.py` once each at the end.
+- One off-screen screenshot of the title bar in each mode (like `tools\screenshots.py`, but no torrents) to check the
+  look.
+- Never add torrents or download anything. The user tests the real behaviour.
+- Report in five lines. If something is unclear, stop and ask; do not guess.
+
+**Review checklist for Claude:** default mode makes no file calls (grep `_guard_` call sites); FLASH and GUARDIAN can
+never both be on; 10013 learning only fires for outgoing connects; no admin calls; no torrent names in the diff.
 
 ### C-09 File selection and priorities (user's decisions, 25 Oct)
 
