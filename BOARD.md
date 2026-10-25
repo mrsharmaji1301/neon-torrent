@@ -50,6 +50,7 @@ Read AGENTS.md and BOARD.md in F:\neon-torrent. Do task <ID> exactly as its card
 | C-06 | Bug: quitting freezes the window for several seconds. Hide it at once, finish shutdown in the background | Claude | done |
 | C-07 | Status filter chips with live counts (All, Downloading, Seeding, Completed, Active, Paused, Stopped, Errors) | Claude | done |
 | C-08 | Dev tools into `F:\neon-build\tools`: Windows SDK BuildTools 10.0.28000.2705 (makeappx/signtool, nuget.org, 21.3 MB), gitleaks 8.30.1 (secret scan, SHA256-checked, 8.4 MB), ruff (lint, into `.venv`), Token Savior (MCP code navigation, own venv, `optimized` profile, project `.mcp.json`) | Claude | done, hash-checked; Token Savior skipped (not needed to ship) |
+| C-09 | Choose files and priorities when adding a torrent, and later in any state (card below) | Claude | todo: waiting for go-ahead |
 | D-01 | Website | Antigravity · Gemini 3.8 Flash | replaced by D-01b: it read like a spec sheet, with empty image boxes |
 | D-01b | Website rebuild around the real screenshots | Codex · GPT-6 Luna (Antigravity ran out of quota at 03:57) | done: checked at 1280×800 and 375 px, now `site/`. Fixed: invisible nav Download text, placeholder `og.png` (now a 1200×630 crop of screenshot 1), five claims not in the sources ("zero trackers", "own all Pro updates forever", "no data is lost", "never crash", FLASH as "read-only LSD"). `/legal/refund.html` is still a dead link until D-04 |
 | D-02 | Launch copy pack | Codex · GPT-6 Luna | done: reviewed, 4 fixes, in `marketing/` |
@@ -183,6 +184,24 @@ Use public information only. Give every row its source URL and the date you chec
 **Done when:**
 - every URL opens
 - every email address comes from an official contact page; collect none from anywhere else
+
+### C-09 File selection and priorities (user's decisions, 25 Oct)
+
+- **Every add** (`.torrent` file, HTTP(S) link, magnet, info-hash) opens an Add dialog; there is no setting to skip it.
+  Nothing downloads until the user presses DOWNLOAD; CANCEL removes the torrent and leaves no files.
+- **Add dialog:** save folder (default `download_dir`, Browse…), free space vs. selected size, then the file list:
+  checkbox per file, a Priority column (High / Normal / Low / Don't download = libtorrent 7 / 4 / 1 / 0), select
+  all/none, multi-select with right-click → Priority, and the selected total.
+- **Magnets:** fetch metadata only. Add with `stop_when_ready` and set every file priority to 0 as soon as metadata
+  arrives, then open the dialog. The dialog shows "Fetching the file list…" until then.
+- **Guard first:** files Download Guard skips arrive as Don't download, with the reason shown, before the dialog opens.
+- **Later, in any state** (downloading, idle, paused, stopped): the right-click → Details → Files tab gets the same
+  checkbox, Priority column and right-click menu. Changes apply at once.
+- **Survives restarts:** a torrent waiting for its selection keeps a meta flag, stays paused, and reopens the dialog
+  after a restart.
+- **Rules:** engine changes go through queued signals only. Torrent and magnet parsing is security-critical
+  (AGENTS.md), so tests and the security audit must pass. Update README. No builds or MSIX until the user says so.
+  Claude adds no torrents: the user tests the real add flow.
 
 ### D-01b Website rebuild
 
