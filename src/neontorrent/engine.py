@@ -52,6 +52,7 @@ ALERT_MASK = (
     | lt.alert.category_t.ip_block_notification
 )
 MAX_TORRENT_DOWNLOAD = 20 * 1024 * 1024
+SHUTDOWN_SAVE_SECONDS = 45             # quitting waits this long for resume data; the window is gone already
 UNLIMITED = 16777215                   # libtorrent's "no limit" for per-torrent connection/upload slots
 
 # FLASH MODE: every file source at once. Peers stay Shield-filtered; booster trackers are long-lived public
@@ -380,11 +381,14 @@ class TorrentEngine(QObject):
                 self.resume_pending = 0
                 for handle in self.session.get_torrents():
                     if handle.is_valid() and handle.status().has_metadata:
-                        handle.save_resume_data(lt.save_resume_flags_t.save_info_dict)
+                        # flush first, so the saved piece list never claims data that is not on disk yet
+                        handle.save_resume_data(lt.save_resume_flags_t.save_info_dict
+                                                | lt.save_resume_flags_t.flush_disk_cache)
                         self.resume_pending += 1
                     else:
                         self._save_magnet_only(handle)
-                deadline = time.monotonic() + 6
+                # the window is already hidden, so waiting costs the user nothing; big torrents need the time
+                deadline = time.monotonic() + SHUTDOWN_SAVE_SECONDS
                 while self.resume_pending > 0 and time.monotonic() < deadline:
                     self.session.wait_for_alert(250)
                     self._process_alerts()
@@ -397,11 +401,44 @@ class TorrentEngine(QObject):
     def _resume_path(self, key: str) -> Path:
         return self.state_dir / f"{key}.fastresume"
 
+    def _snapshot_session(self) -> None:
+        """Once a day, copy the resume files and meta.json to session/backups/<date>; keep the newest three.
+        A bad update can then never take the torrent list with it."""
+        backups = self.state_dir / "backups"
+        today = backups / time.strftime("%Y-%m-%d")
+        try:
+            if not today.exists():
+                files = [p for p in self.state_dir.iterdir()
+                         if p.is_file() and p.suffix in (".fastresume", ".magnet", ".json")]
+                if files:
+                    today.mkdir(parents=True)
+                    for path in files:
+                        shutil.copy2(path, today / path.name)
+            for old in sorted((p for p in backups.iterdir() if p.is_dir()), reverse=True)[3:]:
+                shutil.rmtree(old, ignore_errors=True)
+        except OSError:
+            pass
+
     def _restore(self) -> None:
-        restored = 0
-        for path in sorted(self.state_dir.glob("*.fastresume")):
+        self._snapshot_session()
+        restored, lost = 0, []
+        keys = {p.stem for p in self.state_dir.glob("*.fastresume")} | {p.stem for p in self.state_dir.glob("*.bak")}
+        for key in sorted(keys):
+            params = None
+            # the previous save (.bak) stands in when the latest file is damaged or missing
+            for path in (self._resume_path(key), self.state_dir / f"{key}.bak"):
+                try:
+                    params = lt.read_resume_data(path.read_bytes())
+                    break
+                except Exception:
+                    continue
+            if params is None:
+                for path in (self._resume_path(key), self.state_dir / f"{key}.bak"):
+                    if path.exists():
+                        path.replace(path.with_name(path.name + ".broken"))
+                lost.append(self.meta.get(key, {}).get("name") or key[:12])
+                continue
             try:
-                params = lt.read_resume_data(path.read_bytes())
                 self._filter_params(params)
                 if params.trackers:
                     # use the filtered resume tracker list instead of merging the .torrent's own list back in
@@ -411,7 +448,9 @@ class TorrentEngine(QObject):
                 self.session.async_add_torrent(params)
                 restored += 1
             except Exception:
-                path.rename(path.with_suffix(".broken"))
+                lost.append(params.name or key[:12])
+        if lost:
+            self.notice.emit(f"COULD NOT RESTORE {', '.join(lost)} · copies are in session\\backups", "warn")
         for path in sorted(self.state_dir.glob("*.magnet")):
             try:
                 data = json.loads(path.read_text(encoding="utf-8"))
@@ -467,7 +506,7 @@ class TorrentEngine(QObject):
                 continue
 
     def _forget(self, key: str, keep_meta: bool = False) -> None:
-        for suffix in (".fastresume", ".magnet"):
+        for suffix in (".fastresume", ".bak", ".magnet"):
             (self.state_dir / f"{key}{suffix}").unlink(missing_ok=True)
         if not keep_meta and self.meta.pop(key, None) is not None:
             self._save_meta()
@@ -521,6 +560,8 @@ class TorrentEngine(QObject):
             path = self._resume_path(key)
             tmp = path.with_suffix(".tmp")
             tmp.write_bytes(data)
+            if path.exists():
+                path.replace(path.with_suffix(".bak"))     # keep the last good save until the new one is in place
             tmp.replace(path)
             (self.state_dir / f"{key}.magnet").unlink(missing_ok=True)
             self.resume_pending = max(0, self.resume_pending - 1)

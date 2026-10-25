@@ -153,10 +153,14 @@ Flash mode resets to off when the app restarts.
 - Tracker and IP blocklist (Preferences → Shield), plus everything learned from Malwarebytes.
 - Live speed sparklines, connection state, ETA, ratio, seeds/peers tooltips.
 - Sorting by any column; filter box matches name and status.
-- Status chips above the list: All, Downloading, Seeding, Completed, Active, Paused, Stopped and Errors, each with a
-  live count. The chosen chip is remembered.
+- Three pages above the list, each with a live count: **Downloading** (not finished yet), **Completed** (finished,
+  without the progress and download-speed columns) and **All transfers**. Each page has its own status chips (All,
+  Active, Paused, Stopped, Errors, and Seeding where it applies; All transfers keeps every chip). The page and chip you
+  chose are remembered.
 - System tray with pause all/resume all, optional close-to-tray, and download-complete notifications.
-- Quitting hides the window at once; state is saved in the background and the app exits within seconds.
+- Quitting hides the window at once. The engine then flushes the disk cache and saves every torrent's state (up to 45 s
+  for big sessions) before the process exits. If you start NEON again meanwhile, the new window waits for that save
+  instead of disappearing.
 - Cyberpunk (default), Synthwave, Dark, and Solarized themes.
 - Preferences → About shows the version and the open-source licences (`THIRD-PARTY-NOTICES.md`, shipped in the Store
   package).
@@ -165,7 +169,7 @@ Flash mode resets to off when the app restarts.
 
 `Ctrl+O` open file · `Ctrl+N` focus link box · `Ctrl+F` filter · `Ctrl+M` Shield map · `Ctrl+Shift+F` FLASH MODE ·
 `Ctrl+T` torrent settings · `Ctrl+,` preferences · `Space` pause/resume · `Ctrl+Shift+S` stop · `Del` remove · `Shift+Del` delete data ·
-`Enter` details · `Alt+1` … `Alt+8` status chips · `Ctrl+Q` quit.
+`Enter` details · `Ctrl+1` … `Ctrl+3` pages · `Alt+1` … `Alt+8` status chips · `Ctrl+Q` quit.
 
 ## Data
 
@@ -173,3 +177,9 @@ Stored under `%APPDATA%\NeonTorrent`: `settings.json`, `session\*.fastresume` (t
 `session\meta.json` (ratio limits and per-torrent flags), `shield\learned.json` (learned blocks), and
 `shield\ip2asn.cache` (network database).
 Magnet links saved by version 1 in `torrents.json` are imported once on first launch.
+
+Your torrent list survives crashes and updates:
+- Every save keeps the previous file as `session\<hash>.bak`, and a damaged `.fastresume` is restored from it.
+- Once a day at start-up, NEON copies `session\` to `session\backups\<date>` and keeps the newest three.
+- A torrent that cannot be restored at all is named in the status line and its files are kept as `.broken`. It is
+  never dropped silently.

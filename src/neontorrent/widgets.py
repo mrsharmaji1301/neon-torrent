@@ -801,18 +801,71 @@ class FilterChip(QPushButton):
         p.drawText(badge, Qt.AlignmentFlag.AlignCenter, str(self.count))
 
 
+class PageTab(QPushButton):
+    """A large text tab with a live count (DOWNLOADING 3); the selected one glows and gets an underline."""
+
+    def __init__(self, label: str, color_key: str, parent=None):
+        super().__init__(parent)
+        self.label, self.color_key, self.count, self._hover = label, color_key, 0, False
+        self.setCheckable(True)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setFixedHeight(40)
+        self._fit()
+
+    def set_count(self, count: int) -> None:
+        if count != self.count:
+            self.count = count
+            self._fit()
+            self.update()
+
+    def _fit(self) -> None:
+        text = QFontMetricsF(T.head_font(11.5, QFont.Weight.DemiBold, 1.6)).horizontalAdvance(self.label)
+        number = QFontMetricsF(T.head_font(10, QFont.Weight.Bold)).horizontalAdvance(str(self.count))
+        self.setFixedWidth(int(text + number + 34))
+
+    def enterEvent(self, event):
+        self._hover = True
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self._hover = False
+        self.update()
+        super().leaveEvent(event)
+
+    def paintEvent(self, _event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        on, key = self.isChecked(), self.color_key
+        r = QRectF(self.rect()).adjusted(6, 0, -6, -6)
+        p.setFont(T.head_font(11.5, QFont.Weight.DemiBold, 1.6))
+        p.setPen(T.c(key) if on else T.c("text", 235 if self._hover else 150))
+        p.drawText(r, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft, self.label)
+        offset = QFontMetricsF(p.font()).horizontalAdvance(self.label) + 10
+        p.setFont(T.head_font(10, QFont.Weight.Bold))
+        p.setPen(T.c(key, 230) if on else T.c("muted", 220))
+        p.drawText(r.adjusted(offset, 0, 0, 0), Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+                   str(self.count))
+        if on:
+            y = self.height() - 3.0
+            for width, alpha in ((7.0, 40), (3.0, 255)):
+                p.setPen(QPen(T.c(key, alpha), width, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+                p.drawLine(QPointF(8, y), QPointF(self.width() - 8, y))
+
+
 class FilterBar(QWidget):
-    """One row of status chips; exactly one is selected at a time."""
+    """One row of status chips (or page tabs); exactly one is selected at a time."""
     changed = Signal(str)
 
-    def __init__(self, filters: list[tuple[str, str, str]], parent=None):
+    def __init__(self, filters: list[tuple[str, str, str]], parent=None, chip_class=None, spacing: int = 2):
         super().__init__(parent)
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(2)
+        layout.setSpacing(spacing)
         self.chips: dict[str, FilterChip] = {}
         for key, label, color_key in filters:
-            chip = FilterChip(label, color_key, self)
+            chip = (chip_class or FilterChip)(label, color_key, self)
             chip.clicked.connect(lambda _checked=False, k=key: self.select(k))
             layout.addWidget(chip)
             self.chips[key] = chip
@@ -833,8 +886,16 @@ class FilterBar(QWidget):
         for key, chip in self.chips.items():
             chip.set_count(counts.get(key, 0))
 
+    def show_only(self, keys: list[str]) -> None:
+        """Hide the chips a page has no use for; a hidden selection falls back to the first visible chip."""
+        for key, chip in self.chips.items():
+            chip.setVisible(key in keys)
+        if self.current not in keys:
+            self.select(keys[0])
+
 
 __all__ = [
     "NeonBackground", "NeonPanel", "GlowButton", "WindowButton", "BrandTitle", "StatusDot", "NeonLineEdit",
-    "StatCard", "SectionTitle", "Logo", "VSeparator", "StatusLine", "FilterChip", "FilterBar", "make_icon", "Signal",
+    "StatCard", "SectionTitle", "Logo", "VSeparator", "StatusLine", "FilterChip", "PageTab", "FilterBar", "make_icon",
+    "Signal",
 ]

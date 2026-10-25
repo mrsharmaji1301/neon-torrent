@@ -23,6 +23,25 @@ STATUS_FILTERS = [("all", "ALL", "cyan"), ("downloading", "DOWNLOADING", "cyan2"
                   ("stopped", "STOPPED", "muted"), ("errors", "ERRORS", "red")]
 
 
+# page key, tab label, colour, the status chips that make sense on that page
+PAGES = [("downloading", "DOWNLOADING", "cyan2", ["all", "active", "paused", "stopped", "errors"]),
+         ("completed", "COMPLETED", "green", ["all", "seeding", "active", "stopped", "errors"]),
+         ("all", "ALL TRANSFERS", "cyan", [key for key, _label, _color in STATUS_FILTERS])]
+HIDDEN_ON_PAGE = {"completed": {2, 4}}  # columns that are always 100% / 0 B/s there: PROGRESS, ↓ SPEED
+
+
+def page_matches(page: str, row: dict) -> bool:
+    if page == "downloading":
+        return row["progress"] < 1
+    if page == "completed":
+        return row["progress"] >= 1
+    return True
+
+
+def page_counts(rows: list[dict]) -> dict[str, int]:
+    return {key: sum(1 for row in rows if page_matches(key, row)) for key, _label, _color, _chips in PAGES}
+
+
 def status_matches(key: str, row: dict) -> bool:
     state = row["state"]
     if key == "downloading":
@@ -150,6 +169,7 @@ class TorrentFilter(QSortFilterProxyModel):
         super().__init__(parent)
         self.query = ""
         self.status = "all"
+        self.page = "all"
         self.setSortRole(SORT_ROLE)
         self.setDynamicSortFilter(True)
 
@@ -161,9 +181,13 @@ class TorrentFilter(QSortFilterProxyModel):
         self.status = key
         self.invalidateFilter()
 
+    def set_page(self, key: str) -> None:
+        self.page = key
+        self.invalidateFilter()
+
     def filterAcceptsRow(self, source_row, source_parent):
         row = self.sourceModel().rows[source_row]
-        if not status_matches(self.status, row):
+        if not page_matches(self.page, row) or not status_matches(self.status, row):
             return False
         if not self.query:
             return True

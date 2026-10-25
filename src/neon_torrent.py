@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from PySide6.QtCore import QEvent, QPoint, QStandardPaths, QThread, QTimer, Qt, Signal, Slot
@@ -23,9 +24,11 @@ from neontorrent.dialogs import (DetailsDialog, FirstRunDialog, NeonDialog, Sett
                                  ShieldDialog, SpeedLimitsDialog, TorrentOptionsDialog)
 from neontorrent.engine import DEFAULT_BLOCKED, TorrentEngine  # noqa: E402
 from neontorrent.icons import logo_icon, make_icon  # noqa: E402
-from neontorrent.transfers import STATUS_FILTERS, TransfersView, status_counts  # noqa: E402
+from neontorrent.transfers import (HIDDEN_ON_PAGE, PAGES, STATUS_FILTERS, TransfersView,  # noqa: E402
+                                   page_counts, page_matches, status_counts)
 from neontorrent.widgets import (BrandTitle, FilterBar, GlowButton, Logo, NeonBackground, NeonLineEdit,  # noqa: E402
-                                 NeonPanel, SectionTitle, StatCard, StatusDot, StatusLine, VSeparator, WindowButton)
+                                 NeonPanel, PageTab, SectionTitle, StatCard, StatusDot, StatusLine, VSeparator,
+                                 WindowButton)
 
 SERVER_NAME = "NeonTorrent-single-instance"
 RESIZE_MARGIN = 8
@@ -192,6 +195,8 @@ class TorrentWindow(QMainWindow):
         self.setWindowTitle(APP_NAME)
         self.setWindowIcon(logo_icon(T.c("cyan"), T.c("magenta")))
         self._build_ui()
+        self.page_tabs.select(self.prefs.get("page", "all"))
+        self._on_page(self.page_tabs.current)
         self.filter_bar.select(self.prefs.get("status_filter", "all"))
         self._build_shortcuts()
         self._build_tray()
@@ -344,8 +349,11 @@ class TorrentWindow(QMainWindow):
         tl2.setSpacing(6)
         head = QHBoxLayout()
         head.setContentsMargins(22, 0, 18, 4)
-        self.transfers_title = SectionTitle("list", "TRANSFERS (0)")
-        head.addWidget(self.transfers_title)
+        # separate pages for what is still downloading, what is finished, and everything
+        self.page_tabs = FilterBar([(key, label, color) for key, label, color, _chips in PAGES],
+                                   chip_class=PageTab, spacing=14)
+        self.page_tabs.changed.connect(self._on_page)
+        head.addWidget(self.page_tabs)
         head.addStretch(1)
         self.search = NeonLineEdit("search", "Filter torrents…")
         self.search.setFixedWidth(256)
@@ -416,6 +424,8 @@ class TorrentWindow(QMainWindow):
         sc("Ctrl+R", self.resume_selected)
         for number, (key, _label, _color) in enumerate(STATUS_FILTERS, 1):     # Alt+1 … Alt+8: status chips
             sc(f"Alt+{number}", lambda k=key: self.filter_bar.select(k))
+        for number, (key, _label, _color, _chips) in enumerate(PAGES, 1):     # Ctrl+1 … Ctrl+3: pages
+            sc(f"Ctrl+{number}", lambda k=key: self.page_tabs.select(k))
         table_ctx = Qt.ShortcutContext.WidgetShortcut
         for keys, fn in (("Delete", self.remove_selected), ("Shift+Delete", self.delete_selected),
                          ("Space", self.toggle_selected), ("Return", self.show_details),
@@ -498,8 +508,8 @@ class TorrentWindow(QMainWindow):
         self.last = data
         rows = data.get("rows", [])
         self.table.update_rows(rows)
-        self.transfers_title.set_text(f"TRANSFERS ({len(rows)})")
-        self.filter_bar.set_counts(status_counts(rows))
+        self.page_tabs.set_counts(page_counts(rows))
+        self.filter_bar.set_counts(status_counts([r for r in rows if page_matches(self.page_tabs.current, r)]))
         history = data.get("history", [])
         self.down_card.value.setText(T.fmt_speed(data.get("down", 0)))
         self.down_card.spark.set_values([d for d, _ in history])
@@ -883,6 +893,20 @@ class TorrentWindow(QMainWindow):
         self.table.proxy.set_query(text)
         self.table.viewport().update()
 
+    def _on_page(self, key: str):
+        page = next(p for p in PAGES if p[0] == key)
+        self.table.proxy.set_page(key)
+        self.filter_bar.show_only(page[3])
+        for column in range(self.table.model().columnCount()):
+            self.table.setColumnHidden(column, column in HIDDEN_ON_PAGE.get(key, set()))
+        if self.last:
+            rows = self.last.get("rows", [])
+            self.filter_bar.set_counts(status_counts([r for r in rows if page_matches(key, r)]))
+        self.table.viewport().update()
+        if self.prefs.get("page") != key:
+            self.prefs["page"] = key
+            T.save_preferences(self.prefs)
+
     def _on_status_filter(self, key: str):
         self.table.proxy.set_status(key)
         self.table.viewport().update()
@@ -1004,7 +1028,7 @@ class TorrentWindow(QMainWindow):
         app = QApplication.instance()
         if self.engine_thread.isRunning():
             self.engine_thread.finished.connect(app.quit)
-            QTimer.singleShot(15000, app.quit)            # never linger in the background
+            QTimer.singleShot(60000, app.quit)            # resume data needs up to 45 s; never linger longer
             self.sig_shutdown.emit()
         else:
             app.quit()
@@ -1031,8 +1055,21 @@ def send_to_running_instance(args: list[str]) -> bool:
     socket.write(("\n".join(args) if args else "__show__").encode("utf-8"))
     socket.flush()
     socket.waitForBytesWritten(1000)
+    reply = bytes(socket.readAll()) if socket.waitForReadyRead(1500) else b""
     socket.disconnectFromServer()
-    return True
+    if reply != b"closing":
+        return True
+    # the running copy is quitting and still saving resume data: wait for it to exit, then start normally,
+    # instead of handing the links to a window that is about to disappear
+    deadline = time.monotonic() + 75
+    while time.monotonic() < deadline:
+        probe = QLocalSocket()
+        probe.connectToServer(SERVER_NAME)
+        if not probe.waitForConnected(300):
+            return False
+        probe.disconnectFromServer()
+        time.sleep(0.5)
+    return False
 
 
 def first_run() -> None:
@@ -1076,7 +1113,11 @@ def main() -> int:
 
         def read():
             if window.shutting_down:
+                sock.write(b"closing")    # the new launch waits for this instance to finish saving, then starts
+                sock.flush()
                 return
+            sock.write(b"ok")
+            sock.flush()
             payload = bytes(sock.readAll()).decode("utf-8", "replace")
             lines = payload.splitlines()
             commands = {"--pause-all": window.sig_pause_all.emit, "--resume-all": window.sig_resume_all.emit,
@@ -1096,8 +1137,8 @@ def main() -> int:
             QTimer.singleShot(1500, lambda a=arg: window.add_any(a))
     code = app.exec()
     thread = window.engine_thread
-    if thread.isRunning() and not thread.wait(2000):
-        os._exit(code)            # engine stuck (e.g. a tracker that never answers); resume data is already saved
+    if thread.isRunning() and not thread.wait(15000):
+        os._exit(code)            # engine stuck (e.g. a tracker that never answers) after its 45 s save window
     return code
 
 
