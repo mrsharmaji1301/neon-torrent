@@ -20,8 +20,8 @@ from neontorrent import theme as T  # noqa: E402
 if sys.stderr is None:  # pythonw.exe: no console, so keep errors in a log file
     sys.stderr = open(T.app_data_dir() / "error.log", "a", encoding="utf-8", buffering=1)
     sys.stdout = sys.stderr
-from neontorrent.dialogs import (DetailsDialog, FirstRunDialog, NeonDialog, SettingsDialog,  # noqa: E402
-                                 ShieldDialog, SpeedLimitsDialog, TorrentOptionsDialog)
+from neontorrent.dialogs import (AddTorrentDialog, DetailsDialog, FirstRunDialog, NeonDialog,  # noqa: E402
+                                 SettingsDialog, ShieldDialog, SpeedLimitsDialog, TorrentOptionsDialog)
 from neontorrent.engine import DEFAULT_BLOCKED, TorrentEngine  # noqa: E402
 from neontorrent.icons import logo_icon, make_icon  # noqa: E402
 from neontorrent.transfers import (HIDDEN_ON_PAGE, PAGES, STATUS_FILTERS, TransfersView,  # noqa: E402
@@ -85,6 +85,10 @@ def build_qss() -> str:
     QTableView#detailTable QHeaderView::section {{ border-right: 1px solid {c['line']}; }}
     QTableView#detailTable QHeaderView::section:hover {{ color: {c['text']}; background: {c['line']}; }}
     QTableView#detailTable QTableCornerButton::section {{ background: {c['panel_hi']}; border: none; }}
+    QTableView#detailTable::indicator {{ width: 16px; height: 16px; border-radius: 4px; border: 1px solid {c['muted']};
+        background: {c['input']}; }}
+    QTableView#detailTable::indicator:hover {{ border-color: {c['cyan']}; }}
+    QTableView#detailTable::indicator:checked {{ background: {c['cyan']}; border-color: {c['cyan']}; }}
     QSizeGrip {{ background: transparent; }}
     QTabWidget#neonTabs::pane {{ border: 1px solid {c['line']}; border-radius: 10px; top: -1px;
         background: {c['panel']}; padding: 8px; }}
@@ -160,7 +164,9 @@ class TorrentWindow(QMainWindow):
     sig_reannounce = Signal(list)
     sig_sequential = Signal(list, bool)
     sig_copy_magnet = Signal(str)
-    sig_file_priority = Signal(str, int, int)
+    sig_file_priority = Signal(str, list)
+    sig_confirm_add = Signal(str, str, list)
+    sig_cancel_add = Signal(str)
     sig_move = Signal(str, str)
     sig_detail = Signal(str)
     sig_settings = Signal(dict)
@@ -184,6 +190,7 @@ class TorrentWindow(QMainWindow):
         self.quitting = False
         self.shutting_down = False
         self.details: DetailsDialog | None = None
+        self.add_dialogs: dict[str, AddTorrentDialog] = {}
         self.shield_dialog: ShieldDialog | None = None
         self.options_dialog: TorrentOptionsDialog | None = None
         self.last = {}
@@ -477,6 +484,7 @@ class TorrentWindow(QMainWindow):
         self.engine.finished.connect(self._on_finished)
         self.engine.magnet.connect(self._on_magnet)
         self.engine.threat.connect(self._on_threat)
+        self.engine.select_files.connect(self._on_select_files)
         # direct: ends the engine thread's event loop from inside it, with no round trip through the GUI thread
         self.engine.stopped.connect(self.engine_thread.quit, Qt.ConnectionType.DirectConnection)
         for sig, slot in ((self.sig_add_uri, self.engine.add_uri), (self.sig_add_file, self.engine.add_file),
@@ -486,7 +494,9 @@ class TorrentWindow(QMainWindow):
                           (self.sig_recheck, self.engine.recheck), (self.sig_reannounce, self.engine.reannounce),
                           (self.sig_sequential, self.engine.set_sequential),
                           (self.sig_copy_magnet, self.engine.copy_magnet),
-                          (self.sig_file_priority, self.engine.set_file_priority),
+                          (self.sig_file_priority, self.engine.set_file_priorities),
+                          (self.sig_confirm_add, self.engine.confirm_selection),
+                          (self.sig_cancel_add, self.engine.cancel_selection),
                           (self.sig_move, self.engine.move_storage), (self.sig_detail, self.engine.set_detail_key),
                           (self.sig_settings, self.engine.apply_settings),
                           (self.sig_pause_all, self.engine.pause_all), (self.sig_resume_all, self.engine.resume_all),
@@ -537,6 +547,13 @@ class TorrentWindow(QMainWindow):
             else:
                 self.details.update_row(row)
                 self.details.update_detail(data.get("detail"))
+        if self.add_dialogs:
+            keys = {r["key"] for r in rows}
+            for key, dialog in list(self.add_dialogs.items()):
+                if key in keys:
+                    dialog.seen = True
+                elif dialog.seen:                  # removed from the list while its Add dialog was open
+                    dialog.dismiss()
         if self.shield_dialog is not None:
             self.shield_dialog.update_data(data)
         if self.options_dialog is not None:
@@ -597,6 +614,25 @@ class TorrentWindow(QMainWindow):
     def _on_finished(self, name: str):
         if self.prefs.get("notify_complete", True) and self.tray.isVisible():
             self.tray.showMessage("Download complete", name, self.windowIcon(), 6000)
+
+    @Slot(dict)
+    def _on_select_files(self, offer: dict):
+        """Every add opens the Add dialog (again with the files once a magnet's list is in). Nothing downloads
+        until DOWNLOAD; CANCEL removes the torrent."""
+        key = offer.get("key", "")
+        dialog = self.add_dialogs.get(key)
+        if dialog is None:
+            dialog = AddTorrentDialog(offer, self)
+            dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+            dialog.confirmed.connect(self.sig_confirm_add)
+            dialog.cancelled.connect(self.sig_cancel_add)
+            dialog.finished.connect(lambda *_, k=key: self.add_dialogs.pop(k, None))
+            self.add_dialogs[key] = dialog
+            dialog.show()
+        else:
+            dialog.update_offer(offer)
+        dialog.raise_()
+        dialog.activateWindow()
 
     @Slot(str)
     def _on_magnet(self, uri: str):
@@ -1023,6 +1059,8 @@ class TorrentWindow(QMainWindow):
         for dialog in (self.details, self.shield_dialog, self.options_dialog):
             if dialog is not None:
                 dialog.close()
+        for dialog in list(self.add_dialogs.values()):
+            dialog.dismiss()                       # no answer: the torrent waits and its dialog reopens next start
         # Saving resume data and telling trackers we stopped takes a few seconds. Hide at once and let the engine
         # finish in its own thread: blocking the GUI thread for it made Windows mark the window "Not responding".
         self.hide()

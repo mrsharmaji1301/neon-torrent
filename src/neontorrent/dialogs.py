@@ -1,6 +1,8 @@
-"""Frameless neon dialogs: Settings, torrent Details/Settings, speed limits and the Shield map."""
+"""Frameless neon dialogs: Settings, Add torrent, torrent Details/Settings, speed limits and the Shield map."""
 from __future__ import annotations
 
+import html
+import shutil
 import sys
 import threading
 import time
@@ -12,12 +14,13 @@ from PySide6.QtCore import QAbstractTableModel, QModelIndex, QRectF, QSortFilter
 from PySide6.QtGui import QFont, QPainter
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
                                QFileDialog, QFormLayout, QFrame, QGridLayout, QHBoxLayout, QHeaderView, QLabel,
-                               QLineEdit, QPlainTextEdit, QScrollArea, QSizeGrip, QSpinBox, QTableView, QTableWidget,
-                               QTableWidgetItem, QTabWidget, QTextBrowser, QVBoxLayout, QWidget)
+                               QLineEdit, QMenu, QPlainTextEdit, QScrollArea, QSizeGrip, QSpinBox, QStackedWidget,
+                               QTableView, QTableWidget, QTableWidgetItem, QTabWidget, QTextBrowser, QVBoxLayout,
+                               QWidget)
 
 from . import APP_NAME, APP_VERSION
 from . import theme as T
-from .engine import DEFAULT_BLOCKED
+from .engine import DEFAULT_BLOCKED, kind_for, pretty_title
 from .shield import MB_DETECTIONS
 from .icons import paint_badge, paint_logo
 from .widgets import GlowButton, NeonBackground, NeonPanel, WindowButton
@@ -134,8 +137,12 @@ class RecordModel(QAbstractTableModel):
         if not index.isValid():
             return None
         row = self.rows[index.row()]
-        if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.ToolTipRole):
+        if role == Qt.ItemDataRole.DisplayRole:
             return row["cells"][index.column()]
+        if role == Qt.ItemDataRole.ToolTipRole:
+            # file names, tracker URLs and peer clients come from the network: never let Qt render them as rich text
+            text = str(row["cells"][index.column()])
+            return "<qt>" + html.escape(text) + "</qt>" if text else None
         if role == SORT_ROLE:
             return row["sort"][index.column()]
         if role == KEY_ROLE:
@@ -600,8 +607,303 @@ class BadgeHeader(QWidget):
         p.drawText(QRectF(66, 30, self.width() - 66, 22), Qt.AlignmentFlag.AlignVCenter, self.sub)
 
 
+# libtorrent file priorities offered in the UI, highest first, with their colour in the Priority column
+PRIORITIES = [(7, "High", "magenta"), (4, "Normal", "cyan"), (1, "Low", "yellow"), (0, "Don't download", "muted")]
+
+
+def priority_name(priority: int) -> str:
+    """libtorrent knows 0..7; values other clients leave behind (2, 3, 5, 6) show as the nearest level."""
+    return "Don't download" if priority <= 0 else "Low" if priority <= 2 else "Normal" if priority <= 5 else "High"
+
+
+def display_paths(paths: list[str]) -> list[str]:
+    """Windows-style paths without the torrent's own top folder when every file sits in it (the header names it)."""
+    split = [p.replace("\\", "/").split("/", 1) for p in paths]
+    if len(split) > 1 and all(len(s) == 2 for s in split) and len({s[0] for s in split}) == 1:
+        return [s[1].replace("/", "\\") for s in split]
+    return [p.replace("/", "\\") for p in paths]
+
+
+def selection_totals(files) -> tuple[int, int]:
+    """(files selected, bytes selected): a file is selected when its priority is above Don't download."""
+    chosen = [f for f in files if int(f["priority"]) > 0]
+    return len(chosen), sum(int(f["size"]) for f in chosen)
+
+
+def free_space(path: str) -> int | None:
+    """Free bytes on the drive holding path, or its nearest existing parent (the folder may not exist yet)."""
+    if not path:
+        return None
+    target = Path(path)
+    for candidate in (target, *target.parents):
+        try:
+            return shutil.disk_usage(candidate).free
+        except OSError:
+            continue
+    return None
+
+
+def space_note(free: int | None, need: int, drive: str) -> tuple[str, str]:
+    """(text, colour key) for the free-space line of the Add dialog."""
+    if free is None:
+        return f"CANNOT READ THE FREE SPACE ON {drive}", "yellow"
+    if free < need:
+        return f"NOT ENOUGH SPACE · {T.fmt_bytes(need)} SELECTED, ONLY {T.fmt_bytes(free)} FREE ON {drive}", "red"
+    return f"{T.fmt_bytes(need)} SELECTED · {T.fmt_bytes(free)} FREE ON {drive}", "green"
+
+
+class FileSelector(QWidget):
+    """The files of one torrent: checkbox, Priority column, multi-select right-click → Priority, select all/none and
+    the selected total. Used by the Add dialog and by Details → Files."""
+    changed = Signal(list)                     # [[file index, priority], ...] the user just changed
+
+    def __init__(self, progress: bool = False, parent=None):
+        super().__init__(parent)
+        self.progress = progress
+        self.files: dict[int, dict] = {}
+        self._sent: dict[int, tuple[int, float]] = {}   # recent edits, shown until the engine reports them back
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+        bar = QHBoxLayout()
+        bar.setSpacing(8)
+        self.b_all = GlowButton("ALL", "check", "cyan", "outline")
+        self.b_all.setToolTip("Select every file at Normal priority.\n"
+                              "Files Download Guard flagged as dangerous stay off: tick them one by one.")
+        self.b_none = GlowButton("NONE", "close", "magenta", "outline")
+        self.b_none.setToolTip("Don't download any file")
+        for button in (self.b_all, self.b_none):
+            button.setFixedHeight(32)
+            button.icon_size = 14
+            bar.addWidget(button)
+        bar.addStretch(1)
+        self.total = QLabel()
+        self.total.setObjectName("formLabel")
+        bar.addWidget(self.total)
+        layout.addLayout(bar)
+        headers = ["FILE", "SIZE"] + (["PROGRESS"] if progress else []) + ["PRIORITY", "SAFETY"]
+        widths = [340, 90] + ([90] if progress else []) + [124, 240]
+        self.table = RecordTable(headers, widths, sort_column=0, descending=False, check_column=0)
+        self.table.setToolTip("Tick the files to download · select several and right-click to set their priority")
+        self.table.source.check_toggled.connect(lambda key, on: self._set([int(key)], 4 if on else 0))
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(self._menu)
+        layout.addWidget(self.table, 1)
+        self.b_all.clicked.connect(self.select_all)
+        self.b_none.clicked.connect(lambda: self._set(list(self.files), 0))
+
+    def set_files(self, files: list[dict]) -> None:
+        """files: {"index", "path", "size", "priority", "reason", "danger"} (+ "progress" in Details)."""
+        now = time.monotonic()
+        self._sent = {i: sent for i, sent in self._sent.items() if now - sent[1] < 3}
+        self.files = {}
+        for f in files:
+            f = dict(f)
+            index = int(f["index"])
+            if index in self._sent:
+                f["priority"] = self._sent[index][0]
+            self.files[index] = f
+        self._refresh()
+
+    def pairs(self) -> list[list[int]]:
+        return [[index, int(f["priority"])] for index, f in self.files.items()]
+
+    def select_all(self) -> None:
+        self._set([i for i, f in self.files.items() if int(f["priority"]) <= 0 and not f.get("danger")], 4)
+
+    def _set(self, indices: list[int], priority: int) -> None:
+        now = time.monotonic()
+        changed = []
+        for index in indices:
+            f = self.files.get(index)
+            if f is None or int(f["priority"]) == priority:
+                continue
+            f["priority"] = priority
+            self._sent[index] = (priority, now)
+            changed.append([index, priority])
+        if changed:
+            self._refresh()
+            self.changed.emit(changed)
+
+    def _menu(self, pos) -> None:
+        indices = [int(k) for k in self.table.selected_keys() if int(k) in self.files]
+        if not indices:
+            return
+        menu = QMenu(self)
+        sub = menu.addMenu(f"Priority ({len(indices)} file{'s' if len(indices) != 1 else ''})")
+        current = {priority_name(int(self.files[i]["priority"])) for i in indices}
+        for value, name, _color in PRIORITIES:
+            action = sub.addAction(name, lambda v=value: self._set(indices, v))
+            action.setCheckable(True)
+            action.setChecked(current == {name})
+        menu.addSeparator()
+        menu.addAction("Select all", self.select_all)
+        menu.addAction("Select none", lambda: self._set(list(self.files), 0))
+        menu.exec(self.table.viewport().mapToGlobal(pos))
+
+    def _refresh(self) -> None:
+        colors = {name: color for _value, name, color in PRIORITIES}
+        paths = display_paths([f["path"] for f in self.files.values()])
+        rows = []
+        for (index, f), path in zip(self.files.items(), paths):
+            priority = int(f["priority"])
+            name = priority_name(priority)
+            reason = f.get("reason") or ""
+            cells, sort = [path, T.fmt_bytes(f["size"])], [path.casefold(), int(f["size"])]
+            if self.progress:
+                cells.append(f"{f.get('progress', 0) * 100:.1f}%")
+                sort.append(float(f.get("progress", 0)))
+            column = len(cells)
+            cells += [name, reason]
+            sort += [priority, reason]
+            tint = {column: T.c(colors[name])}
+            if reason:
+                tint[column + 1] = T.c("red") if f.get("danger") else T.c("orange")
+            rows.append({"key": str(index), "cells": cells, "sort": sort, "checked": priority > 0, "colors": tint})
+        self.table.update_rows(rows)
+        count, size = selection_totals(self.files.values())
+        self.total.setText(f"{count} OF {len(self.files)} FILES · {T.fmt_bytes(size)}")
+
+
+class AddTorrentDialog(NeonDialog):
+    """Opens for every add: save folder, free space and which files to download at what priority. Nothing downloads
+    until DOWNLOAD; CANCEL (or closing the dialog) removes the torrent."""
+    confirmed = Signal(str, str, list)         # key, save folder, [[file index, priority], ...]
+    cancelled = Signal(str)
+
+    def __init__(self, offer: dict, parent=None):
+        super().__init__("Add torrent", parent, resizable=True)
+        self.key = offer["key"]
+        self.ready = False
+        self.answered = False
+        self.seen = False                      # the torrent has shown up in the list (main window bookkeeping)
+        self.resize(900, 640)
+        self.header = BadgeHeader()
+        self.root.addWidget(self.header)
+        where = QLabel("SAVE TO")
+        where.setObjectName("formLabel")
+        self.root.addWidget(where)
+        row = QHBoxLayout()
+        row.setSpacing(8)
+        self.folder = QLineEdit(offer.get("save_path", ""))
+        self.folder.setReadOnly(True)
+        browse = GlowButton("BROWSE", "folder", "cyan", "outline")
+        browse.setFixedHeight(40)
+        browse.icon_size = 16
+        browse.clicked.connect(self._browse)
+        row.addWidget(self.folder, 1)
+        row.addWidget(browse)
+        self.root.addLayout(row)
+        self.space = QLabel()
+        self.space.setFont(T.head_font(9.5, QFont.Weight.DemiBold, 1.2))
+        self.root.addWidget(self.space)
+
+        self.stack = QStackedWidget()
+        wait = NeonPanel("cyan", 0.5)
+        wl = QVBoxLayout(wait)
+        wl.setContentsMargins(24, 24, 24, 24)
+        wl.addStretch(1)
+        self.wait_title = QLabel("FETCHING THE FILE LIST…")
+        self.wait_title.setFont(T.head_font(13, QFont.Weight.DemiBold, 2.2))
+        self.wait_title.setStyleSheet(f"color: {T.hexc('cyan')};")
+        self.wait_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        hint = QLabel("Only the list of files is downloaded now. Nothing else downloads until you press DOWNLOAD.")
+        hint.setObjectName("muted")
+        hint.setWordWrap(True)
+        hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        wl.addWidget(self.wait_title)
+        wl.addWidget(hint)
+        wl.addStretch(1)
+        self.selector = FileSelector()
+        self.selector.changed.connect(self._update_space)
+        self.stack.addWidget(wait)
+        self.stack.addWidget(self.selector)
+        self.root.addWidget(self.stack, 1)
+        self._dots = 0
+        self._wait_timer = QTimer(self)
+        self._wait_timer.setInterval(450)
+        self._wait_timer.timeout.connect(self._tick_wait)
+
+        buttons = QHBoxLayout()
+        buttons.addStretch(1)
+        b_cancel = GlowButton("CANCEL", "close", "magenta", "outline")
+        b_cancel.setToolTip("Remove this torrent. Nothing was downloaded.")
+        b_cancel.clicked.connect(self.reject)
+        self.b_download = GlowButton("DOWNLOAD", "download", "cyan", "solid", "cyan2")
+        self.b_download.setMinimumWidth(170)
+        self.b_download.clicked.connect(self._download)
+        buttons.addWidget(b_cancel)
+        buttons.addWidget(self.b_download)
+        buttons.addSpacing(14)                     # keep clear of the resize grip
+        self.root.addLayout(buttons)
+        self.update_offer(offer)
+
+    def update_offer(self, offer: dict) -> None:
+        """Called again when the file list arrives; choices the user already made are kept."""
+        name = offer.get("name") or "Magnet link"
+        if offer.get("ready") and not self.ready:
+            self.ready = True
+            files = offer.get("files") or []
+            total = sum(int(f["size"]) for f in files)
+            multi = len(files) > 1
+            self.header.set_info(kind_for(name, multi), pretty_title(name, multi),
+                                 f"{len(files)} files · {T.fmt_bytes(total)} · {name}/" if multi
+                                 else f"{T.fmt_bytes(total)} · {name}")
+            self.selector.set_files(files)
+            self.stack.setCurrentIndex(1)
+            self._wait_timer.stop()
+            self.b_download.setDefault(True)
+        elif not self.ready:
+            self.header.set_info("magnet", name, "magnet · fetching the file list")
+            self.stack.setCurrentIndex(0)
+            self._wait_timer.start()
+        self._update_space()
+
+    def _tick_wait(self) -> None:
+        self._dots = (self._dots + 1) % 4
+        self.wait_title.setText("FETCHING THE FILE LIST" + "." * self._dots)
+
+    def _update_space(self, *_):
+        folder = self.folder.text()
+        count, size = selection_totals(self.selector.files.values())
+        drive = Path(folder).drive or folder
+        if self.ready:
+            text, color = space_note(free_space(folder), size, drive)
+        else:
+            free = free_space(folder)
+            text, color = (f"{T.fmt_bytes(free)} FREE ON {drive}" if free is not None else drive), "muted"
+        self.space.setText(text)
+        self.space.setStyleSheet(f"color: {T.hexc(color)};")
+        self.b_download.setEnabled(self.ready and count > 0)
+
+    def _browse(self) -> None:
+        folder = QFileDialog.getExistingDirectory(self, "Save to", self.folder.text())
+        if folder:
+            self.folder.setText(str(Path(folder)))
+            self._update_space()
+
+    def _download(self) -> None:
+        pairs = self.selector.pairs()
+        if self.answered or not self.ready or not any(p for _i, p in pairs):
+            return
+        self.answered = True
+        self.confirmed.emit(self.key, self.folder.text(), pairs)
+        self.accept()
+
+    def reject(self) -> None:
+        if not self.answered:
+            self.answered = True
+            self.cancelled.emit(self.key)
+        super().reject()
+
+    def dismiss(self) -> None:
+        """Close without an answer: the app is quitting (the torrent waits for the next start) or it is gone."""
+        self.answered = True
+        self.close()
+
+
 class DetailsDialog(NeonDialog):
-    priority_changed = Signal(str, int, int)
+    priority_changed = Signal(str, list)       # key, [[file index, priority], ...]
     open_folder = Signal(str)
     copy_magnet = Signal(str)
 
@@ -641,11 +943,14 @@ class DetailsDialog(NeonDialog):
         self.tabs.addTab(general, "GENERAL")
 
         # all three: click a header to sort, drag a divider to widen (horizontal scroll appears), drag to reorder
-        self.files = RecordTable(["FILE", "SIZE", "PROGRESS", "DOWNLOAD", "SAFETY"], [430, 96, 96, 110, 300],
-                                 check_column=3)
-        self.files.source.check_toggled.connect(
-            lambda index, on: self.priority_changed.emit(self.key, int(index), 4 if on else 0))
-        self.tabs.addTab(self.files, "FILES")
+        # same checkbox, Priority column and right-click menu as the Add dialog; changes apply at once
+        files_page = QWidget()
+        fl = QVBoxLayout(files_page)
+        fl.setContentsMargins(10, 10, 10, 6)
+        self.files = FileSelector(progress=True)
+        self.files.changed.connect(lambda pairs: self.priority_changed.emit(self.key, pairs))
+        fl.addWidget(self.files)
+        self.tabs.addTab(files_page, "FILES")
         self.peers = RecordTable(["ADDRESS", "CLIENT", "PROGRESS", "↓ SPEED", "↑ SPEED"], [300, 230, 96, 110, 110],
                                  sort_column=3)
         self.tabs.addTab(self.peers, "PEERS")
@@ -694,19 +999,7 @@ class DetailsDialog(NeonDialog):
         self.info["Comment"].setText(d["comment"] or "—")
         self.info["Created by"].setText(d["creator"] or "—")
         files = d["files"]
-        rows = []
-        for f in files:
-            wanted = f["priority"] > 0
-            safety = f.get("safety") or ""
-            rows.append({
-                "key": str(f["index"]),
-                "cells": [f["path"], T.fmt_bytes(f["size"]), f"{f['progress'] * 100:.1f}%",
-                          "Download" if wanted else "Skip", safety],
-                "sort": [f["path"].casefold(), int(f["size"]), float(f["progress"]), int(f["priority"]), safety],
-                "checked": wanted,
-                "colors": {4: T.c("red") if not wanted else T.c("orange")} if safety else {},
-            })
-        self.files.update_rows(rows)
+        self.files.set_files(files)
         self.peers.update_rows([{
             "key": p["ip"],
             "cells": [p["ip"], p["client"], f"{p['progress'] * 100:.0f}%", T.fmt_speed(p["down"]), T.fmt_speed(p["up"])],

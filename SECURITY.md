@@ -1,6 +1,6 @@
 # NEON Torrent — security model and audit
 
-Last audited: 2026-10-23 · `tools\security_audit.py`: **14/14 checks passed**.
+Last audited: 2026-10-25 · `tools\security_audit.py`: **18/18 checks passed**.
 
 ## What a torrent client can and cannot promise
 
@@ -28,7 +28,12 @@ promise any client can honestly make. NEON Torrent works on everything a client 
 
 ### 2. Files: Download Guard
 
-- **Before download.** These are never downloaded (priority 0, before any data is requested):
+- **Add dialog first.** Every new torrent waits, paused and with every file at priority 0, until the user presses
+  DOWNLOAD in the Add dialog. A magnet fetches only its file list, in upload-only mode, and is paused with every file
+  at 0 the moment the list arrives. CANCEL removes the torrent without deleting anything (files already in the
+  folder stay untouched). The engine clamps the dialog's choices to valid file indices and priorities 0–7.
+- **Before download.** These are proposed as Don't download in the Add dialog, with the reason, and stay at
+  priority 0 before any data is requested; *All* never switches them on:
   - double extensions (`movie.mp4.exe`)
   - shortcuts (`.lnk`, `.url`, `.scf`)
   - hidden Unicode direction or invisible characters (RTLO tricks)
@@ -39,7 +44,8 @@ promise any client can honestly make. NEON Torrent works on everything a client 
 
   Strict mode also skips every program, script and macro document.
 - **After download.** Files get Mark-of-the-Web (`Zone.Identifier`, ZoneId=3), so Windows SmartScreen and Office
-  Protected View check them before they can run, as with browser downloads.
+  Protected View check them before they can run, as with browser downloads. A file switched on later in Details →
+  Files gets the mark and the scan when it finishes too.
 - **Scanning.** Microsoft Defender scans the finished torrent when it is the active antivirus. With a VirusTotal
   key, programs are also looked up by SHA-256 (hash only, never the file) against about 70 engines. If a threat is
   found, seeding stops, an alert is shown, and the row is marked ☣.
@@ -48,7 +54,8 @@ promise any client can honestly make. NEON Torrent works on everything a client 
 
 - Never opens or runs a downloaded file. *Open folder* only selects the item in Explorer, uses an absolute
   `explorer.exe` path, and refuses any name that resolves outside the download folder.
-- Torrent-supplied text (names, paths, comments) is shown as plain text, never as HTML.
+- Torrent-supplied text (names, paths, comments) and network text (tracker messages, peer clients) is shown as
+  plain text, never as HTML, in tooltips too.
 - The single-instance channel (links, `--pause-all`, `--resume-all`) accepts messages only from the same Windows
   user.
 - `.torrent` downloads are capped at 20 MB; malformed or hostile input is rejected without crashing.
@@ -75,6 +82,10 @@ promise any client can honestly make. NEON Torrent works on everything a client 
 | 12 | Real download completes | Hash-verified, 100% |
 | 13 | Finished files | Mark-of-the-Web present |
 | 14 | Code review | No `os.system`, `startfile` or `eval`; only Explorer, PowerShell (antivirus status) and Defender are ever launched |
+| 15 | New torrent before the Add dialog is confirmed | Paused, every file at priority 0: nothing is requested |
+| 16 | CANCEL in the Add dialog | Torrent removed, no files written |
+| 17 | Guard findings in the Add dialog | Skipped files proposed as Don't download, with the reason |
+| 18 | HTML in a file name (Add dialog, Details tables) | Escaped in tooltips |
 
 ## On this PC (checked 2026-10-23)
 

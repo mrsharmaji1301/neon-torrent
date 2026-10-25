@@ -58,9 +58,19 @@ def engine(download_dir: str) -> en.TorrentEngine:
                           "accept_incoming": False, "shield_avoid_dc": False})
     original = e._settings
     e._settings = lambda: {**original(), "dht_bootstrap_nodes": "", "enable_dht": False}
+    e.offers = {}                                     # what the Add dialog would show, per torrent
+    e.select_files.connect(lambda offer: e.offers.__setitem__(offer["key"], offer))
     e.start()
     run(300)
     return e
+
+
+def confirm(e: en.TorrentEngine, handle, save: str) -> None:
+    """Press DOWNLOAD in the Add dialog with the priorities it proposed (Guard skips included)."""
+    key = en.handle_key(handle)
+    offer = e.offers.get(key, {})
+    e.confirm_selection(key, save, [[f["index"], f["priority"]] for f in offer.get("files", [])])
+    run(300)
 
 
 # ------------------------------------------------------------------------------------------------ 1. paths
@@ -80,6 +90,14 @@ def test_paths(e: en.TorrentEngine, save: str) -> None:
     if handle is None:
         check("Path traversal: crafted torrent is handled", False, "torrent was not added")
         return
+    key = en.handle_key(handle)
+    waiting = list(handle.get_file_priorities())
+    paused = bool(handle.status().flags & lt.torrent_flags.paused)
+    offered = [f["priority"] for f in e.offers.get(key, {}).get("files", [])]
+    check("Nothing is requested before the Add dialog is confirmed (paused, every file Don't download)",
+          paused and not any(waiting) and e.meta.get(key, {}).get("select") is True and len(offered) == len(files),
+          f"paused={paused}; libtorrent priorities while waiting={waiting}; dialog proposes={offered}")
+    confirm(e, handle, save)
     fs = handle.torrent_file().files()
     base = Path(save).resolve()
     paths = [fs.file_path(i) for i in range(fs.num_files())]
@@ -99,7 +117,7 @@ def test_paths(e: en.TorrentEngine, save: str) -> None:
 
 
 # ------------------------------------------------------------------------------------------------ 2. symlinks
-def test_symlink(e: en.TorrentEngine) -> None:
+def test_symlink(e: en.TorrentEngine, save: str) -> None:
     files = [
         {b"length": 100, b"path": [b"readme.txt"]},
         {b"length": 0, b"path": [b"system"], b"attr": b"l", b"symlink path": [b"..", b"..", b"..", b"..", b"Windows",
@@ -117,12 +135,17 @@ def test_symlink(e: en.TorrentEngine) -> None:
     flagged = guard.get("findings", {}).get("1", {}).get("level") == "danger"
     check("Symlink pointing outside the download folder is flagged by the Guard", flagged,
           f"libtorrent symlink target: {target!r}; guard: {guard.get('findings', {}).get('1')}")
-    e.remove([en.handle_key(handle)])
+    key = en.handle_key(handle)
+    e.cancel_selection(key)
     run(300)
+    gone = key not in {en.handle_key(h) for h in e.session.get_torrents()}
+    written = sorted(str(p.relative_to(save)) for p in Path(save).rglob("*") if "linkbomb" in p.parts)
+    check("CANCEL in the Add dialog removes the torrent and writes no files", gone and not written and key not in e.meta,
+          f"torrent removed={gone}; files written={written or 'none'}")
 
 
 # ------------------------------------------------------------------------------------------------ 3. disguised files
-def test_guard(e: en.TorrentEngine) -> None:
+def test_guard(e: en.TorrentEngine, save: str) -> None:
     rlo = chr(0x202E)
     files = [
         {b"length": 300 * 1024 * 1024, b"path": [b"Movie.2024.mkv"]},
@@ -138,8 +161,14 @@ def test_guard(e: en.TorrentEngine) -> None:
     if handle is None:
         check("Disguised-file torrent handled", False, "not added")
         return
-    prio = list(handle.get_file_priorities())
     expected_skip = {1, 2, 3, 4}
+    offer = e.offers.get(en.handle_key(handle), {}).get("files", [])
+    proposed = {f["index"] for f in offer if f["priority"] == 0}
+    reasons = all(f["reason"] for f in offer if f["index"] in expected_skip)
+    check("The Add dialog proposes Guard-skipped files as Don't download, with the reason",
+          proposed == expected_skip and reasons, f"proposed Don't download: {sorted(proposed)}; reasons shown={reasons}")
+    confirm(e, handle, save)
+    prio = list(handle.get_file_priorities())
     skipped = {i for i, p in enumerate(prio) if p == 0}
     check("Disguised programs in a media torrent are never downloaded (priority 0 before any data)",
           skipped == expected_skip and prio[0] > 0 and prio[5] > 0,
@@ -176,7 +205,7 @@ def test_inputs(e: en.TorrentEngine) -> None:
 
 
 # ------------------------------------------------------------------------------------------------ 5. SSRF via trackers
-def test_ssrf(e: en.TorrentEngine) -> None:
+def test_ssrf(e: en.TorrentEngine, save: str) -> None:
     hits: list[str] = []
 
     class Handler(http.server.BaseHTTPRequestHandler):
@@ -195,7 +224,11 @@ def test_ssrf(e: en.TorrentEngine) -> None:
     data = lt.bdecode(crafted_torrent(files, b"ssrf"))
     data[b"announce-list"] = [[f"http://127.0.0.1:{port}/admin/delete?id=1".encode()]]
     e.add_bytes(lt.bencode(data), "audit")
-    run(5000)
+    run(800)
+    for h in e.session.get_torrents():
+        if h.status().name == "ssrf":
+            confirm(e, h, save)                       # started, so it would announce if the URL were allowed
+    run(4200)
     server.shutdown()
     check("Tracker URL aimed at a local service (SSRF) is not requested", not any("admin" in h for h in hits),
           f"requests that reached the local service: {hits or 'none'}")
@@ -218,6 +251,12 @@ def test_ui() -> None:
     tip = model.data(model.index(0, 1), Qt.ItemDataRole.ToolTipRole)
     check("Torrent names are escaped (no HTML rendering in tooltips)", "<img" not in tip and "&lt;img" in tip,
           f"tooltip starts: {tip[:90]}…")
+    from neontorrent.dialogs import RecordModel
+    files = RecordModel(["FILE"])
+    files.update_rows([{"key": "0", "cells": [evil], "sort": [evil]}])
+    tip = files.data(files.index(0, 0), Qt.ItemDataRole.ToolTipRole)
+    check("File names in the Add dialog and Details tables are escaped in tooltips",
+          "<img" not in tip and "&lt;img" in tip, f"tooltip starts: {tip[:90]}…")
     base = Path(tempfile.mkdtemp())
     (base / "inside.mkv").write_bytes(b"x")
     attempts = {
@@ -254,6 +293,7 @@ def test_finish(e: en.TorrentEngine, save: str) -> None:
     e.add_file(str(tp))
     run(1200)
     handle = next(h for h in e.session.get_torrents() if h.status().name == "tool_setup.exe")
+    confirm(e, handle, save)
     handle.connect_peer(("127.0.0.1", 6802))
     deadline = time.time() + 25
     key = en.handle_key(handle)
@@ -287,10 +327,10 @@ def main() -> int:
     e = engine(save)
     try:
         test_paths(e, save)
-        test_symlink(e)
-        test_guard(e)
+        test_symlink(e, save)
+        test_guard(e, save)
         test_inputs(e)
-        test_ssrf(e)
+        test_ssrf(e, save)
         test_ui()
         test_finish(e, save)
         test_static()

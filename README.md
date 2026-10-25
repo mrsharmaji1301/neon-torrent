@@ -16,8 +16,8 @@ You can also pass magnet links, `.torrent` paths, or URLs on the command line:
 Windows user.
 
 **Disk space:** if a drive fills up, libtorrent stops writing and the torrent goes upload-only. NEON Torrent shows
-this as **Disk full** (red), with the space needed and the space free. It warns when a new download will not fit, and
-resumes automatically once there is room again. Use *Move data* (row menu or Torrent settings) to move a torrent to
+this as **Disk full** (red), with the space needed and the space free. The Add dialog shows when a new download will
+not fit, and the torrent resumes automatically once there is room again. Use *Move data* (row menu or Torrent settings) to move a torrent to
 another drive.
 
 `runtime\NeonTorrent.exe` is a renamed copy of the signed Python interpreter with its own `._pth` file
@@ -30,6 +30,26 @@ its own interpreter, the standard library and only the Qt parts it uses. Add `--
 certificate, install it and start it in Windows Sandbox; the report goes to `F:\neon-build\msix\results`. The package
 adds inbound firewall rules for NeonTorrent.exe on install. Windows keeps the Store version's data under
 `%LOCALAPPDATA%\Packages\NeonTorrent_…\LocalCache\Roaming\NeonTorrent` instead of `%APPDATA%\NeonTorrent`.
+
+## Adding a torrent: choose files first
+
+Every add (`.torrent` file, HTTP(S) link, magnet, info-hash) opens the **Add torrent** dialog. Nothing downloads until
+you press **DOWNLOAD**.
+- **Save to:** defaults to your download folder; *Browse* picks another. The line under it shows the selected size
+  against the free space on that drive, in red when it will not fit.
+- **Files:** tick the files you want. The Priority column shows **High**, **Normal**, **Low** or **Don't download**.
+  Select several rows and right-click → *Priority* to set them together; *All* and *None* tick or clear everything,
+  and the total updates as you go. *All* leaves files the Download Guard flagged as dangerous off; tick those one by
+  one if you really want them.
+- **Download Guard first:** files the Guard skips arrive as *Don't download*, with the reason in the Safety column.
+- **Magnets** fetch only the file list first. The dialog shows "Fetching the file list…" until it arrives.
+- **CANCEL** (or closing the dialog) removes the torrent. Nothing was downloaded, and files already in the folder are
+  never touched.
+- A torrent still waiting for its choice shows **Choose files** in the list and stays paused. *Resume* opens its
+  dialog again, and so does the next start of the app.
+
+Later, in any state (downloading, idle, paused, stopped), right-click → *Details…* → **Files** has the same checkboxes,
+Priority column and right-click menu. Changes apply at once.
 
 ## Shield: peer filtering and antivirus alerts
 
@@ -85,7 +105,7 @@ what the uploader published. The Guard covers what a client can control. Details
   scans the torrent when it is active, and an optional VirusTotal key adds a hash lookup for programs (only the
   hash is sent). If a threat is found, seeding stops and you are alerted.
 - The status column shows the result: ⚠ risky files skipped · ✓ scanned clean · ✓ marked · ☣ THREAT.
-- Check the client any time: `.venv\Scripts\python.exe tools\security_audit.py` (14 real attack tests, offline).
+- Check the client any time: `.venv\Scripts\python.exe tools\security_audit.py` (18 real attack tests, offline).
 
 ## Speed
 
@@ -140,12 +160,13 @@ Flash mode resets to off when the app restarts.
 
 ## Features
 
-- Add magnet links, bare info-hashes, HTTP(S) `.torrent` URLs, and local `.torrent` files (multi-select, drag and drop, or Ctrl+V on the list).
+- Add magnet links, bare info-hashes, HTTP(S) `.torrent` URLs, and local `.torrent` files (multi-select, drag and drop, or Ctrl+V on the list). Each add opens the Add dialog: save folder, free space, files and priorities.
 - Pause, stop, resume, remove (keep files), and delete data, on one or many selected torrents. **Pause** is temporary
   (finishes blocks in flight). **Stop** disconnects at once, closes the files, stops seeding, and stays stopped after a
   restart until you resume it.
 - Row menu (`⋯` or right-click): details, force recheck, ask trackers for peers, sequential download, open folder, copy magnet link, move data.
-- Details window: general info, per-file progress with skip/download toggles and Guard safety notes, connected
+- Details window: general info, per-file progress with checkboxes, High / Normal / Low / Don't download priorities
+  (right-click several files) and Guard safety notes, connected
   peers, trackers. The Files, Peers, and Trackers tabs sort by any column and have resizable, movable columns with
   horizontal scrolling; the window itself can be resized or maximised.
 - Full resume data: progress, paused state, and file choices survive restarts without rechecking.

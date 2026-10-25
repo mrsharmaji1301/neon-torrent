@@ -124,6 +124,33 @@ def handle_key(handle) -> str:
         return str(handle.info_hash())
 
 
+def proposed_priorities(files: list[dict], findings: dict, skip: bool) -> list[dict]:
+    """The Add dialog's starting point: every file Normal (4), except files Download Guard skips (0)."""
+    out = []
+    for f in files:
+        finding = findings.get(str(f["index"])) or {}
+        danger = finding.get("level") == G.DANGER
+        out.append({"index": f["index"], "path": f["path"], "size": f["size"],
+                    "priority": 0 if danger and skip else 4, "reason": finding.get("reason", ""), "danger": danger})
+    return out
+
+
+def priority_vector(num_files: int, pairs, current=None) -> list[int]:
+    """Full per-file priority list from the UI's [index, priority] pairs. Unknown indices are dropped and values are
+    clamped to libtorrent's 0..7, so a bad message never reaches libtorrent. Files not named keep `current`
+    (or 0, Don't download)."""
+    out = [int(p) for p in list(current or [])[:num_files]]
+    out += [0] * (num_files - len(out))
+    for pair in pairs or []:
+        try:
+            index, priority = int(pair[0]), int(pair[1])
+        except (TypeError, ValueError, IndexError):
+            continue
+        if 0 <= index < num_files:
+            out[index] = max(0, min(7, priority))
+    return out
+
+
 class TorrentEngine(QObject):
     snapshot = Signal(dict)
     notice = Signal(str, str)          # text, level: info|ok|warn|error
@@ -135,6 +162,7 @@ class TorrentEngine(QObject):
     _seeds_resolved = Signal(list)     # web-seed host addresses resolved (worker thread)
     _guard_done = Signal(str, dict)    # Download Guard finished a torrent (worker thread)
     threat = Signal(str, str)          # torrent name, detail: a scanner found malware
+    select_files = Signal(dict)        # a new torrent waits for the Add dialog: key, name, save_path, ready, files
 
     def __init__(self, prefs: dict):
         super().__init__()
@@ -457,6 +485,8 @@ class TorrentEngine(QObject):
                     params.flags |= lt.torrent_flags.override_trackers
                 if not params.save_path:
                     params.save_path = self.download_dir
+                if self._awaiting(key):
+                    self._await_flags(params)              # still waiting for the Add dialog: stays paused
                 self.session.async_add_torrent(params)
                 restored += 1
             except Exception:
@@ -471,7 +501,9 @@ class TorrentEngine(QObject):
                 params = lt.parse_magnet_uri(data["uri"])
                 self._filter_params(params)
                 params.save_path = data.get("save_path") or self.download_dir
-                if data.get("paused"):
+                if self._awaiting(path.stem):
+                    self._await_flags(params)              # back to fetching the file list only
+                elif data.get("paused"):
                     params.flags |= lt.torrent_flags.paused
                     params.flags &= ~lt.torrent_flags.auto_managed
                 self.session.async_add_torrent(params)
@@ -568,6 +600,8 @@ class TorrentEngine(QObject):
                 handle.save_resume_data(lt.save_resume_flags_t.save_info_dict)
             else:
                 self._save_magnet_only(handle)
+            if self._awaiting(key):
+                self._offer_selection(handle)              # new add, or one still waiting after a restart
         elif isinstance(alert, lt.save_resume_data_alert):
             key = handle_key(alert.handle)
             data = lt.write_resume_data_buf(alert.params)
@@ -582,12 +616,22 @@ class TorrentEngine(QObject):
         elif isinstance(alert, lt.save_resume_data_failed_alert):
             self.resume_pending = max(0, self.resume_pending - 1)
         elif isinstance(alert, lt.metadata_received_alert):
-            alert.handle.save_resume_data(lt.save_resume_flags_t.save_info_dict)
-            self._guard_inspect(alert.handle)          # before any file data is requested
-            if self.meta.get(handle_key(alert.handle), {}).get("first_last"):
-                self._apply_first_last(alert.handle, True)
-            self._resolve_web_seeds([alert.handle])
-            self.notice.emit(f"METADATA RECEIVED · {alert.handle.status().name}", "info")
+            handle = alert.handle
+            awaiting = self._awaiting(handle_key(handle))
+            if awaiting:
+                # the file list is in: every file Don't download and paused until the user confirms the Add dialog
+                handle.prioritize_files([0] * handle.torrent_file().num_files())
+                handle.unset_flags(lt.torrent_flags.auto_managed)
+                handle.pause()
+                handle.unset_flags(lt.torrent_flags.upload_mode | lt.torrent_flags.stop_when_ready)
+            handle.save_resume_data(lt.save_resume_flags_t.save_info_dict)
+            self._guard_inspect(handle)                # before any file data is requested
+            if self.meta.get(handle_key(handle), {}).get("first_last"):
+                self._apply_first_last(handle, True)
+            self._resolve_web_seeds([handle])
+            self.notice.emit(f"METADATA RECEIVED · {handle.status().name}", "info")
+            if awaiting:
+                self._offer_selection(handle)
         elif isinstance(alert, lt.torrent_finished_alert):
             status = alert.handle.status()
             alert.handle.save_resume_data(lt.save_resume_flags_t.save_info_dict)
@@ -595,7 +639,9 @@ class TorrentEngine(QObject):
             if status.all_time_download > 0 and time.monotonic() - self.started_at > 5:
                 self.finished.emit(status.name)
                 self.notice.emit(f"COMPLETED · {status.name}", "ok")
-            if "scan" not in self.meta.get(handle_key(alert.handle), {}).get("guard", {}):
+            # a torrent with nothing selected (waiting for its Add dialog) also counts as finished: wait for real data
+            done = status.total_wanted > 0 and status.total_wanted_done >= status.total_wanted
+            if done and "scan" not in self.meta.get(handle_key(alert.handle), {}).get("guard", {}):
                 self._guard_finish(alert.handle)
         elif isinstance(alert, (lt.torrent_error_alert, lt.file_error_alert)):
             self.notice.emit(f"ERROR · {alert.message()}", "error")
@@ -617,25 +663,102 @@ class TorrentEngine(QObject):
     def _queue_add(self, params) -> None:
         key = hash_key(params.info_hashes) if params.ti is None else hash_key(params.ti.info_hashes())
         if key in self._existing_keys():
+            if self._awaiting(key):
+                self.resume([key])                     # still waiting for its files: bring the Add dialog back
+                return
             self.notice.emit("ALREADY IN LIST", "warn")
             return
         self._blocked_notice(self._filter_params(params))
-        if params.ti is not None:
-            try:
-                free = shutil.disk_usage(self.download_dir).free
-                if free < params.ti.total_size():
-                    self.notice.emit(f"NOT ENOUGH SPACE · NEEDS {fmt_bytes(params.ti.total_size())}, "
-                                     f"{fmt_bytes(free)} FREE IN {self.download_dir}", "warn")
-            except OSError:
-                pass
         if params.ti is None and not params.trackers and not self._dht_on():
             self.notice.emit("THIS MAGNET HAS NO TRACKERS · TURN ON DHT IN SHIELD SETTINGS TO FETCH IT", "warn")
         params.save_path = self.download_dir
-        params.flags |= lt.torrent_flags.auto_managed
-        params.flags &= ~lt.torrent_flags.paused
+        # every add waits for the Add dialog (save folder, files, priorities); the free-space check lives there
+        self._await_flags(params)
+        self._meta_for(key)["select"] = True
+        self._save_meta()
         self.pending_names[key] = ""
         self.session.async_add_torrent(params)
-        self.notice.emit("ADDING TORRENT · LOOKING FOR PEERS", "info")
+        self.notice.emit("FETCHING THE FILE LIST…" if params.ti is None else "CHOOSE FILES TO START", "info")
+
+    # ------------------------------------------------------------ file selection (Add dialog)
+    def _awaiting(self, key: str) -> bool:
+        """True while a torrent waits for the user to confirm its Add dialog. Nothing downloads until then."""
+        return bool(self.meta.get(key, {}).get("select"))
+
+    @staticmethod
+    def _await_flags(params) -> None:
+        """A .torrent stays paused with every file at Don't download. A magnet fetches its file list only:
+        upload_mode requests no piece data and stop_when_ready pauses it once metadata is in."""
+        params.flags &= ~lt.torrent_flags.auto_managed
+        if params.ti is None:
+            params.flags &= ~lt.torrent_flags.paused
+            params.flags |= lt.torrent_flags.upload_mode | lt.torrent_flags.stop_when_ready
+        else:
+            params.flags |= lt.torrent_flags.paused
+            params.file_priorities = [0] * params.ti.num_files()
+
+    def _offer_selection(self, handle) -> None:
+        """Ask the UI for the Add dialog: first while the file list is fetched (ready False), then with the files.
+        Files Download Guard skips are proposed as Don't download, with the reason."""
+        key = handle_key(handle)
+        status = handle.status()
+        files = []
+        if status.has_metadata:
+            findings = self.meta.get(key, {}).get("guard", {}).get("findings", {})
+            files = proposed_priorities(self._guard_files(handle), findings, self.guard_opts["skip"])
+        self.select_files.emit({"key": key, "name": status.name or "", "save_path": status.save_path or self.download_dir,
+                                "ready": bool(status.has_metadata), "files": files})
+
+    @Slot(str, str, list)
+    def confirm_selection(self, key: str, save_path: str, pairs: list) -> None:
+        """DOWNLOAD in the Add dialog: apply the save folder and file priorities, then start."""
+        for handle in self._handles([key]):
+            ti = handle.torrent_file()
+            if not self._awaiting(key) or ti is None:
+                continue
+            priorities = priority_vector(ti.num_files(), pairs)
+            if not any(priorities):
+                continue
+            status = handle.status()
+            target = str(Path(save_path)) if save_path and Path(save_path).is_absolute() else self.download_dir
+            try:
+                Path(target).mkdir(parents=True, exist_ok=True)
+            except OSError as exc:
+                self.notice.emit(f"CANNOT USE {target} · {exc}", "error")
+                self._offer_selection(handle)
+                continue
+            handle.prioritize_files(priorities)
+            if os.path.normcase(os.path.abspath(target)) != os.path.normcase(os.path.abspath(status.save_path)):
+                handle.move_storage(target)            # nothing is on disk yet, so this only changes the folder
+            fs = ti.files()
+            if any(priorities[i] and (Path(target) / fs.file_path(i)).exists() for i in range(fs.num_files())):
+                handle.force_recheck()                 # data from an earlier download: verify it, don't fetch again
+            meta = self._meta_for(key)
+            meta.pop("select", None)
+            meta.get("guard", {}).pop("scan", None)        # Mark-of-the-Web and the scan run when the files finish
+            if meta.get("first_last"):
+                self._apply_first_last(handle, True)
+            handle.unset_flags(lt.torrent_flags.upload_mode | lt.torrent_flags.stop_when_ready)
+            handle.set_flags(lt.torrent_flags.auto_managed)
+            handle.resume()
+            self._save_meta()
+            handle.save_resume_data(lt.save_resume_flags_t.save_info_dict)
+            wanted = sum(1 for p in priorities if p)
+            self.notice.emit(f"DOWNLOADING · {status.name} · {wanted} FILE{'S' if wanted != 1 else ''}", "ok")
+        self._on_tick()
+
+    @Slot(str)
+    def cancel_selection(self, key: str) -> None:
+        """CANCEL in the Add dialog: drop the torrent. Nothing was requested, so it left no files; files that were
+        already in the folder are never touched."""
+        for handle in self._handles([key]):
+            if not self._awaiting(key):
+                continue
+            self.session.remove_torrent(handle)
+            self._forget(key)
+            self.pending_names.pop(key, None)
+            self.notice.emit("ADD CANCELLED · NOTHING WAS DOWNLOADED", "info")
+        self._on_tick()
 
     @Slot(str)
     def add_uri(self, uri: str) -> None:
@@ -734,6 +857,14 @@ class TorrentEngine(QObject):
     @Slot(list)
     def resume(self, keys: list) -> None:
         for handle in self._handles(keys):
+            if self._awaiting(handle_key(handle)):
+                # still waiting for its file selection: show the Add dialog again instead of downloading
+                if not handle.status().has_metadata:
+                    handle.unset_flags(lt.torrent_flags.auto_managed)
+                    handle.set_flags(lt.torrent_flags.upload_mode | lt.torrent_flags.stop_when_ready)
+                    handle.resume()
+                self._offer_selection(handle)
+                continue
             handle.set_flags(lt.torrent_flags.auto_managed)
             handle.resume()
             self._meta_for(handle_key(handle)).pop("stopped", None)
@@ -800,11 +931,28 @@ class TorrentEngine(QObject):
         for handle in self._handles([key]):
             self.magnet.emit(lt.make_magnet_uri(handle))
 
-    @Slot(str, int, int)
-    def set_file_priority(self, key: str, index: int, priority: int) -> None:
+    @Slot(str, list)
+    def set_file_priorities(self, key: str, pairs: list) -> None:
+        """Details → Files: High / Normal / Low / Don't download in any state; applies at once."""
         for handle in self._handles([key]):
-            handle.file_priority(index, priority)
+            ti = handle.torrent_file()
+            if ti is None:
+                continue
+            if self._awaiting(key):
+                self.notice.emit("CHOOSE FILES IN THE ADD DIALOG FIRST", "warn")
+                self._offer_selection(handle)
+                continue
+            before = list(handle.get_file_priorities())
+            priorities = priority_vector(ti.num_files(), pairs, before)
+            handle.prioritize_files(priorities)
+            if self.meta.get(key, {}).get("first_last"):
+                self._apply_first_last(handle, True)    # new file priorities reset piece priorities
+            # a file was switched on: Mark-of-the-Web and the scan run again when it finishes
+            switched_on = any(p and (i >= len(before) or not before[i]) for i, p in enumerate(priorities))
+            if switched_on and self.meta.get(key, {}).get("guard", {}).pop("scan", None) is not None:
+                self._save_meta()
             handle.save_resume_data(lt.save_resume_flags_t.save_info_dict)
+        self._on_tick()
 
     @Slot(str, str)
     def move_storage(self, key: str, path: str) -> None:
@@ -972,9 +1120,9 @@ class TorrentEngine(QObject):
         count = 0
         for handle in self._handles(keys):
             status = handle.status()
-            if not status.has_metadata:
-                continue
             key = handle_key(handle)
+            if not status.has_metadata or self._awaiting(key):
+                continue
             trackers = handle.trackers()
             params = lt.add_torrent_params()
             params.ti = handle.torrent_file()
@@ -1335,7 +1483,9 @@ class TorrentEngine(QObject):
             status = handle.status()
             key = handle_key(handle)
             state = self._state(status)
-            disk_full = bool(status.flags & lt.torrent_flags.upload_mode) and status.progress < 1.0
+            awaiting = self._awaiting(key)
+            # a magnet fetching its file list for the Add dialog runs in upload mode too: that is not a full disk
+            disk_full = bool(status.flags & lt.torrent_flags.upload_mode) and status.progress < 1.0 and not awaiting
             if disk_full:
                 state = "Disk full"
             elif state == "Paused" and self.meta.get(key, {}).get("stopped"):
@@ -1391,6 +1541,7 @@ class TorrentEngine(QObject):
                     self._disk_message(status) if disk_full else ""),
                 "queue": handle.queue_position(),
                 "guard": self._guard_summary(key),
+                "select": awaiting,
             })
             if key == self.detail_key:
                 detail = self._detail(handle, status, ti)
@@ -1444,11 +1595,12 @@ class TorrentEngine(QObject):
                 if fs.file_flags(i) & lt.file_storage.flag_pad_file:
                     continue                      # alignment padding, never stored on disk
                 size = fs.file_size(i)
+                finding = findings.get(str(i), {})
                 files.append({
                     "index": i, "path": fs.file_path(i), "size": size,
                     "progress": (progress[i] / size) if size else 1.0,
                     "priority": int(priorities[i]) if i < len(priorities) else 4,
-                    "safety": findings.get(str(i), {}).get("reason", ""),
+                    "reason": finding.get("reason", ""), "danger": finding.get("level") == G.DANGER,
                 })
         peers = []
         for p in handle.get_peer_info():

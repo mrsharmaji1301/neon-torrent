@@ -50,7 +50,7 @@ Read AGENTS.md and BOARD.md in F:\neon-torrent. Do task <ID> exactly as its card
 | C-06 | Bug: quitting freezes the window for several seconds. Hide it at once, finish shutdown in the background | Claude | done |
 | C-07 | Status filter chips with live counts (All, Downloading, Seeding, Completed, Active, Paused, Stopped, Errors) | Claude | done |
 | C-08 | Dev tools into `F:\neon-build\tools`: Windows SDK BuildTools 10.0.28000.2705 (makeappx/signtool, nuget.org, 21.3 MB), gitleaks 8.30.1 (secret scan, SHA256-checked, 8.4 MB), ruff (lint, into `.venv`), Token Savior (MCP code navigation, own venv, `optimized` profile, project `.mcp.json`) | Claude | done, hash-checked; Token Savior skipped (not needed to ship) |
-| C-09 | Choose files and priorities when adding a torrent, and later in any state (card below) | Claude | todo: waiting for go-ahead |
+| C-09 | Choose files and priorities when adding a torrent, and later in any state (card below) | Claude | done 25 Oct: Add dialog on every add, Details → Files priorities; tests 36/36, audit 18/18. Waiting for the user's real add test |
 | D-01 | Website | Antigravity · Gemini 3.8 Flash | replaced by D-01b: it read like a spec sheet, with empty image boxes |
 | D-01b | Website rebuild around the real screenshots | Codex · GPT-6 Luna (Antigravity ran out of quota at 03:57) | done: checked at 1280×800 and 375 px, now `site/`. Fixed: invisible nav Download text, placeholder `og.png` (now a 1200×630 crop of screenshot 1), five claims not in the sources ("zero trackers", "own all Pro updates forever", "no data is lost", "never crash", FLASH as "read-only LSD"). `/legal/refund.html` is still a dead link until D-04 |
 | D-02 | Launch copy pack | Codex · GPT-6 Luna | done: reviewed, 4 fixes, in `marketing/` |

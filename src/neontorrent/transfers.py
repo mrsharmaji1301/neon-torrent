@@ -275,6 +275,8 @@ class TorrentDelegate(QStyledItemDelegate):
             p.setFont(self.f_status)
             p.setPen(color)
             label = {"Metadata": "Metadata"}.get(row["state"], row["state"])
+            if row.get("select") and row["state"] == "Paused":
+                label = "Choose files"             # waits for its Add dialog; Resume opens it again
             p.drawText(QRectF(left + 22, r.top() + 2 * shift, r.width() - 30, r.height()),
                        Qt.AlignmentFlag.AlignVCenter, label)
             if badge:
