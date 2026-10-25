@@ -581,6 +581,8 @@ class TorrentWindow(QMainWindow):
     @Slot(str, str)
     def _on_notice(self, text: str, level: str):
         key = {"ok": "green", "warn": "yellow", "error": "red", "info": "cyan"}.get(level, "text")
+        if level in ("warn", "error"):       # keep problems after the status line has moved on (error.log)
+            print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} {level.upper()} {text}", file=sys.stderr, flush=True)
         self.status_line.set_segments([(text, key)])
         self.status_dot.set_level(level if level != "info" else "info")
         self.notice_timer.start(7000 if level == "error" else 4500)
@@ -1086,6 +1088,9 @@ def first_run() -> None:
 
 
 def main() -> int:
+    if os.environ.get("NEON_DEBUG_STACKS"):          # support: dump every thread's stack to error.log after N s
+        import faulthandler
+        faulthandler.dump_traceback_later(int(os.environ["NEON_DEBUG_STACKS"]), file=sys.stderr)
     if sys.platform == "win32":
         import ctypes  # own taskbar identity/icon instead of grouping with python.exe
         length = ctypes.c_uint32(0)

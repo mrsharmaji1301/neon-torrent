@@ -17,6 +17,8 @@
 - Never clear, reset or restart the chat on your own, even to save tokens. Ask first: the user reads the history.
 - Never buy anything: no credits, overages, upgrades, subscriptions or "buy" buttons in any app. The user makes every
   purchase personally.
+- Never add torrents or start test downloads (this includes `tools\screenshots.py`). When a check needs a download,
+  ask the user to run it.
 
 ## Token discipline
 

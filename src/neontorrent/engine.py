@@ -6,8 +6,10 @@ import json
 import os
 import shutil
 import socket
+import sys
 import threading
 import time
+import traceback
 import urllib.request
 from collections import deque
 from pathlib import Path
@@ -307,22 +309,32 @@ class TorrentEngine(QObject):
     @Slot()
     def start(self) -> None:
         try:
+            t0, steps = time.monotonic(), []
             Path(self.download_dir).mkdir(parents=True, exist_ok=True)
             self.state_dir.mkdir(parents=True, exist_ok=True)
+            steps.append(("folders", time.monotonic()))
             self.session = lt.session(self._settings())
+            steps.append(("session", time.monotonic()))
             # learn from past antivirus detections before any torrent can connect
             self.shield.poll_antivirus()
+            steps.append(("antivirus", time.monotonic()))
             self._apply_ip_filter()
+            steps.append(("ip filter", time.monotonic()))
             self.shield.db.start(self._shield_ready.emit)
             self.shield.feed.start(self._shield_ready.emit)
             self.started_at = time.monotonic()
             self._restore()
+            steps.append(("restore", time.monotonic()))
+            print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} INFO engine start: "
+                  + ", ".join(f"{name} {end - start:.1f}s" for (name, end), start
+                              in zip(steps, [t0] + [e for _n, e in steps])), file=sys.stderr, flush=True)
             self.tick = QTimer(self)
             self.tick.setInterval(1000)
             self.tick.timeout.connect(self._on_tick)
             self.tick.start()
             self._on_tick()
         except Exception as exc:  # engine must report, never crash the UI
+            traceback.print_exc()             # error.log under pythonw
             self.notice.emit(f"ENGINE ERROR: {exc}", "error")
 
     def _settings(self) -> dict:
@@ -416,8 +428,8 @@ class TorrentEngine(QObject):
                         shutil.copy2(path, today / path.name)
             for old in sorted((p for p in backups.iterdir() if p.is_dir()), reverse=True)[3:]:
                 shutil.rmtree(old, ignore_errors=True)
-        except OSError:
-            pass
+        except OSError as exc:
+            print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} WARN session backup failed: {exc}", file=sys.stderr, flush=True)
 
     def _restore(self) -> None:
         self._snapshot_session()
@@ -449,6 +461,8 @@ class TorrentEngine(QObject):
                 restored += 1
             except Exception:
                 lost.append(params.name or key[:12])
+        print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} INFO restored {restored} of {len(keys)} saved torrents from "
+              f"{self.state_dir}", file=sys.stderr, flush=True)
         if lost:
             self.notice.emit(f"COULD NOT RESTORE {', '.join(lost)} · copies are in session\\backups", "warn")
         for path in sorted(self.state_dir.glob("*.magnet")):
