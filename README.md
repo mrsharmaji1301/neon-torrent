@@ -141,6 +141,46 @@ Flash mode resets to off when the app restarts.
 - **Skip hash check** marks data on disk as complete without hashing it first. libtorrent still verifies each piece
   the first time it is uploaded, and if the files are missing it falls back to a normal download.
 
+## File Sharing: phone and PC, over Wi-Fi or the internet
+
+The **FILE SHARING** tab at the top of the window (next to **TORRENTS**, or `Ctrl+Tab`) moves files between this PC
+and a phone, at home or away. The phone needs only its browser (Android Chrome, iPhone Safari); nothing is installed.
+
+**LAN or INTERNET, picked automatically.** When sharing starts, the app also opens a free Cloudflare quick tunnel
+(the installed `cloudflared`, no account) and the QR code carries its `https://….trycloudflare.com` address. A phone
+that scans it from elsewhere connects over the internet. A phone on the same Wi-Fi (same public IP as the PC) jumps
+to the direct LAN address by itself, which is much faster. If that LAN page does not load, press Back: the phone
+remembers it and stays on the internet path. Without internet or `cloudflared`, the QR code is the LAN address as
+before. A **LAN** or **INTERNET** badge shows the path on the PC (next to the status) and in the phone's header.
+Files are end-to-end encrypted on both paths; Cloudflare relays only ciphertext.
+
+1. Open **FILE SHARING**. A sharing session starts and shows a QR code. **SEND TO PHONE** and **RECEIVE FROM PHONE**
+   each have their own code; both open the same page, which has *Send to PC* and *Get from PC* tabs.
+2. Scan it with the phone camera. The first time, the phone asks for a name (remembered on the phone).
+3. The PC asks **Allow “name” (model, IP, MAC)?** Allow it once; the phone stays trusted until you press
+   **DISCONNECT**, **STOP**, quit the app, or the phone stays away for 10 minutes. The QR code changes after every
+   answer, so a code someone photographed cannot be used again.
+4. **PC → phone**: *ADD FILES* (or drop files on the grid). On the phone, *Get from PC* shows them with previews;
+   tick what you want and tap *Save to phone*. They go to the phone's Downloads.
+   **Phone → PC**: on the phone, *Choose files*, remove any with its X, tap *Send to PC*. Files are saved in
+   `<download folder>\FTP\` (names are cleaned; an existing name becomes `name (1).ext`).
+
+Both sides show thumbnails (photos and video first frames; a type icon otherwise), an X on every tile (remove before
+sending, cancel during a transfer), per-file progress with a ✓ when done, and the overall count (5/12), speed and
+time left. The status reads *Ready to connect*, *Waiting for approval*, *Connected*, *Transferring* or
+*Disconnected* (no heartbeat for 8 s). The network panel shows this PC's IP, MAC and Wi-Fi name, and the phone's
+name, IP and MAC.
+
+Limits:
+- The internet path is slower than LAN and depends on Cloudflare's free quick tunnels (no uptime guarantee). The
+  tunnel address changes on every START and every DISCONNECT. Guest networks and "client isolation" on some routers
+  block the direct LAN path; the phone then stays on INTERNET. The first time, Windows Firewall may ask to allow NeonTorrent on private networks.
+- Browsers on plain HTTP do not report the exact phone model: Android Chrome says "Android phone", iPhone says
+  "iPhone". Phones also use a random **private MAC** per Wi-Fi network; the panel says so when it sees one.
+- Windows hides the Wi-Fi name from apps without Location access; the panel then says so.
+- *Save to phone* holds a file in the phone browser's memory before saving it, so very large files (several GB) may
+  fail on phones with little memory. Keep the phone screen on during a transfer.
+
 ## Layout
 
 | File | Purpose |
@@ -190,7 +230,8 @@ Flash mode resets to off when the app restarts.
 
 `Ctrl+O` open file · `Ctrl+N` focus link box · `Ctrl+F` filter · `Ctrl+M` Shield map · `Ctrl+Shift+F` FLASH MODE ·
 `Ctrl+T` torrent settings · `Ctrl+,` preferences · `Space` pause/resume · `Ctrl+Shift+S` stop · `Del` remove · `Shift+Del` delete data ·
-`Enter` details · `Ctrl+1` … `Ctrl+3` pages · `Alt+1` … `Alt+8` status chips · `Ctrl+Q` quit.
+`Enter` details · `Ctrl+1` … `Ctrl+3` pages · `Alt+1` … `Alt+8` status chips · `Ctrl+Tab` TORRENTS / FILE SHARING ·
+`Ctrl+Q` quit.
 
 ## Data
 
@@ -204,3 +245,11 @@ Your torrent list survives crashes and updates:
 - Once a day at start-up, NEON copies `session\` to `session\backups\<date>` and keeps the newest three.
 - A torrent that cannot be restored at all is named in the status line and its files are kept as `.broken`. It is
   never dropped silently.
+
+## Disclaimer
+
+NEON Torrent is a general-purpose file transfer tool, provided as is, without warranty of any kind. To the fullest
+extent the law allows, its author accepts no liability for any use of it for illegal, harmful or malicious purposes,
+or for any loss or damage that results from such use. Each user alone is responsible and accountable for what they
+use NEON for: what they download, share and run, and for following the laws of their country. The same text is shown
+on the installer's first page and in Preferences → About.

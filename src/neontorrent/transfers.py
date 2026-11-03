@@ -289,10 +289,12 @@ class TorrentDelegate(QStyledItemDelegate):
         elif col == COL_PROGRESS:
             pct = row["progress"]
             text = f"{pct * 100:.0f}%" if pct < 0.995 or pct >= 1 else "99%"
+            size = row["size"]
+            sub = f"{T.fmt_bytes(min(row.get('done', 0), size))} / {T.fmt_bytes(size)}" if size else ""
             p.setFont(self.f_cell)
             fm = QFontMetricsF(self.f_cell)
             text_w = 52.0
-            bar = QRectF(left, cy - 6, max(40.0, r.width() - text_w - 22), 12)
+            bar = QRectF(left, cy - 6 - (7 if sub else 0), max(40.0, r.width() - text_w - 22), 12)
             p.setPen(Qt.PenStyle.NoPen)
             p.setBrush(T.c("track"))
             p.drawRoundedRect(bar, 6, 6)
@@ -312,7 +314,14 @@ class TorrentDelegate(QStyledItemDelegate):
                 p.setBrush(QColor(255, 255, 255, 55))
                 p.drawRoundedRect(QRectF(fill.left() + 3, fill.top() + 2, fill.width() - 6, 2.5), 1.2, 1.2)
             p.setPen(T.c("text"))
-            p.drawText(QRectF(bar.right() + 14, r.top(), text_w, r.height()), Qt.AlignmentFlag.AlignVCenter, text)
+            p.drawText(QRectF(bar.right() + 14, bar.center().y() - 12, text_w, 24), Qt.AlignmentFlag.AlignVCenter,
+                       text)
+            if sub:                                # downloaded / total under the bar
+                p.setFont(self.f_sub)
+                p.setPen(T.c("muted"))
+                fs = QFontMetricsF(self.f_sub)
+                p.drawText(QRectF(left, cy + 4, bar.width() + text_w, 18), Qt.AlignmentFlag.AlignVCenter,
+                           fs.elidedText(sub, Qt.TextElideMode.ElideRight, bar.width() + text_w))
             _ = fm
         elif col in (COL_SIZE, COL_DOWN, COL_UP):
             if col == COL_SIZE:

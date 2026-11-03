@@ -64,6 +64,42 @@ promise any client can honestly make. NEON Torrent works on everything a client 
 - Runs as its own `runtime\NeonTorrent.exe` (a signed Python interpreter copy) without admin rights, so the
   firewall and antivirus see it separately from other Python programs.
 
+### 4. File Sharing (phone and PC, LAN or internet)
+
+- The server exists only while a sharing session is open (FILE SHARING tab, until STOP or quit). It listens on the
+  PC's private LAN IPv4 address only, on a random port, and refuses any source address outside 10/8, 172.16/12,
+  192.168/16 and 169.254/16, and any request whose `Host` is not that address (DNS rebinding).
+- Pairing: the QR code carries the PC's ephemeral X25519 public key and a 128-bit one-time token in the URL
+  `#fragment`, which browsers never send over the network. The phone makes its own ephemeral X25519 key; both sides
+  derive two keys (one per direction) with HKDF-SHA256, salt = token. The pairing request is already sealed with
+  the derived key, so a phone without the token is refused (403) and the token never travels. A replayed pairing
+  request is refused, and the QR code (key and token) is replaced after every Allow or Deny.
+- Every message and every 1 MiB file chunk is sealed with ChaCha20-Poly1305 (Python `cryptography`; the phone uses
+  `@noble/curves` and `@noble/ciphers`, bundled in the page, no CDN). Nonces are unique per direction, file and
+  chunk; the file number, chunk index and chunk count are authenticated, so a tampered, reordered, truncated or
+  replayed chunk or message is rejected. Control counters must only grow.
+- A new phone has to be allowed on the PC (name, model, IP and MAC shown) before it can list, send or receive
+  anything. One phone at a time.
+- Received names are reduced to a bare file name: no folders or `..`, no control, bidi or format characters, no
+  Windows device names, no trailing dots; an existing name gets ` (1)`. Files are written as hidden `.neonpart`
+  files, renamed only when every chunk has passed authentication, and tagged with Mark-of-the-Web like downloads.
+  Partial files are deleted on cancel, disconnect or stop. Free space is checked before an upload starts.
+- Limit: the phone page itself is served over plain HTTP (browsers need a trusted certificate for HTTPS, which a
+  LAN address cannot get). File contents stay confidential against anyone who only watches the Wi-Fi, but an
+  attacker who can actively tamper with traffic on your own network while you scan could swap the page's script
+  and read the key. Use File Sharing on networks you control, not on public Wi-Fi.
+- Internet mode: while sharing, `cloudflared tunnel --no-autoupdate --url http://<LAN IP>:<port>` runs hidden (no
+  account, no config file; its working folder is the app data folder) and is killed on STOP, DISCONNECT (a new
+  tunnel URL is made) and quit. The tunnel page is HTTPS, so the page-integrity limit above shrinks to trusting
+  Cloudflare's edge, which only ever sees ciphertext and never the `#fragment`.
+- A request counts as tunnel traffic only if its `Host` is the current `*.trycloudflare.com` name **and** it comes
+  from this PC's own LAN address (where cloudflared connects from) **and** carries `CF-Connecting-IP`; such sessions
+  are bound to that public IP and cannot be used from the LAN side. Anyone with the tunnel URL can load the page,
+  but pairing still needs the token from the QR fragment and the Allow click on the PC.
+- LAN/INTERNET detection: the PC learns its public IPv4/IPv6 once from Cloudflare's trace endpoint
+  (`/cdn-cgi/trace`). `/api/where` reveals the LAN address only to a tunnel visitor with the same public IPv4 (or
+  IPv6 /64), i.e. someone already behind the same router.
+
 ## Audit (re-run any time: `.venv\Scripts\python.exe tools\security_audit.py`)
 
 | # | Attack | Result |
@@ -81,11 +117,16 @@ promise any client can honestly make. NEON Torrent works on everything a client 
 | 11 | Links sent by another Windows user | Refused (user-only local socket) |
 | 12 | Real download completes | Hash-verified, 100% |
 | 13 | Finished files | Mark-of-the-Web present |
-| 14 | Code review | No `os.system`, `startfile` or `eval`; only Explorer, PowerShell (antivirus status) and Defender are ever launched |
+| 14 | Code review | No `os.system`, `startfile` or `eval`; only Explorer, PowerShell (antivirus status), Defender and cloudflared (File Sharing tunnel) are ever launched |
 | 15 | New torrent before the Add dialog is confirmed | Paused, every file at priority 0: nothing is requested |
 | 16 | CANCEL in the Add dialog | Torrent removed, no files written |
 | 17 | Guard findings in the Add dialog | Skipped files proposed as Don't download, with the reason |
 | 18 | HTML in a file name (Add dialog, Details tables) | Escaped in tooltips |
+| 19 | File Sharing: pairing without the QR token, replayed pairing request | Refused (403) |
+| 20 | File Sharing: listing files before the PC user presses Allow; replayed control message | Refused |
+| 21 | File Sharing: tampered chunk; upload named `..\..\..\Windows\evil.exe` | Chunk rejected; saved as `FTP\evil.exe` with Mark-of-the-Web |
+| 22 | File Sharing: foreign `Host` header (DNS rebinding); connection from a non-private address | Refused (421 / 403) |
+| 23 | File Sharing: request posing as tunnel traffic without Cloudflare's client-IP header | Refused (403) |
 
 ## On this PC (checked 2026-10-23)
 

@@ -10,7 +10,7 @@ from PySide6.QtCore import QEvent, QPoint, QStandardPaths, QThread, QTimer, Qt, 
 from PySide6.QtGui import QAction, QFont, QGuiApplication, QKeySequence, QShortcut
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QLabel, QMainWindow, QMenu,
-                               QSystemTrayIcon, QVBoxLayout, QWidget)
+                               QStackedWidget, QSystemTrayIcon, QVBoxLayout, QWidget)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -24,6 +24,7 @@ from neontorrent.dialogs import (AddTorrentDialog, DetailsDialog, FirstRunDialog
                                  SettingsDialog, ShieldDialog, SpeedLimitsDialog, TorrentOptionsDialog)
 from neontorrent.engine import DEFAULT_BLOCKED, TorrentEngine  # noqa: E402
 from neontorrent.icons import logo_icon, make_icon  # noqa: E402
+from neontorrent.share_ui import ShareTab, TopTab  # noqa: E402
 from neontorrent.transfers import (HIDDEN_ON_PAGE, PAGES, STATUS_FILTERS, TransfersView,  # noqa: E402
                                    page_counts, page_matches, status_counts)
 from neontorrent.widgets import (BrandTitle, FilterBar, GlowButton, Logo, NeonBackground, NeonLineEdit,  # noqa: E402
@@ -210,7 +211,8 @@ class TorrentWindow(QMainWindow):
         self._apply_theme()
         self._start_engine()
         self.resize(1240, 770)
-        self.setMinimumSize(1000, 640)
+        # never narrower than the title bar needs, or the tabs would paint over the wordmark
+        self.setMinimumSize(max(1000, self.title_bar.minimumSizeHint().width() + 28), 640)
         self.notice_timer = QTimer(self)
         self.notice_timer.setSingleShot(True)
         self.notice_timer.timeout.connect(self._refresh_status)
@@ -261,6 +263,12 @@ class TorrentWindow(QMainWindow):
         tl.setSpacing(14)
         tl.addWidget(Logo(60))
         tl.addWidget(BrandTitle())
+        tl.addSpacing(24)
+        # torrents and phone file sharing are separate views of the same window
+        self.view_tabs = FilterBar([("torrents", "TORRENTS", "cyan"), ("share", "FILE SHARING", "magenta")],
+                                   chip_class=TopTab, spacing=10)
+        self.view_tabs.changed.connect(self._on_view)
+        tl.addWidget(self.view_tabs, 0, Qt.AlignmentFlag.AlignVCenter)
         tl.addStretch(1)
         self.conn_dot = StatusDot(10)
         self.conn_dot.set_level("warn")
@@ -307,6 +315,16 @@ class TorrentWindow(QMainWindow):
         tl.addLayout(controls)
         tl.setAlignment(controls, Qt.AlignmentFlag.AlignTop)
         root.addWidget(title)
+        self.title_bar = title
+        self.views = QStackedWidget()
+        torrent_page = QWidget()
+        page = QVBoxLayout(torrent_page)
+        page.setContentsMargins(0, 0, 0, 0)
+        page.setSpacing(14)
+        self.views.addWidget(torrent_page)
+        self.share_tab = ShareTab(lambda: self.prefs["download_dir"], self.bg.register, self._share_attention)
+        self.views.addWidget(self.share_tab)
+        root.addWidget(self.views, 1)
 
         # --- add torrent
         add = NeonPanel("cyan", 0.8)
@@ -329,7 +347,7 @@ class TorrentWindow(QMainWindow):
         self.open_btn.clicked.connect(self.open_torrent)
         al.addWidget(self.add_btn)
         al.addWidget(self.open_btn)
-        root.addWidget(add)
+        page.addWidget(add)
 
         # --- stats
         stats = QHBoxLayout()
@@ -346,7 +364,7 @@ class TorrentWindow(QMainWindow):
         for card in (self.down_card, self.up_card, self.active_card, self.cap_card):
             self.bg.register(card)
             stats.addWidget(card)
-        root.addLayout(stats)
+        page.addLayout(stats)
 
         # --- transfers
         transfers = NeonPanel("cyan", 0.55)
@@ -380,7 +398,7 @@ class TorrentWindow(QMainWindow):
         self.table.details_requested.connect(self.show_details)
         self.table.options_requested.connect(self.show_options)
         tl2.addWidget(self.table, 1)
-        root.addWidget(transfers, 1)
+        page.addWidget(transfers, 1)
 
         # --- footer
         footer = NeonPanel("cyan", 0.45)
@@ -410,29 +428,35 @@ class TorrentWindow(QMainWindow):
         self.status_line = StatusLine()
         fl.addWidget(self.status_dot)
         fl.addWidget(self.status_line)
-        root.addWidget(footer)
+        page.addWidget(footer)
         self._update_actions()
 
     def _build_shortcuts(self):
-        def sc(keys, fn, ctx=Qt.ShortcutContext.WindowShortcut):
+        self.torrent_shortcuts: list[QShortcut] = []
+
+        def sc(keys, fn, ctx=Qt.ShortcutContext.WindowShortcut, torrents_only=False):
             s = QShortcut(QKeySequence(keys), self)
             s.setContext(ctx)
             s.activated.connect(fn)
+            if torrents_only:                      # acts on the torrent list: off while FILE SHARING is shown
+                self.torrent_shortcuts.append(s)
+        sc("Ctrl+Tab", lambda: self.view_tabs.select("share" if self.view_tabs.current == "torrents" else "torrents"))
         sc("Ctrl+O", self.open_torrent)
-        sc("Ctrl+N", lambda: self.uri_input.setFocus())
-        sc("Ctrl+F", lambda: (self.search.setFocus(), self.search.selectAll()))
+        sc("Ctrl+N", lambda: self.uri_input.setFocus(), torrents_only=True)
+        sc("Ctrl+F", lambda: (self.search.setFocus(), self.search.selectAll()), torrents_only=True)
         sc("Ctrl+,", self.show_settings)
         sc("Ctrl+M", self.show_shield)
         sc("Ctrl+Shift+F", self.toggle_flash)
-        sc("Ctrl+T", lambda: self.show_options(self.table.selected_keys()[0]) if self.table.selected_keys() else None)
+        sc("Ctrl+T", lambda: self.show_options(self.table.selected_keys()[0]) if self.table.selected_keys() else None,
+           torrents_only=True)
         sc("Ctrl+Q", self.quit_app)
-        sc("Ctrl+P", self.pause_selected)
-        sc("Ctrl+Shift+S", self.stop_selected)
-        sc("Ctrl+R", self.resume_selected)
+        sc("Ctrl+P", self.pause_selected, torrents_only=True)
+        sc("Ctrl+Shift+S", self.stop_selected, torrents_only=True)
+        sc("Ctrl+R", self.resume_selected, torrents_only=True)
         for number, (key, _label, _color) in enumerate(STATUS_FILTERS, 1):     # Alt+1 … Alt+8: status chips
-            sc(f"Alt+{number}", lambda k=key: self.filter_bar.select(k))
+            sc(f"Alt+{number}", lambda k=key: self.filter_bar.select(k), torrents_only=True)
         for number, (key, _label, _color, _chips) in enumerate(PAGES, 1):     # Ctrl+1 … Ctrl+3: pages
-            sc(f"Ctrl+{number}", lambda k=key: self.page_tabs.select(k))
+            sc(f"Ctrl+{number}", lambda k=key: self.page_tabs.select(k), torrents_only=True)
         table_ctx = Qt.ShortcutContext.WidgetShortcut
         for keys, fn in (("Delete", self.remove_selected), ("Shift+Delete", self.delete_selected),
                          ("Space", self.toggle_selected), ("Return", self.show_details),
@@ -1005,9 +1029,30 @@ class TorrentWindow(QMainWindow):
                     return True
         return super().eventFilter(obj, event)
 
+    # ------------------------------------------------------------ views
+    def _on_view(self, key: str):
+        share = key == "share"
+        self.views.setCurrentWidget(self.share_tab if share else self.views.widget(0))
+        for shortcut in self.torrent_shortcuts:
+            shortcut.setEnabled(not share)
+        if share:
+            self.share_tab.activate()
+        self.bg.update()                           # panel glows follow the visible view
+
+    def _share_attention(self, text: str):
+        """A phone asks to connect: bring the window forward so the Allow dialog is seen."""
+        if not self.isActiveWindow() and self.tray.isVisible():
+            self.tray.showMessage(APP_NAME, text, self.windowIcon(), 4000)
+        if not self.isVisible() or self.isMinimized():
+            self.show_window()
+
     # ------------------------------------------------------------ drag & drop
     def dragEnterEvent(self, event):
         md = event.mimeData()
+        if self.views.currentWidget() is self.share_tab:
+            if md.hasUrls():
+                event.acceptProposedAction()
+            return
         if md.hasUrls() or (md.hasText() and md.text().strip().lower().startswith(("magnet:", "http"))):
             event.acceptProposedAction()
             self.bg.setStyleSheet("")
@@ -1015,6 +1060,10 @@ class TorrentWindow(QMainWindow):
 
     def dropEvent(self, event):
         md = event.mimeData()
+        if self.views.currentWidget() is self.share_tab:        # FILE SHARING: dropped files go to the phone
+            self.share_tab.add_paths([u.toLocalFile() for u in md.urls() if u.isLocalFile()])
+            event.acceptProposedAction()
+            return
         if md.hasUrls():
             for url in md.urls():
                 if url.isLocalFile():
@@ -1056,6 +1105,7 @@ class TorrentWindow(QMainWindow):
         if self.shutting_down:
             return
         self.shutting_down = True
+        self.share_tab.shutdown()                  # closes the sharing server: nothing listens after quit
         for dialog in (self.details, self.shield_dialog, self.options_dialog):
             if dialog is not None:
                 dialog.close()
@@ -1117,9 +1167,14 @@ def first_run() -> None:
     prefs = T.load_preferences()
     if prefs.get("download_dir"):
         return
-    downloads = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DownloadLocation)
+    exe = Path(sys.executable).resolve()
+    if (exe.parent / "portable.ini").exists():          # installed copy: suggest the install drive, e.g. F:\Downloads\NEON
+        default = Path(exe.anchor) / "Downloads" / "NEON"
+    else:
+        downloads = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DownloadLocation)
+        default = Path(downloads or Path.home() / "Downloads") / "NEON"
     QApplication.instance().setStyleSheet(build_qss())
-    dialog = FirstRunDialog(str(Path(downloads or Path.home() / "Downloads") / "NEON"))
+    dialog = FirstRunDialog(str(default))
     dialog.exec()
     prefs["download_dir"] = dialog.folder.text()
     T.save_preferences(prefs)

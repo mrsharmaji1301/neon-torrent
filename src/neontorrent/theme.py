@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 
 from PySide6.QtGui import QColor, QFont
@@ -96,6 +97,12 @@ def head_font(size: float, weight: QFont.Weight = QFont.Weight.DemiBold, spacing
 # ---------------------------------------------------------------- storage
 
 def app_data_dir() -> Path:
+    # an installed copy (installer writes portable.ini next to NeonTorrent.exe) keeps its data in its own folder
+    exe_dir = Path(sys.executable).resolve().parent
+    if (exe_dir / "portable.ini").exists() and "APPDATA_OVERRIDE" not in os.environ:
+        root = exe_dir / "data"
+        root.mkdir(parents=True, exist_ok=True)
+        return root
     base = os.environ.get("APPDATA") or str(Path.home() / "AppData" / "Roaming")
     root = Path(base) / "NeonTorrent"
     root.mkdir(parents=True, exist_ok=True)

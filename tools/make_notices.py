@@ -2,7 +2,7 @@
 
 Sources are the real licence texts: the base Python's LICENSE.txt and Doc/html/license.html, the installed package
 versions, and the verbatim texts in packaging/licenses/ (LGPL-3.0 and GPL-3.0 for Qt and PySide6, libtorrent's
-LICENSE from its v2.1.1 tag, and the Boost licence). Run it again whenever Python, PySide6 or libtorrent changes.
+LICENSE from its v2.1.1 tag, the Boost licence and the @noble licences). Run it again whenever a dependency changes.
 
 Run with the project's venv interpreter: .venv\\Scripts\\python.exe tools\\make_notices.py
 """
@@ -12,13 +12,14 @@ import re
 import ssl
 import sys
 from html.parser import HTMLParser
-from importlib.metadata import version
+from importlib.metadata import distribution, version
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 LICENSES = ROOT / "packaging" / "licenses"
 OUT = ROOT / "THIRD-PARTY-NOTICES.md"
 BASE = Path(sys.base_prefix)
+NOBLE = {"ciphers": "2.4.0", "curves": "2.4.0", "hashes": "2.4.0"}  # versions bundled by tools/build_share_web.py
 TCL_START = "This software is copyrighted by the Regents of the University"  # Tcl/Tk is not shipped
 
 
@@ -82,10 +83,24 @@ def openssl_in_libtorrent() -> str:
     return found.group(1).decode() if found else "3"
 
 
+def package_licenses(name: str) -> str:
+    """Every licence file in an installed package's dist-info, fenced, in file-name order."""
+    files = sorted((f for f in distribution(name).files or () if "/licenses/" in f.as_posix()), key=str)
+    return "\n\n".join(f"{f.name}:\n\n{fenced(f.read_text(encoding='utf-8'))}" for f in files)
+
+
+def openssl_in_cryptography() -> str:
+    from cryptography.hazmat.backends.openssl import backend
+    return backend.openssl_version_text().split()[1]
+
+
 def build() -> str:
     py = ".".join(map(str, sys.version_info[:3]))
     qt, lt = version("PySide6-Essentials"), version("libtorrent")
+    crypto, cffi, pycparser, segno = (version(n) for n in ("cryptography", "cffi", "pycparser", "segno"))
     py_ssl = ssl.OPENSSL_VERSION.split()[1]
+    noble = {lib: (LICENSES / f"noble-{lib}-LICENSE.txt").read_text(encoding="utf-8") for lib in NOBLE}
+    noble_text = "\n\n".join(f"@noble/{lib} {ver}:\n\n{fenced(noble[lib])}" for lib, ver in NOBLE.items())
     rows = [
         ("Python (CPython runtime and standard library)", py,
          "PSF License 2.0, plus the licences of the code it includes (below)"),
@@ -95,6 +110,12 @@ def build() -> str:
         ("Boost (built into libtorrent)", "", "Boost Software License 1.0"),
         ("OpenSSL (built into libtorrent)", openssl_in_libtorrent(), "Apache-2.0"),
         ("OpenSSL (Python's ssl and hashlib modules)", py_ssl, "Apache-2.0"),
+        ("cryptography (phone sharing encryption)", crypto, "Apache-2.0 or BSD-3-Clause"),
+        ("OpenSSL (built into cryptography)", openssl_in_cryptography(), "Apache-2.0"),
+        ("cffi (used by cryptography)", cffi, "MIT-0"),
+        ("pycparser (used by cffi)", pycparser, "BSD-3-Clause"),
+        ("segno (QR codes)", segno, "BSD-3-Clause"),
+        ("@noble/ciphers, @noble/curves, @noble/hashes (phone page, bundled)", NOBLE["curves"], "MIT"),
         ("libffi, bzip2, zlib, expat, libmpdec, mimalloc and others in Python", "",
          "MIT, BSD-style and zlib licences (below)"),
         ("xz / liblzma (Python's lzma module)", "", "Public domain"),
@@ -147,6 +168,39 @@ Source: https://github.com/arvidn/libtorrent (tag v{lt}). Its LICENSE file:
 ## OpenSSL
 
 OpenSSL is licensed under the Apache License 2.0; its full text is part of the Python licence file below.
+
+## cryptography {crypto}
+
+Source: https://github.com/pyca/cryptography (tag {crypto}). Its wheel includes OpenSSL
+{openssl_in_cryptography()} (Apache-2.0). Licence files:
+
+{package_licenses("cryptography")}
+
+## cffi {cffi}
+
+Source: https://github.com/python-cffi/cffi
+
+{package_licenses("cffi")}
+
+## pycparser {pycparser}
+
+Source: https://github.com/eliben/pycparser
+
+{package_licenses("pycparser")}
+
+## segno {segno}
+
+Source: https://github.com/heuer/segno
+
+{package_licenses("segno")}
+
+## @noble cryptography libraries (phone page)
+
+The phone page served by FILE SHARING bundles these libraries by Paul Miller, unmodified, into its script. Source:
+https://github.com/paulmillr/noble-ciphers, https://github.com/paulmillr/noble-curves and
+https://github.com/paulmillr/noble-hashes.
+
+{noble_text}
 
 ## Python {py}
 

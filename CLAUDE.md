@@ -3,7 +3,8 @@
 ## For Claude: working with this user
 
 - Start every session by reading [BOARD.md](BOARD.md): live tasks, statuses and open questions.
-- Reply in short, serious, conversational English, even when the user writes or dictates in Hindi or Hinglish.
+- Hard rule: always reply in Hinglish (Hindi + English mixed, Roman script), short and serious. Never pure Hindi,
+  never pure English.
   Do the work yourself instead of explaining how. Ask only for
   vision, money, accounts or consent decisions, and never assume those.
 - Check the PC before claiming anything about it (installed tools, paths, drives). The user's terminal is PowerShell.
@@ -12,7 +13,9 @@
 - Never write to drive C:. Project `F:\neon-torrent`; builds, temp and caches `F:\neon-build`; app data
   `F:\neon-data\NeonTorrent` (junction at `%APPDATA%\NeonTorrent`).
 - Start the app detached, so it survives session restarts: `explorer.exe "F:\neon-torrent\run.bat"`.
-- Only Claude commits and pushes (private repo `mrsharmaji1301/neon-torrent`).
+- Only Claude commits and pushes (private repo `mrsharmaji1301/neon-torrent`), and only when the user says so. Until
+  then, no commits and no pushes.
+- The app is for the user's personal use, not for sale or the Store: no licences, payments, Dodo or Partner Center.
 - Claude Pro plan: the weekly limit is the bottleneck, so keep the context small.
 - Never clear, reset or restart the chat on your own, even to save tokens. Ask first: the user reads the history.
 - Never buy anything: no credits, overages, upgrades, subscriptions or "buy" buttons in any app. The user makes every

@@ -239,8 +239,8 @@ def test_ssrf(e: en.TorrentEngine, save: str) -> None:
 
 # ------------------------------------------------------------------------------------------------ 6. UI injection
 def test_ui() -> None:
-    from neontorrent.transfers import TorrentModel
     import neon_torrent as nt
+    from neontorrent.transfers import TorrentModel
     model = TorrentModel()
     evil = '<img src="file:///C:/Windows/win.ini"><a href="x">click</a>'
     row = {"key": "k", "name": evil, "title": evil, "sub": evil, "kind": "file", "state": "Downloading",
@@ -318,8 +318,92 @@ def test_static() -> None:
     executes_downloads = bool(dangerous)
     risky = launches
     check("Code audit: no os.system / startfile / eval; the only programs launched are Explorer, PowerShell "
-          "(antivirus status) and Defender", not executes_downloads,
+          "(antivirus status), Defender and cloudflared (File Sharing internet tunnel)", not executes_downloads,
           "process launches: " + " | ".join(f"{n}: {l[:60]}" for n, l in risky))
+
+
+def test_share() -> None:
+    """File Sharing server (C-11): pairing, encryption, replay, file names and the network gate."""
+    import http.client
+    import json
+    from urllib.parse import parse_qs, urlsplit
+
+    from cryptography.hazmat.primitives.asymmetric.x25519 import (
+        X25519PrivateKey,
+        X25519PublicKey,
+    )
+
+    from neontorrent import share as S
+
+    def post(port: int, path: str, body: bytes, host: str = "") -> tuple[int, bytes]:
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+        conn.request("POST", path, body=body, headers={"Host": host} if host else {})
+        response = conn.getresponse()
+        result = response.status, response.read()
+        conn.close()
+        return result
+
+    def phone(server: S.ShareServer, token: bytes | None = None):
+        frag = parse_qs(urlsplit(server.url("send")).fragment)
+        pc_pub, real = S.b64d(frag["k"][0]), S.b64d(frag["t"][0])
+        key = X25519PrivateKey.generate()
+        pub = key.public_key().public_bytes_raw()
+        up, down = S.derive_keys(key.exchange(X25519PublicKey.from_public_bytes(pc_pub)), token or real, pc_pub, pub)
+        channel = S.Channel(up, down, role="phone")
+        body = json.dumps({"p": S.b64e(pub), "d": channel.seal({"name": "audit"}, 0, b"H" + pc_pub + pub)}).encode()
+        return channel, body
+
+    save = Path(tempfile.mkdtemp(prefix="neon_share_audit_"))
+    server = S.ShareServer("127.0.0.1", save / "FTP", "AUDIT", allow_loopback=True)
+    server.start()
+    try:
+        _channel, bad = phone(server, token=os.urandom(16))
+        status, _ = post(server.port, "/api/hello", bad)
+        check("Share: a phone without the QR token cannot pair", status == 403 and not server.phones, f"HTTP {status}")
+        channel, body = phone(server)
+        status, reply = post(server.port, "/api/hello", body)
+        sid = json.loads(reply)["s"]
+        replay, _ = post(server.port, "/api/hello", body)
+        check("Share: a captured pairing request cannot be replayed", status == 200 and replay == 403,
+              f"first HTTP {status}, replay HTTP {replay}")
+        sealed = channel.seal({"op": "list"}, 1, f"C{sid}:1".encode())
+        status, reply = post(server.port, "/api/c", json.dumps({"s": sid, "c": 1, "d": sealed}).encode())
+        listed = channel.open(json.loads(reply)["d"], json.loads(reply)["c"], f"R{sid}:1".encode())
+        check("Share: nothing is listed before the PC user presses Allow", listed.get("error", "").startswith("not"),
+              str(listed))
+        server.decide(sid, True)
+        replay, _ = post(server.port, "/api/c", json.dumps({"s": sid, "c": 1, "d": sealed}).encode())
+        check("Share: a replayed control message is refused", replay == 409, f"HTTP {replay}")
+        sealed = channel.seal({"op": "begin", "name": r"..\..\..\Windows\evil.exe", "size": 3}, 2,
+                              f"C{sid}:2".encode())
+        _, reply = post(server.port, "/api/c", json.dumps({"s": sid, "c": 2, "d": sealed}).encode())
+        begin = channel.open(json.loads(reply)["d"], json.loads(reply)["c"], f"R{sid}:2".encode())
+        chunk = bytearray(channel.seal_chunk(begin["n"], 0, 1, b"MZ!"))
+        chunk[0] ^= 1
+        tampered, _ = post(server.port, f"/api/up?s={sid}&n={begin['n']}&i=0", bytes(chunk))
+        chunk[0] ^= 1
+        status, reply = post(server.port, f"/api/up?s={sid}&n={begin['n']}&i=0", bytes(chunk))
+        saved = save / "FTP" / json.loads(reply).get("saved", "?")
+        check("Share: a tampered chunk is rejected; a traversal name is saved inside the FTP folder, tagged MotW",
+              tampered == 403 and saved.parent == save / "FTP" and saved.name == "evil.exe"
+              and G.has_mark_of_the_web(saved), f"tamper HTTP {tampered}, saved {saved}")
+        rebind, _ = post(server.port, "/api/hello", body, host="evil.example:80")
+        check("Share: requests for another host name are refused (DNS rebinding)", rebind == 421, f"HTTP {rebind}")
+        server.public_ips = {"203.0.113.5"}
+        server.set_tunnel("https://audit-tunnel-0001.trycloudflare.com")
+        forged, _ = post(server.port, "/api/hello", body, host="audit-tunnel-0001.trycloudflare.com")
+        check("Share: a request posing as tunnel traffic without Cloudflare's client-IP header is refused",
+              forged == 403, f"HTTP {forged}")
+    finally:
+        server.stop()
+    gate = S.ShareServer("127.0.0.1", save, "AUDIT")
+    gate.start()
+    try:
+        status, _ = post(gate.port, "/api/hello", b"{}")
+        check("Share: only private-network (RFC 1918 / link-local) addresses may connect", status == 403,
+              f"127.0.0.1 got HTTP {status}")
+    finally:
+        gate.stop()
 
 
 def main() -> int:
@@ -334,6 +418,7 @@ def main() -> int:
         test_ui()
         test_finish(e, save)
         test_static()
+        test_share()
     finally:
         e.shutdown()
     passed = sum(ok for _, ok, _ in RESULTS)

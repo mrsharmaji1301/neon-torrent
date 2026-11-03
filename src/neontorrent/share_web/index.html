@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#090e19">
+<title>NEON File Share</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body class="bg-surface-container-lowest text-on-surface antialiased min-h-screen flex flex-col font-body-md pb-36">
+<svg xmlns="http://www.w3.org/2000/svg" class="hidden" aria-hidden="true">
+  <defs>
+    <symbol id="i-hub" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.6"/><circle cx="4.5" cy="4.5" r="2"/><circle cx="19.5" cy="4.5" r="2"/><circle cx="4.5" cy="19.5" r="2"/><circle cx="19.5" cy="19.5" r="2"/><path d="M6 6l4 4M18 6l-4 4M6 18l4-4M18 18l-4-4"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3M12 15v2"/></symbol>
+    <symbol id="i-computer" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18h2"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></symbol>
+    <symbol id="i-addimg" viewBox="0 0 24 24"><path d="M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"/><path d="M16 5h6M19 2v6"/><path d="M3 17l5-5 4 4 2-2 4 4"/><circle cx="8.5" cy="8.5" r="1.5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></symbol>
+    <symbol id="i-pdf" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M8.5 13h7M8.5 16.5h5"/></symbol>
+    <symbol id="i-zip" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></symbol>
+    <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></symbol>
+    <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+    <symbol id="i-cancel" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></symbol>
+    <symbol id="i-swap" viewBox="0 0 24 24"><path d="M7 7h13M16 3l4 4-4 4M17 17H4M8 13l-4 4 4 4"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a15 15 0 0 1 20 0"/><circle cx="12" cy="19.5" r="1"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></symbol>
+  </defs>
+</svg>
+
+<header class="bg-surface-container-lowest border-b border-outline-variant/30 shadow-[0_4px_20px_-4px_rgba(34,211,238,0.15)] sticky top-0 z-40">
+  <div class="flex justify-between items-center w-full px-margin py-space-sm max-w-md mx-auto">
+    <div class="flex items-center gap-2 text-primary">
+      <svg class="ico w-6 h-6"><use href="#i-hub"/></svg>
+      <span class="text-headline-sm font-headline-sm font-bold tracking-tight drop-shadow-[0_0_12px_rgba(34,211,238,0.6)]">NEON</span>
+    </div>
+    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container border border-primary-container/20">
+      <span class="relative flex h-2 w-2"><span id="hdr-dot" class="neon-pulse absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span><span id="hdr-dot2" class="relative inline-flex rounded-full h-2 w-2 bg-tertiary"></span></span>
+      <span id="hdr-path" class="font-label-sm text-label-sm text-primary-fixed tracking-wider uppercase font-bold">LAN</span>
+    </div>
+    <span class="text-primary p-1" title="End-to-end encrypted"><svg class="ico w-6 h-6"><use href="#i-lock"/></svg></span>
+  </div>
+</header>
+
+<main class="w-full max-w-md mx-auto px-margin pt-3 flex-1 flex flex-col gap-3.5">
+  <!-- connection -->
+  <section class="bg-surface-container-low border border-primary-container/30 rounded-[14px] p-3 neon-glow-cyan flex flex-col gap-2.5">
+    <div class="flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-9 h-9 rounded-[10px] bg-primary-container/10 border border-primary-container/40 flex items-center justify-center shrink-0 text-primary-container"><svg class="ico w-5 h-5"><use href="#i-computer"/></svg></div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-1.5"><span id="conn-dot" class="inline-block w-1.5 h-1.5 rounded-full bg-outline shrink-0"></span><span id="conn-title" class="font-label-md text-label-md text-on-surface font-semibold truncate">Connecting…</span></div>
+          <div id="conn-sub" class="font-label-sm text-label-sm text-outline tracking-wider truncate"></div>
+        </div>
+      </div>
+      <span id="pill" class="shrink-0 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container border border-outline-variant text-outline font-label-sm text-label-sm font-semibold uppercase">…</span>
+    </div>
+    <div class="flex items-center justify-between pt-2 border-t border-outline-variant/30">
+      <span class="flex items-center gap-1.5 font-label-sm text-label-sm text-on-surface-variant"><svg class="ico w-4 h-4 text-tertiary"><use href="#i-shield"/></svg>End-to-end encrypted</span>
+      <span class="font-label-sm text-label-sm text-primary tracking-widest px-2 py-0.5 rounded-md border border-outline-variant/40">ChaCha20-Poly1305</span>
+    </div>
+  </section>
+
+  <!-- mode switch -->
+  <nav class="grid grid-cols-2 gap-1 p-1 rounded-[12px] bg-surface-container-low border border-outline-variant/40" aria-label="Mode">
+    <button id="tab-send" class="mode-tab flex items-center justify-center gap-1.5 py-2 rounded-[9px] font-label-md text-label-md font-bold uppercase"><svg class="ico w-4 h-4"><use href="#i-upload"/></svg>Send to PC</button>
+    <button id="tab-recv" class="mode-tab flex items-center justify-center gap-1.5 py-2 rounded-[9px] font-label-md text-label-md font-bold uppercase"><svg class="ico w-4 h-4"><use href="#i-download"/></svg>Get from PC</button>
+  </nav>
+
+  <!-- device -->
+  <section class="bg-surface-container-low border border-primary-container/25 rounded-[14px] p-space-md flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3 min-w-0 flex-1">
+      <div class="w-8 h-8 rounded-[10px] bg-surface-container-highest flex items-center justify-center border border-outline-variant text-primary-container shrink-0"><svg class="ico w-[18px] h-[18px]"><use href="#i-phone"/></svg></div>
+      <div class="min-w-0 flex-1">
+        <span class="font-label-sm text-label-sm text-outline block">This phone</span>
+        <span id="dev-name" class="font-headline-sm text-[16px] text-on-surface font-semibold tracking-tight truncate block">Phone</span>
+        <input id="dev-input" maxlength="40" autocomplete="off" class="hidden w-full bg-surface-container border border-primary-container/50 rounded-[8px] px-2 py-1 text-[16px] text-on-surface outline-none" aria-label="Phone name">
+      </div>
+    </div>
+    <button id="dev-edit" aria-label="Rename this phone" class="w-8 h-8 rounded-[8px] bg-surface-container border border-outline-variant/50 text-on-surface-variant flex items-center justify-center shrink-0"><svg class="ico w-4 h-4"><use href="#i-edit"/></svg></button>
+  </section>
+
+  <!-- SEND: pick files -->
+  <div id="v-send" class="flex flex-col gap-3.5">
+    <label for="picker" class="w-full relative overflow-hidden rounded-[14px] border-2 border-dashed border-primary-container/60 bg-surface-container-low/70 p-4 neon-glow-cyan active:scale-[0.99] cursor-pointer block">
+      <div class="absolute inset-0 transmission-sweep opacity-20 pointer-events-none"></div>
+      <div class="relative flex items-center gap-3.5">
+        <div class="w-11 h-11 rounded-[12px] bg-primary-container text-surface-container-lowest flex items-center justify-center shadow-[0_0_16px_rgba(34,211,238,0.6)]"><svg class="ico w-6 h-6"><use href="#i-addimg"/></svg></div>
+        <div>
+          <div class="font-headline-sm text-[17px] font-bold text-on-surface flex items-center gap-1.5">Choose files <svg class="ico w-[18px] h-[18px] text-primary-container"><use href="#i-arrow"/></svg></div>
+          <p class="font-body-sm text-body-sm text-on-surface-variant">Photos, videos, documents · multiple allowed</p>
+        </div>
+      </div>
+    </label>
+    <input id="picker" type="file" multiple class="hidden">
+    <div id="send-head" class="hidden flex items-center justify-between pt-1">
+      <div class="flex items-center gap-2">
+        <span class="font-headline-sm text-[15px] font-bold text-on-surface tracking-wide uppercase">Selected files</span>
+        <span id="send-count" class="px-2 py-0.5 rounded-full bg-primary-container/15 text-primary border border-primary-container/30 font-label-sm text-label-sm font-bold">0</span>
+      </div>
+      <button id="send-clear" class="font-label-sm text-label-sm text-secondary flex items-center gap-1"><svg class="ico w-3.5 h-3.5"><use href="#i-trash"/></svg>Clear all</button>
+    </div>
+    <section id="send-grid" class="grid grid-cols-3 gap-3"></section>
+    <section id="send-summary" class="hidden bg-surface-container-low border border-primary-container/20 rounded-[14px] p-3 flex items-center justify-between">
+      <div class="flex items-center gap-2.5"><div class="w-2 h-2 rounded-full bg-primary-container"></div><div><span id="send-total" class="font-headline-sm text-[15px] font-bold text-on-surface"></span></div></div>
+      <label for="picker" class="font-label-sm text-label-sm text-primary border border-primary-container/30 px-2.5 py-1 rounded-[8px] bg-primary-container/10 flex items-center gap-1 cursor-pointer"><svg class="ico w-3.5 h-3.5"><use href="#i-plus"/></svg>Add more</label>
+    </section>
+  </div>
+
+  <!-- SENDING: progress -->
+  <div id="v-sending" class="hidden flex flex-col gap-3.5">
+    <section class="bg-surface-container-low border border-primary-container/40 rounded-[14px] p-3.5 shadow-[0_0_20px_rgba(34,211,238,0.18)] flex flex-col gap-3 relative overflow-hidden">
+      <div class="flex items-center gap-3">
+        <div id="up-thumb" class="relative w-12 h-12 rounded-[10px] overflow-hidden shrink-0 border border-primary-container/60 bg-surface-container-highest flex items-center justify-center"></div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between gap-1"><h3 id="up-name" class="font-headline-sm text-[15px] font-bold text-on-surface truncate">—</h3><span id="up-pct" class="font-label-sm text-[11px] text-primary font-bold shrink-0">0%</span></div>
+          <div class="flex items-center justify-between mt-0.5"><span id="up-index" class="font-label-sm text-[10px] text-primary-fixed"></span><span id="up-bytes" class="font-label-sm text-[10px] text-on-surface-variant"></span></div>
+        </div>
+      </div>
+      <div class="w-full h-2 rounded-full bg-surface-container-highest overflow-hidden border border-primary-container/20"><div id="up-bar" class="h-full rounded-full bg-gradient-to-r from-primary-container to-secondary-container shadow-[0_0_12px_rgba(34,211,238,0.8)] transition-[width] duration-300" style="width:0%"></div></div>
+      <div class="pt-1 border-t border-outline-variant/30 flex flex-col gap-1.5">
+        <div class="flex items-center justify-between font-label-sm text-[11px]"><span id="up-overall" class="text-on-surface font-medium flex items-center gap-1.5"><svg class="ico w-3.5 h-3.5 text-primary"><use href="#i-swap"/></svg>Overall</span><span id="up-overall-bytes" class="text-outline"></span></div>
+        <div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden"><div id="up-obar" class="h-full rounded-full bg-gradient-to-r from-primary-container to-secondary-container transition-[width] duration-300" style="width:0%"></div></div>
+        <div class="flex items-center justify-between font-label-sm text-[10px] pt-0.5"><span class="flex items-center gap-1.5 text-primary-fixed font-semibold"><svg class="ico w-3.5 h-3.5 text-tertiary"><use href="#i-bolt"/></svg><span id="up-speed">—</span></span><span class="text-outline flex items-center gap-1"><svg class="ico w-3 h-3"><use href="#i-clock"/></svg><span id="up-eta">—</span></span></div>
+      </div>
+    </section>
+    <div class="flex items-center justify-between pt-0.5">
+      <div class="flex items-center gap-2"><span id="up-head" class="font-headline-sm text-[14px] font-bold text-on-surface tracking-wide uppercase">Files in transit</span><span id="up-badge" class="px-2 py-0.5 rounded-full bg-tertiary/15 text-tertiary border border-tertiary/30 font-label-sm text-[10px] font-bold"></span></div>
+      <span id="up-queued" class="font-label-sm text-[10px] text-outline tracking-wider"></span>
+    </div>
+    <section id="up-grid" class="grid grid-cols-3 gap-2.5 pb-2"></section>
+  </div>
+
+  <!-- RECEIVE -->
+  <div id="v-recv" class="hidden flex flex-col gap-3.5">
+    <div class="flex items-end justify-between gap-2">
+      <div class="min-w-0"><h2 id="recv-title" class="font-headline-sm text-[18px] font-bold text-on-surface truncate">Files from the PC</h2><div id="recv-sub" class="font-body-sm text-[13px] text-on-surface-variant"></div></div>
+      <button id="recv-all" class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary-container/40 bg-surface-container-low font-label-sm text-label-sm text-on-surface"><svg class="ico w-3.5 h-3.5 text-primary"><use href="#i-check"/></svg><span id="recv-sel">0 of 0 selected</span></button>
+    </div>
+    <div id="recv-empty" class="rounded-[14px] border border-dashed border-outline-variant/60 p-5 text-center font-body-sm text-body-sm text-on-surface-variant">No files yet. Add files under <b class="text-primary">Send to phone</b> on the PC; they show up here.</div>
+    <section id="recv-grid" class="grid grid-cols-3 gap-3"></section>
+    <section id="dn-card" class="hidden bg-surface-container-low border border-primary-container/40 rounded-[14px] p-3.5 flex flex-col gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-[10px] border border-primary-container/50 bg-surface-container flex items-center justify-center text-primary shrink-0"><svg class="ico w-5 h-5"><use href="#i-download"/></svg></div>
+        <div class="flex-1 min-w-0"><div class="flex items-center justify-between gap-2"><h3 id="dn-name" class="font-headline-sm text-[15px] font-bold text-on-surface truncate"></h3><span id="dn-bytes" class="font-label-sm text-[10px] text-on-surface-variant shrink-0"></span></div><span id="dn-index" class="font-label-sm text-[10px] text-primary-fixed"></span></div>
+      </div>
+      <div class="w-full h-2 rounded-full bg-surface-container-highest overflow-hidden"><div id="dn-bar" class="h-full rounded-full bg-gradient-to-r from-primary-container to-secondary-container transition-[width] duration-300" style="width:0%"></div></div>
+      <div class="flex items-center justify-between font-label-sm text-[11px]"><span class="text-outline">Current file progress</span><span id="dn-pct" class="text-primary font-bold">0%</span></div>
+      <div class="pt-1 border-t border-outline-variant/30 flex flex-col gap-1.5">
+        <div class="flex items-center justify-between font-label-sm text-[11px]"><span id="dn-overall" class="text-on-surface flex items-center gap-1.5"><svg class="ico w-3.5 h-3.5 text-primary"><use href="#i-swap"/></svg>Overall</span><span id="dn-overall-bytes" class="text-outline"></span></div>
+        <div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden"><div id="dn-obar" class="h-full rounded-full bg-gradient-to-r from-primary-container to-secondary-container transition-[width] duration-300" style="width:0%"></div></div>
+        <div class="flex items-center justify-between font-label-sm text-[11px] pt-0.5"><span class="flex items-center gap-1.5 text-tertiary font-semibold"><svg class="ico w-3.5 h-3.5"><use href="#i-bolt"/></svg><span id="dn-speed">—</span></span><span class="text-outline flex items-center gap-1"><svg class="ico w-3.5 h-3.5"><use href="#i-clock"/></svg><span id="dn-eta">—</span></span></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- bottom bars -->
+<aside class="fixed bottom-0 inset-x-0 z-50 bg-[#060b16]/95 border-t border-primary-container/20 px-margin pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
+  <div class="w-full max-w-md mx-auto flex flex-col gap-2">
+    <button id="btn-send" disabled class="relative w-full overflow-hidden rounded-[14px] p-0.5 shadow-[0_0_24px_rgba(34,211,238,0.35)] active:scale-[0.98] disabled:opacity-40 disabled:shadow-none">
+      <div class="absolute inset-0 bg-gradient-to-r from-secondary-container via-primary-container to-secondary"></div>
+      <div class="relative w-full bg-surface-container-lowest/90 rounded-[12px] py-3.5 px-4 flex items-center justify-center gap-2.5"><svg class="ico w-[22px] h-[22px] text-primary"><use href="#i-send"/></svg><span id="btn-send-text" class="font-headline-sm text-[17px] font-bold tracking-wider text-white">SEND TO PC</span></div>
+    </button>
+    <button id="btn-cancel" class="hidden w-full py-3 px-4 rounded-[12px] border border-secondary/40 bg-surface-container-low text-secondary font-headline-sm text-[15px] font-bold flex items-center justify-center gap-2 active:scale-95 shadow-[0_0_14px_rgba(224,64,251,0.2)]"><svg class="ico w-[18px] h-[18px]"><use href="#i-cancel"/></svg><span>Cancel all</span></button>
+    <button id="btn-more" class="hidden w-full py-3 px-4 rounded-[12px] border border-primary-container/50 bg-surface-container-low text-primary font-headline-sm text-[15px] font-bold flex items-center justify-center gap-2 active:scale-95"><svg class="ico w-[18px] h-[18px]"><use href="#i-plus"/></svg><span>Send more files</span></button>
+    <button id="btn-save" disabled class="hidden w-full rounded-[14px] py-3.5 px-4 bg-gradient-to-r from-primary-container via-primary-container to-secondary-container text-surface-container-lowest flex items-center justify-center gap-2.5 font-headline-sm text-[17px] font-bold tracking-wider active:scale-[0.98] disabled:opacity-40 shadow-[0_0_24px_rgba(34,211,238,0.35)]"><svg class="ico w-[22px] h-[22px]"><use href="#i-download"/></svg><span id="btn-save-text">SAVE TO PHONE</span></button>
+    <div id="foot" class="flex items-center justify-center gap-1.5 font-label-sm text-[11px] text-outline text-center"></div>
+  </div>
+</aside>
+
+<!-- overlay: name, waiting, problems -->
+<div id="overlay" class="hidden fixed inset-0 z-[60] bg-surface-container-lowest/95 flex items-center justify-center px-6">
+  <div class="w-full max-w-sm bg-surface-container-low border border-primary-container/40 rounded-[16px] p-5 neon-glow-cyan flex flex-col gap-3 text-center">
+    <div id="ov-icon" class="mx-auto w-12 h-12 rounded-[14px] bg-primary-container/10 border border-primary-container/40 flex items-center justify-center text-primary"></div>
+    <h2 id="ov-title" class="font-headline-sm text-[19px] font-bold text-on-surface"></h2>
+    <p id="ov-text" class="font-body-md text-body-md text-on-surface-variant"></p>
+    <input id="ov-input" maxlength="40" autocomplete="off" placeholder="e.g. My phone" class="hidden w-full bg-surface-container border border-primary-container/50 rounded-[10px] px-3 py-2.5 text-[16px] text-on-surface outline-none" aria-label="Phone name">
+    <button id="ov-btn" class="hidden w-full py-3 rounded-[12px] bg-primary-container text-surface-container-lowest font-headline-sm text-[16px] font-bold active:scale-95"></button>
+  </div>
+</div>
+
+<div id="toast" class="hidden fixed left-1/2 -translate-x-1/2 bottom-36 z-[70] max-w-[90%] px-4 py-2 rounded-[10px] bg-surface-container-highest border border-outline-variant text-on-surface font-body-sm text-body-sm text-center"></div>
+<script src="/app.js"></script>
+</body>
+</html>

@@ -393,7 +393,10 @@ class BrandTitle(QWidget):
         super().__init__(parent)
         self.title_font = T.head_font(25, QFont.Weight.Bold, 3.2)
         self.sub_font = T.head_font(8.6, QFont.Weight.Normal, 3.0)
-        self.setMinimumSize(380, 62)
+        # as wide as the text really is (+ glow), so the title-bar tabs never paint over it
+        width = max(QFontMetricsF(self.title_font).horizontalAdvance("NEON TORRENT"),
+                    QFontMetricsF(self.sub_font).horizontalAdvance("PEER-TO-PEER  ·  CONTROL CENTER"))
+        self.setFixedSize(int(width + 18), 62)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
 
     def paintEvent(self, _event):
@@ -403,17 +406,21 @@ class BrandTitle(QWidget):
         fm = QFontMetricsF(self.title_font)
         base = fm.ascent() + 2
         x = 0.0
-        parts = (("NEON", "cyan", "cyan2", True), (" / ", "magenta", "magenta", True), ("TORRENT", "text", "text", False))
-        for text, k1, k2, glow in parts:
+        # NEON: sky blue to magenta with a glow; TORRENT: plain white
+        parts = (("NEON", QColor("#38bdf8"), T.c("magenta"), True), (" TORRENT", QColor("white"), QColor("white"), False))
+        for text, c1, c2, glow in parts:
             w = fm.horizontalAdvance(text)
             path = QPainterPath()
             path.addText(QPointF(x, base), self.title_font, text)
-            grad = QLinearGradient(QPointF(x, 0), QPointF(x + w, base))
-            grad.setColorAt(0, T.c(k1))
-            grad.setColorAt(1, T.c(k2).lighter(110))
+            grad = QLinearGradient(QPointF(x, 0), QPointF(x + w, 0))
+            grad.setColorAt(0, c1)
+            grad.setColorAt(1, c2)
             if glow:
                 for width, alpha in ((7, 22), (4, 45), (2, 80)):
-                    p.setPen(QPen(T.c(k1, alpha), width, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
+                    halo = QLinearGradient(QPointF(x, 0), QPointF(x + w, 0))
+                    halo.setColorAt(0, QColor(c1.red(), c1.green(), c1.blue(), alpha))
+                    halo.setColorAt(1, QColor(c2.red(), c2.green(), c2.blue(), alpha))
+                    p.setPen(QPen(QBrush(halo), width, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
                                   Qt.PenJoinStyle.RoundJoin))
                     p.setBrush(Qt.BrushStyle.NoBrush)
                     p.drawPath(path)
@@ -803,6 +810,8 @@ class FilterChip(QPushButton):
 
 class PageTab(QPushButton):
     """A large text tab with a live count (DOWNLOADING 3); the selected one glows and gets an underline."""
+    show_count = True
+    text_lift = 6        # px the label sits above centre to leave room for the underline
 
     def __init__(self, label: str, color_key: str, parent=None):
         super().__init__(parent)
@@ -821,8 +830,8 @@ class PageTab(QPushButton):
 
     def _fit(self) -> None:
         text = QFontMetricsF(T.head_font(11.5, QFont.Weight.DemiBold, 1.6)).horizontalAdvance(self.label)
-        number = QFontMetricsF(T.head_font(10, QFont.Weight.Bold)).horizontalAdvance(str(self.count))
-        self.setFixedWidth(int(text + number + 34))
+        number = QFontMetricsF(T.head_font(10, QFont.Weight.Bold)).horizontalAdvance(str(self.count)) + 10
+        self.setFixedWidth(int(text + (number if self.show_count else 0) + 24))
 
     def enterEvent(self, event):
         self._hover = True
@@ -838,15 +847,16 @@ class PageTab(QPushButton):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         on, key = self.isChecked(), self.color_key
-        r = QRectF(self.rect()).adjusted(6, 0, -6, -6)
+        r = QRectF(self.rect()).adjusted(6, 0, -6, -self.text_lift)
         p.setFont(T.head_font(11.5, QFont.Weight.DemiBold, 1.6))
         p.setPen(T.c(key) if on else T.c("text", 235 if self._hover else 150))
         p.drawText(r, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft, self.label)
-        offset = QFontMetricsF(p.font()).horizontalAdvance(self.label) + 10
-        p.setFont(T.head_font(10, QFont.Weight.Bold))
-        p.setPen(T.c(key, 230) if on else T.c("muted", 220))
-        p.drawText(r.adjusted(offset, 0, 0, 0), Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
-                   str(self.count))
+        if self.show_count:
+            offset = QFontMetricsF(p.font()).horizontalAdvance(self.label) + 10
+            p.setFont(T.head_font(10, QFont.Weight.Bold))
+            p.setPen(T.c(key, 230) if on else T.c("muted", 220))
+            p.drawText(r.adjusted(offset, 0, 0, 0), Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+                       str(self.count))
         if on:
             y = self.height() - 3.0
             for width, alpha in ((7.0, 40), (3.0, 255)):

@@ -500,11 +500,19 @@ class AboutDialog(NeonDialog):
         self.root.addLayout(head)
         summary = QLabel("NEON Torrent is built on open-source software, each part under its own licence: Qt and "
                          "PySide6 (LGPL-3.0, loaded as separate files you may replace), libtorrent (BSD-3-Clause), "
-                         "Boost (BSL-1.0), Python (PSF 2.0), OpenSSL (Apache-2.0), and libffi, bzip2, zlib, expat "
-                         "and others (MIT, BSD-style, zlib). The full notices and licence texts follow.")
+                         "Boost (BSL-1.0), Python (PSF 2.0), OpenSSL (Apache-2.0), cryptography (Apache-2.0 or "
+                         "BSD-3-Clause), segno (BSD-3-Clause), the @noble libraries (MIT), and libffi, bzip2, zlib, "
+                         "expat and others (MIT, BSD-style, zlib). The full notices and licence texts follow.")
         summary.setWordWrap(True)
         summary.setObjectName("muted")
         self.root.addWidget(summary)
+        disclaimer = QLabel("Disclaimer: NEON Torrent is a general-purpose file transfer tool, provided as is, without "
+                            "warranty. To the fullest extent the law allows, its author accepts no liability for any "
+                            "use of it for illegal, harmful or malicious purposes. Each user alone is responsible and "
+                            "accountable for what they use it for.")
+        disclaimer.setWordWrap(True)
+        disclaimer.setStyleSheet(f"color: {T.hexc('orange')};")
+        self.root.addWidget(disclaimer)
         self.notices = QTextBrowser()
         self.notices.setObjectName("notices")
         self.notices.setOpenExternalLinks(True)

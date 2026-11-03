@@ -454,7 +454,8 @@ class TorrentEngine(QObject):
                     today.mkdir(parents=True)
                     for path in files:
                         shutil.copy2(path, today / path.name)
-            for old in sorted((p for p in backups.iterdir() if p.is_dir()), reverse=True)[3:]:
+            olds = sorted((p for p in backups.iterdir() if p.is_dir()), reverse=True) if backups.is_dir() else []
+            for old in olds[3:]:
                 shutil.rmtree(old, ignore_errors=True)
         except OSError as exc:
             print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} WARN session backup failed: {exc}", file=sys.stderr, flush=True)
