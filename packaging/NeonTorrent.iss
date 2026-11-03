@@ -1,6 +1,9 @@
-; Inno Setup script for NEON Torrent. Built by tools\build_installer.py, which passes /DLayout and /DOutDir.
+; Inno Setup script for NEON Torrent. Built by tools\build_installer.py, which passes /DLayout, /DOutDir and
+; /DAppVer (APP_VERSION from src\neontorrent\__init__.py, so the version lives in one place).
 #define AppName "NEON Torrent"
-#define AppVer "1.0.1"
+#ifndef AppVer
+  #error Build with tools\build_installer.py: it passes /DAppVer from APP_VERSION
+#endif
 
 [Setup]
 AppId={{B6E1F2A4-3C7D-4E9A-8F21-5D4C3B2A1E90}
@@ -8,6 +11,15 @@ AppName={#AppName}
 AppVersion={#AppVer}
 AppVerName={#AppName} {#AppVer}
 AppPublisher=NEON
+; the setup .exe's own version resource (Explorer > Properties > Details); without it Windows shows 0.0.0.0
+VersionInfoVersion={#AppVer}
+VersionInfoProductVersion={#AppVer}
+VersionInfoTextVersion={#AppVer}
+VersionInfoProductTextVersion={#AppVer}
+VersionInfoProductName={#AppName}
+VersionInfoDescription={#AppName} Setup
+VersionInfoCompany=NEON
+VersionInfoCopyright=NEON Torrent
 DefaultDirName=F:\Apps\{#AppName}
 DisableDirPage=no
 DefaultGroupName={#AppName}

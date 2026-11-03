@@ -8,6 +8,7 @@ from __future__ import annotations
 import compileall
 import os
 import py_compile
+import re
 import shutil
 import subprocess
 import sys
@@ -21,6 +22,15 @@ WORK = base.BUILD / "installer"
 LAYOUT, OUT = WORK / "layout", WORK / "out"
 ISCC = Path(os.environ.get("NEON_ISCC", str(base.BUILD / "tools" / "InnoSetup" / "ISCC.exe")))
 EXTRA_PACKAGES = ("cryptography", "cffi", "pycparser", "segno")   # File Sharing: encryption and QR codes
+
+
+def app_version() -> str:
+    """APP_VERSION from the package, read as text (no app import): the one place the version is written."""
+    text = (ROOT / "src" / "neontorrent" / "__init__.py").read_text(encoding="utf-8")
+    match = re.search(r'^APP_VERSION = "(\d+(?:\.\d+){0,3})"$', text, re.MULTILINE)
+    if not match:
+        raise SystemExit("APP_VERSION in src/neontorrent/__init__.py must look like 1.2.3")
+    return match.group(1)
 
 
 def main() -> int:
@@ -44,12 +54,13 @@ def main() -> int:
     files = [f for f in LAYOUT.rglob("*") if f.is_file()]
     print(f"Layout: {len(files)} files, {sum(f.stat().st_size for f in files) / 2**20:.0f} MB")
     OUT.mkdir(parents=True, exist_ok=True)
-    run = subprocess.run([str(ISCC), "/Q", f"/DLayout={LAYOUT}", f"/DOutDir={OUT}",
+    version = app_version()
+    run = subprocess.run([str(ISCC), "/Q", f"/DLayout={LAYOUT}", f"/DOutDir={OUT}", f"/DAppVer={version}",
                           str(ROOT / "packaging" / "NeonTorrent.iss")], capture_output=True, text=True)
     if run.returncode:
         raise SystemExit("Inno Setup failed:\n" + "\n".join((run.stdout + run.stderr).splitlines()[-25:]))
     setup = OUT / "NEON-Torrent-Setup.exe"
-    print(f"Built {setup} ({setup.stat().st_size / 2**20:.0f} MB)")
+    print(f"Built {setup} ({setup.stat().st_size / 2**20:.0f} MB), version {version}")
     return 0
 
 
