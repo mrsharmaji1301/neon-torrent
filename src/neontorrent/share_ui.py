@@ -148,20 +148,39 @@ class TopTab(PageTab):
 
 
 class QrView(QWidget):
-    def __init__(self, parent=None):
+    clicked = Signal()                                   # a code is shown and was clicked: open the zoom
+
+    def __init__(self, size: int = 225, zoomable: bool = True, parent=None):
         super().__init__(parent)
         self.rows: list[list[int]] = []
         self.message = ""
-        self.setFixedSize(236, 236)
+        self.zoomable = zoomable
+        self.mirror: QrView | None = None                # the open zoom window shows the same code
+        self.setFixedSize(size, size)
 
     def set_url(self, url: str) -> None:
         self.rows = [list(row) for row in segno.make(url, error="m").matrix_iter(scale=1, border=3)] if url else []
-        self.update()
+        self._changed()
 
     def set_message(self, text: str) -> None:
         self.message = text
         self.rows = []
+        self._changed()
+
+    def _changed(self) -> None:
+        if self.zoomable:
+            self.setCursor(Qt.CursorShape.PointingHandCursor if self.rows else Qt.CursorShape.ArrowCursor)
+            self.setToolTip("Click to zoom" if self.rows else "")
+        if self.mirror is not None:
+            self.mirror.rows, self.mirror.message = self.rows, self.message
+            self.mirror.update()
         self.update()
+
+    def mousePressEvent(self, event):
+        if self.zoomable and self.rows and event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+        else:
+            super().mousePressEvent(event)
 
     def paintEvent(self, _event):
         p = QPainter(self)
@@ -465,6 +484,39 @@ class ApproveDialog(NeonDialog):
         self.root.addLayout(row)
 
 
+class QrZoomDialog(NeonDialog):
+    """The pairing code at 500 x 500 with its hint, for phones that struggle with the small one. Follows changes."""
+
+    def __init__(self, source: QrView, hint: str, parent=None):
+        super().__init__("QR code", parent)            # its title bar has the X at the top right
+        # a popup: any click outside it closes it
+        self.setWindowFlags(Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint)
+        self.source = source
+        self.view = QrView(500, zoomable=False)
+        self.view.rows, self.view.message = source.rows, source.message
+        source.mirror = self.view
+        self.root.addWidget(self.view, 0, Qt.AlignmentFlag.AlignHCenter)
+        self.hint = QLabel(hint)
+        self.hint.setObjectName("muted")
+        self.hint.setWordWrap(True)
+        self.hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.hint.setFixedWidth(500)
+        self.root.addWidget(self.hint, 0, Qt.AlignmentFlag.AlignHCenter)
+        row = QHBoxLayout()
+        row.addStretch(1)
+        close = GlowButton("CLOSE", "check", "cyan", "solid", "cyan2")
+        close.setMinimumWidth(130)
+        close.setFixedHeight(44)
+        close.clicked.connect(self.accept)
+        row.addWidget(close)
+        self.root.addLayout(row)
+        self.finished.connect(self._detach)
+
+    def _detach(self, _result: int) -> None:
+        if self.source.mirror is self.view:
+            self.source.mirror = None
+
+
 class _Relay(QObject):
     pc_info = Signal(dict)
 
@@ -512,7 +564,7 @@ class ShareTab(QWidget):
         qr_panel.setFixedWidth(384)
         ql = QVBoxLayout(qr_panel)
         ql.setContentsMargins(22, 16, 22, 18)
-        ql.setSpacing(10)
+        ql.setSpacing(8)
         self.mode_tabs = FilterBar([("send", "TO PHONE", "cyan"), ("recv", "FROM PHONE", "magenta")],
                                    chip_class=TopTab, spacing=4)
         self.mode_tabs.changed.connect(self._on_mode)
@@ -530,14 +582,16 @@ class ShareTab(QWidget):
         status.addWidget(self.path_badge)
         ql.addLayout(status)
         self.qr = QrView()
+        self.qr.clicked.connect(self._zoom_qr)
+        self.zoom: QrZoomDialog | None = None
+        self.connected: set[str] = set()                 # phones pending or online at the last poll
+        self.zoom_known: set[str] = set()                # ...when the zoom opened; a new one closes it
         ql.addWidget(self.qr, 0, Qt.AlignmentFlag.AlignHCenter)
         self.hint = QLabel()
         self.hint.setObjectName("muted")
         self.hint.setWordWrap(True)
         self.hint.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
-        # room for three wrapped lines, so a short window never squeezes the text up into the QR
-        self.hint.setMinimumHeight(round(self.hint.fontMetrics().lineSpacing() * 3) + 4)
-        ql.addWidget(self.hint)
+        ql.addWidget(self.hint)                          # _on_mode fixes its height to the wrapped text
         buttons = QHBoxLayout()
         buttons.setSpacing(8)
         self.new_qr_btn = GlowButton("NEW QR", "refresh", "cyan", "outline")
@@ -561,9 +615,9 @@ class ShareTab(QWidget):
         register(net)
         net.setFixedWidth(384)
         nl = QGridLayout(net)
-        nl.setContentsMargins(22, 14, 22, 16)
+        nl.setContentsMargins(22, 10, 22, 12)             # compact: the QR panel above needs the height
         nl.setHorizontalSpacing(12)
-        nl.setVerticalSpacing(5)
+        nl.setVerticalSpacing(3)
         self.net_values: dict[str, QLabel] = {}
         row = 0
         for header, fields in (("THIS PC", (("pc_ip", "IP"), ("pc_mac", "MAC"), ("pc_wifi", "Wi-Fi"))),
@@ -734,6 +788,17 @@ class ShareTab(QWidget):
         if self.server is not None:
             self.server.set_tunnel("")
 
+    def _zoom_qr(self) -> None:
+        if self.zoom is None:
+            self.zoom_known = set(self.connected)
+            self.zoom = QrZoomDialog(self.qr, self.hint.text(), self)
+            self.zoom.finished.connect(lambda _r: setattr(self, "zoom", None))
+            self.zoom.adjustSize()
+            self.zoom.move(self.window().frameGeometry().center() - self.zoom.rect().center())
+            self.zoom.show()                             # not modal: the code keeps updating behind it
+        self.zoom.raise_()
+        self.zoom.activateWindow()
+
     # ---------------------------------------------------------- mode
     def _on_mode(self, mode: str) -> None:
         self.mode = mode
@@ -747,6 +812,10 @@ class ShareTab(QWidget):
         self.hint.setText("Scan with the phone camera. On the phone, choose “Get from PC” to save these files."
                           if send else "Scan with the phone camera, choose files on the phone and tap Send. "
                           f"They are saved in {self.save_dir()}.")
+        self.hint.ensurePolished()                              # the #muted font size, before measuring
+        self.hint.setFixedHeight(self.hint.heightForWidth(340))  # panel 384 - margins 44: the layout cannot squeeze it
+        if self.zoom is not None:
+            self.zoom.hint.setText(self.hint.text())
         self.pairing_rev = -1                                   # QR carries the mode: redraw it
         if self.server is not None:
             self._poll()
@@ -849,6 +918,9 @@ class ShareTab(QWidget):
         allowed = next((p for p in phones if p["state"] == "allowed"), None)
         pending = [p for p in phones if p["state"] == "pending"]
         active = [t for t in snap["transfers"] if t["state"] == "active"]
+        self.connected = {p["sid"] for p in phones if p["state"] == "pending" or p.get("alive")}
+        if self.zoom is not None and self.connected - self.zoom_known:
+            self.zoom.close()                            # a phone just connected: the big code has done its job
         if allowed is not None:
             self._set_status("transferring" if active and allowed["alive"] else
                              "connected" if allowed["alive"] else "lost")

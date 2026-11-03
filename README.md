@@ -156,7 +156,9 @@ Files are end-to-end encrypted on both paths; Cloudflare relays only ciphertext.
 
 1. Open **FILE SHARING**. A sharing session starts and shows a QR code. **SEND TO PHONE** and **RECEIVE FROM PHONE**
    each have their own code; both open the same page, which has *Send to PC* and *Get from PC* tabs.
-2. Scan it with the phone camera. The first time, the phone asks for a name (remembered on the phone).
+2. Scan it with the phone camera. The first time, the phone asks for a name (remembered on the phone). Click the QR
+   code to zoom it to 500 × 500 with its hint; the zoom closes with its X, a click anywhere outside it, or as soon as
+   a phone connects.
 3. The PC asks **Allow “name” (model, IP, MAC)?** Allow it once; the phone stays trusted until you press
    **DISCONNECT**, **STOP**, quit the app, or the phone stays away for 10 minutes. The QR code changes after every
    answer, so a code someone photographed cannot be used again.
