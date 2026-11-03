@@ -88,10 +88,20 @@ promise any client can honestly make. NEON Torrent works on everything a client 
   LAN address cannot get). File contents stay confidential against anyone who only watches the Wi-Fi, but an
   attacker who can actively tamper with traffic on your own network while you scan could swap the page's script
   and read the key. Use File Sharing on networks you control, not on public Wi-Fi.
+- LAN | INTERNET toggle (next to TO PHONE | FROM PHONE, remembered as `share_net`). **LAN** starts no tunnel at
+  all: nothing is reachable from the internet. **INTERNET** (the default) shows the QR code only once the tunnel is
+  up, never a LAN code a phone elsewhere could not use, and keeps phones on the tunnel (no LAN hop).
+- No port is opened on the router: cloudflared makes an outbound connection to Cloudflare, and only the random
+  `*.trycloudflare.com` name reaches the sharing server, over HTTPS.
 - Internet mode: while sharing, `cloudflared tunnel --no-autoupdate --url http://<LAN IP>:<port>` runs hidden (no
   account, no config file; its working folder is the app data folder) and is killed on STOP, DISCONNECT (a new
-  tunnel URL is made) and quit. The tunnel page is HTTPS, so the page-integrity limit above shrinks to trusting
-  Cloudflare's edge, which only ever sees ciphertext and never the `#fragment`.
+  tunnel URL is made), switching to LAN and quit. It also sits in a Windows job object with kill-on-close, so it
+  dies with NEON even when NEON crashes or is killed: no orphaned public tunnel. The tunnel page is HTTPS, so the
+  page-integrity limit above shrinks to trusting Cloudflare's edge, which only ever sees ciphertext and never the
+  `#fragment`.
+- Flood limits: at most 48 concurrent connections (more are dropped unread), 30 s socket timeout, 8 failed pairings
+  per IP (4096 IPs remembered), 3 phones waiting for Allow, and an upload's 1 MB body is read only after its session
+  and transfer check out.
 - A request counts as tunnel traffic only if its `Host` is the current `*.trycloudflare.com` name **and** it comes
   from this PC's own LAN address (where cloudflared connects from) **and** carries `CF-Connecting-IP`; such sessions
   are bound to that public IP and cannot be used from the LAN side. Anyone with the tunnel URL can load the page,
@@ -127,6 +137,10 @@ promise any client can honestly make. NEON Torrent works on everything a client 
 | 21 | File Sharing: tampered chunk; upload named `..\..\..\Windows\evil.exe` | Chunk rejected; saved as `FTP\evil.exe` with Mark-of-the-Web |
 | 22 | File Sharing: foreign `Host` header (DNS rebinding); connection from a non-private address | Refused (421 / 403) |
 | 23 | File Sharing: request posing as tunnel traffic without Cloudflare's client-IP header | Refused (403) |
+| 24 | File Sharing: INTERNET mode and a tunnel visitor behind the same router | LAN address never handed out |
+| 25 | File Sharing: old tunnel host name after the tunnel stopped | Refused (421) |
+| 26 | File Sharing: upload with a 1 MB body from an unknown session | Refused (401) before the body is read |
+| 27 | File Sharing: connection flood | Capped at 48; the server serves again afterwards |
 
 ## On this PC (checked 2026-10-23)
 

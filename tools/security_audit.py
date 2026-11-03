@@ -326,6 +326,7 @@ def test_share() -> None:
     """File Sharing server (C-11): pairing, encryption, replay, file names and the network gate."""
     import http.client
     import json
+    import socket
     from urllib.parse import parse_qs, urlsplit
 
     from cryptography.hazmat.primitives.asymmetric.x25519 import (
@@ -394,6 +395,40 @@ def test_share() -> None:
         forged, _ = post(server.port, "/api/hello", body, host="audit-tunnel-0001.trycloudflare.com")
         check("Share: a request posing as tunnel traffic without Cloudflare's client-IP header is refused",
               forged == 403, f"HTTP {forged}")
+        hop = server.where("cf:203.0.113.5")["lan"]
+        server.lan_hop = False
+        stay = server.where("cf:203.0.113.5")["lan"]
+        check("Share: INTERNET mode never hands the LAN address to a phone that came through the tunnel",
+              bool(hop) and stay == "", f"auto {hop!r}, internet mode {stay!r}")
+        server.set_tunnel("")
+        stale, _ = post(server.port, "/api/hello", body, host="audit-tunnel-0001.trycloudflare.com")
+        check("Share: once the tunnel is stopped its host name is refused", stale == 421, f"HTTP {stale}")
+
+        raw = socket.create_connection(("127.0.0.1", server.port), timeout=5)
+        started = time.monotonic()
+        raw.sendall(f"POST /api/up?s=nobody&n=1&i=0 HTTP/1.1\r\nHost: 127.0.0.1:{server.port}\r\n"
+                    f"Content-Length: {S.CHUNK + S.TAG}\r\n\r\n".encode())      # headers only: the body never comes
+        answer = raw.recv(64)
+        waited = time.monotonic() - started
+        raw.close()
+        check("Share: an upload from an unknown session is refused before its 1 MB body is read",
+              answer.startswith(b"HTTP/1.1 401") and waited < 3, f"{answer[:12]!r} after {waited:.1f}s")
+
+        idle = [socket.create_connection(("127.0.0.1", server.port), timeout=5) for _ in range(S.MAX_CONNECTIONS)]
+        time.sleep(0.5)
+        extra = socket.create_connection(("127.0.0.1", server.port), timeout=5)
+        extra.sendall(f"GET / HTTP/1.1\r\nHost: 127.0.0.1:{server.port}\r\n\r\n".encode())
+        try:
+            dropped = extra.recv(64) == b""
+        except OSError:
+            dropped = True                          # reset by the server counts as dropped too
+        extra.close()
+        for s in idle:
+            s.close()
+        time.sleep(1.0)
+        status, _ = post(server.port, "/api/hello", b"{}")
+        check(f"Share: a connection flood is capped at {S.MAX_CONNECTIONS}; the server serves again afterwards",
+              dropped and status == 403, f"extra dropped {dropped}, then HTTP {status}")
     finally:
         server.stop()
     gate = S.ShareServer("127.0.0.1", save, "AUDIT")

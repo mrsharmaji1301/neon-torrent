@@ -147,6 +147,53 @@ class TopTab(PageTab):
     text_lift = 0        # centred on the title bar, level with CONNECTED and the buttons
 
 
+class NetToggle(QWidget):
+    """Two-way pill, LAN | INTERNET: which address the QR code carries. Click a side (or anywhere) to switch."""
+    changed = Signal(str)
+    OPTIONS = (("lan", "LAN", "green"), ("internet", "INTERNET", "magenta"))
+
+    def __init__(self, current: str, parent=None):
+        super().__init__(parent)
+        self.current = current
+        self.font_ = T.head_font(7.8, QFont.Weight.Bold, 1.0)
+        fm = QFontMetricsF(self.font_)
+        self.widths = [fm.horizontalAdvance(label) + 12 for _k, label, _c in self.OPTIONS]
+        self.setFixedSize(int(sum(self.widths)) + 4, 26)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setToolTip("LAN: phones on this Wi-Fi only, nothing goes through the internet.\n"
+                        "INTERNET: phones anywhere, through an encrypted Cloudflare tunnel; the QR code "
+                        "appears once the tunnel is up.")
+
+    def mousePressEvent(self, event):
+        if event.button() != Qt.MouseButton.LeftButton:
+            return super().mousePressEvent(event)
+        key = self.OPTIONS[0][0] if event.position().x() < 2 + self.widths[0] else self.OPTIONS[1][0]
+        if key != self.current:
+            self.current = key
+            self.update()
+            self.changed.emit(key)
+
+    def paintEvent(self, _event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        r = QRectF(self.rect()).adjusted(1, 1, -1, -1)
+        p.setPen(QPen(T.c("line"), 1.2))
+        p.setBrush(T.c("panel", 170))
+        p.drawRoundedRect(r, r.height() / 2, r.height() / 2)
+        p.setFont(self.font_)
+        x = 2.0
+        for (key, label, color), width in zip(self.OPTIONS, self.widths):
+            seg = QRectF(x, 3, width, self.height() - 6)
+            on = key == self.current
+            if on:
+                p.setPen(QPen(T.c(color, 200), 1.2))
+                p.setBrush(T.c(color, 70))
+                p.drawRoundedRect(seg, seg.height() / 2, seg.height() / 2)
+            p.setPen(QColor("white") if on else T.c("muted"))
+            p.drawText(seg, Qt.AlignmentFlag.AlignCenter, label)
+            x += width
+
+
 class QrView(QWidget):
     clicked = Signal()                                   # a code is shown and was clicked: open the zoom
 
@@ -534,6 +581,7 @@ class ShareTab(QWidget):
         self.tunnel: S.Tunnel | None = None
         self.pairing_rev = -1
         self.mode = "send"
+        self.net_mode = "lan" if T.load_preferences().get("share_net") == "lan" else "internet"
         self.sends: dict[str, dict] = {}                 # tile key -> {"path", "offer"}
         self.received: dict[str, Path] = {}              # tile key -> saved path
         self.prompts: dict[str, ApproveDialog] = {}
@@ -568,7 +616,13 @@ class ShareTab(QWidget):
         self.mode_tabs = FilterBar([("send", "TO PHONE", "cyan"), ("recv", "FROM PHONE", "magenta")],
                                    chip_class=TopTab, spacing=4)
         self.mode_tabs.changed.connect(self._on_mode)
-        ql.addWidget(self.mode_tabs)
+        tabs_row = QHBoxLayout()
+        tabs_row.setSpacing(2)
+        tabs_row.addWidget(self.mode_tabs, 1)
+        self.net_toggle = NetToggle(self.net_mode)
+        self.net_toggle.changed.connect(self._on_net)
+        tabs_row.addWidget(self.net_toggle, 0, Qt.AlignmentFlag.AlignVCenter)
+        ql.addLayout(tabs_row)
         status = QHBoxLayout()
         status.setSpacing(6)
         self.status_dot = StatusDot(10)
@@ -764,6 +818,23 @@ class ShareTab(QWidget):
     def _new_qr(self) -> None:
         if self.server is not None:
             self.server.rotate()
+            if self.net_mode == "internet" and (self.tunnel is None or self.tunnel.error):
+                self._stop_tunnel()                      # the internet link failed: NEW QR tries again
+                self._start_tunnel()
+            self._poll()
+
+    def _on_net(self, mode: str) -> None:
+        """LAN | INTERNET toggle: which address the QR code carries. Remembered for the next session."""
+        self.net_mode = mode
+        self.net_toggle.current = mode
+        self.net_toggle.update()
+        prefs = T.load_preferences()
+        prefs["share_net"] = mode
+        T.save_preferences(prefs)
+        if self.server is not None:
+            self._stop_tunnel()
+            self._start_tunnel()                         # starts only in INTERNET mode
+            self.pairing_rev = -1
             self._poll()
 
     def _disconnect(self) -> None:
@@ -776,10 +847,12 @@ class ShareTab(QWidget):
     def _start_tunnel(self) -> None:
         """Internet mode: a Cloudflare quick tunnel to the LAN server. The QR switches to it once it is up."""
         server = self.server
-        if server is None:
-            return
+        if server is None or self.net_mode != "internet":
+            return                                       # LAN mode: nothing is exposed to the internet
+        server.lan_hop = False                           # chosen by hand: phones stay on the internet path
         self.tunnel = S.Tunnel(server.lan_url().rstrip("/"), T.app_data_dir() / "cloudflared", server.set_tunnel)
         self.tunnel.start()
+        self.pairing_rev = -1                            # show "connecting the internet link" at once
 
     def _stop_tunnel(self) -> None:
         tunnel, self.tunnel = self.tunnel, None
@@ -911,7 +984,16 @@ class ShareTab(QWidget):
         if server is None:
             return
         snap = server.snapshot()
-        if snap["pairing_rev"] != self.pairing_rev:
+        tunnel = self.tunnel
+        if self.net_mode == "internet" and not snap["tunnel"]:
+            # INTERNET: the code appears only once the tunnel is up; a LAN code would strand a phone elsewhere
+            error = tunnel.error if tunnel is not None else "the tunnel is not running"
+            message = (f"The internet link failed: {error}.\nPress NEW QR to try again, or switch to LAN."
+                       if error else "Connecting the internet link…\nThe QR code appears once the tunnel is up.")
+            if self.pairing_rev != -2 or self.qr.message != message:
+                self.pairing_rev = -2
+                self.qr.set_message(message)
+        elif snap["pairing_rev"] != self.pairing_rev:
             self.pairing_rev = snap["pairing_rev"]
             self.qr.set_url(server.url(self.mode))
         phones = snap["phones"]
@@ -1032,16 +1114,18 @@ class ShareTab(QWidget):
         self.disconnect_btn.setEnabled(on and key in ("waiting", "connected", "transferring", "lost"))
 
     def _set_path(self, phone: dict | None, tunnel: str) -> None:
-        internet = phone["path"] == "internet" if phone else bool(tunnel)
+        internet = phone["path"] == "internet" if phone else self.net_mode == "internet"
         if phone:
             tip = ("The phone is connected through the internet tunnel (Cloudflare relays only encrypted data)."
                    if internet else "The phone is connected directly over your Wi-Fi.")
         elif tunnel:
             tip = (f"The QR code uses the internet tunnel ({tunnel}). Phones on this Wi-Fi switch to the direct "
                    "LAN connection by themselves.")
+        elif self.net_mode == "lan":
+            tip = "LAN mode: only phones on this Wi-Fi can connect; nothing goes through the internet."
         else:
             error = self.tunnel.error if self.tunnel else ""
-            tip = f"LAN only: {error}." if error else "LAN only for now: the internet tunnel is starting…"
+            tip = f"The internet link failed: {error}." if error else "The internet tunnel is connecting…"
         self.path_badge.setText("INTERNET" if internet else "LAN")
         color = T.hexc("magenta" if internet else "green")
         self.path_badge.setStyleSheet(f"color: {color}; border: 1px solid {color}; border-radius: 8px; padding: 2px 8px;")

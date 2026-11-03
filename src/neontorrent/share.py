@@ -32,6 +32,7 @@ import shutil
 import socket
 import struct
 import subprocess
+import sys
 import threading
 import time
 import unicodedata
@@ -59,6 +60,8 @@ SESSION_EXPIRY = 600.0               # an approved phone silent this long has to
 PENDING_EXPIRY = 120.0               # an unanswered approval request is dropped after this
 MAX_PENDING = 3
 MAX_HELLO_FAILS = 8                  # wrong-token attempts per IP before it is ignored for this session
+MAX_FAIL_IPS = 4096                  # distinct failing IPs remembered; beyond that every new one is refused
+MAX_CONNECTIONS = 48                 # concurrent HTTP connections (handler threads); more are dropped
 MAX_UPLOADS = 4                      # open uploads per phone
 DISK_RESERVE = 64 << 20              # keep this much free on the target drive
 PART_SUFFIX = ".neonpart"
@@ -337,6 +340,43 @@ def same_network(phone_ip: str, pc_ips: set[str]) -> bool:
     return False
 
 
+class _IoCounters(ctypes.Structure):
+    _fields_ = [(name, ctypes.c_ulonglong) for name in ("r_ops", "w_ops", "o_ops", "r_bytes", "w_bytes", "o_bytes")]
+
+
+class _BasicLimits(ctypes.Structure):
+    _fields_ = [("user_time", ctypes.c_longlong), ("job_time", ctypes.c_longlong), ("flags", ctypes.c_uint32),
+                ("min_ws", ctypes.c_size_t), ("max_ws", ctypes.c_size_t), ("processes", ctypes.c_uint32),
+                ("affinity", ctypes.c_size_t), ("priority", ctypes.c_uint32), ("scheduling", ctypes.c_uint32)]
+
+
+class _ExtendedLimits(ctypes.Structure):
+    _fields_ = [("basic", _BasicLimits), ("io", _IoCounters), ("process_memory", ctypes.c_size_t),
+                ("job_memory", ctypes.c_size_t), ("peak_process", ctypes.c_size_t), ("peak_job", ctypes.c_size_t)]
+
+
+_KILL_JOB: int | None = None
+
+
+def tie_to_app(process: subprocess.Popen) -> bool:
+    """Windows: put a child in a job that the OS closes with NEON, so it dies even if NEON is killed or crashes."""
+    global _KILL_JOB
+    if os.name != "nt":
+        return False
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    k32.CreateJobObjectW.restype = ctypes.c_void_p
+    k32.SetInformationJobObject.argtypes = (ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_uint32)
+    k32.AssignProcessToJobObject.argtypes = (ctypes.c_void_p, ctypes.c_void_p)
+    if _KILL_JOB is None:
+        job = k32.CreateJobObjectW(None, None)
+        limits = _ExtendedLimits()
+        limits.basic.flags = 0x2000                  # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+        if not job or not k32.SetInformationJobObject(job, 9, ctypes.byref(limits), ctypes.sizeof(limits)):
+            return False                             # 9 = JobObjectExtendedLimitInformation
+        _KILL_JOB = job                              # kept open for the app's lifetime; the OS closes it at exit
+    return bool(k32.AssignProcessToJobObject(_KILL_JOB, int(process._handle)))
+
+
 class Tunnel:
     """A Cloudflare quick tunnel (cloudflared, no account, no config file) in front of the LAN server.
     ``on_ready`` gets the https://*.trycloudflare.com URL from a background thread; failures just leave LAN mode."""
@@ -362,6 +402,7 @@ class Tunnel:
         except OSError as error:
             self.error = f"cloudflared did not start: {error.strerror or error}"
             return
+        tie_to_app(self.process)                     # no orphaned public tunnel after a crash or a kill
         threading.Thread(target=self._read, args=(self.process,), name="neon-share-tunnel", daemon=True).start()
 
     def _read(self, process: subprocess.Popen) -> None:
@@ -442,6 +483,31 @@ class _HTTPServer(ThreadingHTTPServer):
     allow_reuse_address = False                      # SO_REUSEADDR on Windows would let another app steal the port
     share: "ShareServer"
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.slots = threading.BoundedSemaphore(MAX_CONNECTIONS)
+
+    def process_request(self, request, client_address) -> None:
+        """At most MAX_CONNECTIONS handler threads: a flood through the tunnel cannot exhaust the PC."""
+        if not self.slots.acquire(blocking=False):
+            self.shutdown_request(request)           # dropped at once, nothing read
+            return
+        try:
+            super().process_request(request, client_address)
+        except Exception:
+            self.slots.release()
+            raise
+
+    def process_request_thread(self, request, client_address) -> None:
+        try:
+            super().process_request_thread(request, client_address)
+        finally:
+            self.slots.release()
+
+    def handle_error(self, request, client_address) -> None:
+        if not isinstance(sys.exc_info()[1], OSError):   # resets and timeouts are routine; they would flood error.log
+            super().handle_error(request, client_address)
+
 
 class ShareServer:
     """One sharing session: the listening socket, the pairing, the phones and the transfers. Thread-safe."""
@@ -469,6 +535,7 @@ class ShareServer:
         self.closed = False
         self.tunnel_url = ""                         # https://*.trycloudflare.com once the tunnel is up
         self.public_ips: set[str] = set()
+        self.lan_hop = True                          # False: a phone that came through the tunnel stays on it
 
     @staticmethod
     def _read_web(name: str) -> bytes:
@@ -512,12 +579,13 @@ class ShareServer:
         with self.lock:
             self.tunnel_url = url if TUNNEL_URL.fullmatch(url or "") else ""
             self.pairing_rev += 1
-        if self.tunnel_url and not self.public_ips:
-            self.public_ips = public_ips()
+        if self.tunnel_url and self.lan_hop and not self.public_ips:
+            self.public_ips = public_ips()           # only the LAN hop needs it; INTERNET mode skips the lookup
 
     def where(self, peer: str) -> dict:
         """For a page loaded through the tunnel: the LAN address, but only if the phone is behind the same router."""
-        if peer.startswith(TUNNEL_PREFIX) and same_network(peer[len(TUNNEL_PREFIX):], self.public_ips):
+        if self.lan_hop and peer.startswith(TUNNEL_PREFIX) and \
+                same_network(peer[len(TUNNEL_PREFIX):], self.public_ips):
             return {"lan": self.lan_url()}
         return {"lan": ""}
 
@@ -656,7 +724,7 @@ class ShareServer:
     # ---------------------------------------------------------- API (handler threads)
     def hello(self, ip: str, body: bytes) -> dict:
         with self.lock:
-            if self.fails.get(ip, 0) >= MAX_HELLO_FAILS:
+            if self.fails.get(ip, 0) >= MAX_HELLO_FAILS or (ip not in self.fails and len(self.fails) >= MAX_FAIL_IPS):
                 raise ShareError(429, "too many failed pairing attempts")
             pairing = self.pairing
         try:
@@ -1008,6 +1076,12 @@ class _Handler(BaseHTTPRequestHandler):
         if ip is None:
             return
         share, url = self.server.share, urlsplit(self.path)
+        if url.path == "/api/up":
+            try:                                     # session and transfer first: no 1 MB read for strangers
+                share._transfer(parse_qs(url.query), ip, "up")
+            except ShareError as error:
+                self._json(error.status, {"error": str(error)})
+                return
         body = self._body(CHUNK + TAG if url.path == "/api/up" else MAX_CONTROL)
         if body is None:
             return

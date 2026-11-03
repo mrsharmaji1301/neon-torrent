@@ -146,13 +146,15 @@ Flash mode resets to off when the app restarts.
 The **FILE SHARING** tab at the top of the window (next to **TORRENTS**, or `Ctrl+Tab`) moves files between this PC
 and a phone, at home or away. The phone needs only its browser (Android Chrome, iPhone Safari); nothing is installed.
 
-**LAN or INTERNET, picked automatically.** When sharing starts, the app also opens a free Cloudflare quick tunnel
-(the installed `cloudflared`, no account) and the QR code carries its `https://….trycloudflare.com` address. A phone
-that scans it from elsewhere connects over the internet. A phone on the same Wi-Fi (same public IP as the PC) jumps
-to the direct LAN address by itself, which is much faster. If that LAN page does not load, press Back: the phone
-remembers it and stays on the internet path. Without internet or `cloudflared`, the QR code is the LAN address as
-before. A **LAN** or **INTERNET** badge shows the path on the PC (next to the status) and in the phone's header.
-Files are end-to-end encrypted on both paths; Cloudflare relays only ciphertext.
+**LAN | INTERNET toggle** (next to **TO PHONE | FROM PHONE**; remembered):
+- **INTERNET** (default): the app opens a free Cloudflare quick tunnel (the installed `cloudflared`, no account) and
+  the QR code appears only once the tunnel is connected, carrying its `https://….trycloudflare.com` address. A phone
+  anywhere, on any network or mobile data, can scan it. If the tunnel fails, the QR area says why; press **NEW QR**
+  to try again, or switch to LAN. No port is opened on your router.
+- **LAN**: no tunnel at all; the QR code is the direct LAN address, for phones on this Wi-Fi only (fastest).
+
+A **LAN** or **INTERNET** badge next to the status shows the path the phone actually uses, also in the phone's
+header. Files are end-to-end encrypted on both paths; Cloudflare relays only ciphertext.
 
 1. Open **FILE SHARING**. A sharing session starts and shows a QR code. **SEND TO PHONE** and **RECEIVE FROM PHONE**
    each have their own code; both open the same page, which has *Send to PC* and *Get from PC* tabs.
