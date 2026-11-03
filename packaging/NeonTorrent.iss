@@ -1,6 +1,6 @@
 ; Inno Setup script for NEON Torrent. Built by tools\build_installer.py, which passes /DLayout and /DOutDir.
 #define AppName "NEON Torrent"
-#define AppVer "1.0.0"
+#define AppVer "1.0.1"
 
 [Setup]
 AppId={{B6E1F2A4-3C7D-4E9A-8F21-5D4C3B2A1E90}
