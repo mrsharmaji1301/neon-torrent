@@ -26,7 +26,10 @@ shared `python.exe`, so the app can be allowed or blocked without affecting othe
 again after upgrading Python. Windows Firewall asks once for the new exe: allow it on Private networks.
 
 **Windows Installer (MSI).** `.venv\Scripts\python.exe tools\build_msi.py` builds
-`neon-build\msi\out\NEON-Torrent-Setup.msi`, the package for free distribution. Nuitka (with the Zig C compiler)
+`neon-build\msi\out\NEON-Torrent-Setup.msi` and `NEON-Torrent-Setup.exe`. The exe is the file to share: a small
+native launcher (`tools\setup_stub`, built with Zig) with the NEON icon and version info. It carries the MSI, unpacks
+it into a fresh folder under `%TEMP%`, runs `msiexec /i` on it and deletes it afterwards. A bare `.msi` always shows
+the generic Windows Installer icon. Nuitka (with the Zig C compiler)
 compiles the app to a native `NeonTorrent.exe`; Python, a browser and the VC++ Redistributable are not needed on
 the target PC. WiX 3.14 (`neon-build\tools\wix314`) packs it from `packaging\NeonTorrent.wxs`. The installer shows
 the user agreement, privacy policy and disclaimer (`packaging\PRIVACY.txt`) and installs for all users, by

@@ -153,6 +153,55 @@ def run_wix(version: str) -> Path:
     return OUT / "NEON-Torrent-Setup.msi"
 
 
+SETUP_MAGIC = b"NEONMSI1"
+
+
+def zig_exe() -> Path:
+    """The Zig compiler Nuitka downloaded into nuitka-cache (also builds the setup launcher)."""
+    found = sorted(BUILD.glob("nuitka-cache/downloads/pip/*/Lib/site-packages/ziglang/zig.exe"))
+    if not found:
+        raise SystemExit("Zig not found in nuitka-cache: run without --no-compile once")
+    return found[-1]
+
+
+def make_setup_exe(msi: Path, version: str) -> Path:
+    """NEON-Torrent-Setup.exe: tools/setup_stub (NEON icon, version info) with the MSI appended. Windows shows every
+    .msi with its generic installer icon; this exe is the file users see and double-click."""
+    stub_dir, work = ROOT / "tools" / "setup_stub", WORK / "stub"
+    work.mkdir(parents=True, exist_ok=True)
+    numbers = ",".join((version.split(".") + ["0", "0", "0"])[:4])
+    strings = {"CompanyName": "SharmaJi", "FileDescription": "NEON Torrent Setup", "FileVersion": version,
+               "ProductName": "NEON Torrent", "ProductVersion": version, "LegalCopyright": "NEON Torrent",
+               "OriginalFilename": "NEON-Torrent-Setup.exe",
+               "Comments": "Free-to-use BitTorrent client with a built-in File Transfer module. Made by SharmaJi."}
+    for source in (PACKAGING / "NeonTorrent.ico", stub_dir / "setup.manifest"):   # zig's rc compiler reads the
+        shutil.copy2(source, work / source.name)                                   # resources next to the .rc
+    rc = "\n".join([
+        '1 ICON "NeonTorrent.ico"',
+        '1 24 "setup.manifest"',
+        "1 VERSIONINFO",
+        f"FILEVERSION {numbers}", f"PRODUCTVERSION {numbers}",
+        "FILEFLAGSMASK 0x3f", "FILEFLAGS 0x0", "FILEOS 0x40004", "FILETYPE 0x1", "FILESUBTYPE 0x0",
+        "BEGIN", '  BLOCK "StringFileInfo"', "  BEGIN", '    BLOCK "040904B0"', "    BEGIN",
+        *(f'      VALUE "{k}", "{v}"' for k, v in strings.items()),
+        "    END", "  END", '  BLOCK "VarFileInfo"', "  BEGIN", '    VALUE "Translation", 0x409, 1200', "  END",
+        "END", ""])
+    (work / "setup.rc").write_text(rc, encoding="utf-8")
+    stub = work / "NEON-Torrent-Setup-stub.exe"
+    env = build_env()
+    env.update(ZIG_GLOBAL_CACHE_DIR=str(BUILD / "zig-cache"), ZIG_LOCAL_CACHE_DIR=str(BUILD / "zig-cache" / "local"))
+    run = subprocess.run([str(zig_exe()), "build-exe", str(stub_dir / "stub.c"), str(work / "setup.rc"),
+                          "-target", "x86_64-windows-gnu", "-O", "ReleaseSmall", "-lc", "-luser32", "-lkernel32",
+                          "--subsystem", "windows", "--name", "NEON-Torrent-Setup-stub", f"-femit-bin={stub}"],
+                         cwd=work, env=env, capture_output=True, text=True)
+    if run.returncode:
+        raise SystemExit("setup launcher build failed:\n" + "\n".join((run.stdout + run.stderr).splitlines()[-30:]))
+    setup = OUT / "NEON-Torrent-Setup.exe"
+    payload = msi.read_bytes()
+    setup.write_bytes(stub.read_bytes() + payload + len(payload).to_bytes(8, "little") + SETUP_MAGIC)
+    return setup
+
+
 def main() -> int:
     version = app_version()
     if "--no-compile" not in sys.argv:
@@ -160,6 +209,8 @@ def main() -> int:
     make_layout()
     msi = run_wix(version)
     print(f"Built {msi} ({msi.stat().st_size / 2**20:.0f} MB), version {version}")
+    setup = make_setup_exe(msi, version)
+    print(f"Built {setup} ({setup.stat().st_size / 2**20:.0f} MB): the setup to share, with the NEON icon")
     return 0
 
 
