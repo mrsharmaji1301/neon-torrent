@@ -25,9 +25,22 @@ another drive.
 shared `python.exe`, so the app can be allowed or blocked without affecting other Python programs. Run `setup.bat`
 again after upgrading Python. Windows Firewall asks once for the new exe: allow it on Private networks.
 
+**Windows Installer (MSI).** `.venv\Scripts\python.exe tools\build_msi.py` builds
+`neon-build\msi\out\NEON-Torrent-Setup.msi`, the package for free distribution. Nuitka (with the Zig C compiler)
+compiles the app to a native `NeonTorrent.exe`; Python, a browser and the VC++ Redistributable are not needed on
+the target PC. WiX 3.14 (`neon-build\tools\wix314`) packs it from `packaging\NeonTorrent.wxs`. The installer shows
+the user agreement, privacy policy and disclaimer (`packaging\PRIVACY.txt`) and installs for all users, by
+default to `F:\Apps\NEON Torrent`. It adds an entry in Programs and Features, a Start menu shortcut, an optional
+desktop shortcut and a launch option. The app keeps its data in the `data` folder there, and uninstalling keeps
+that data. If NEON Torrent is already installed, Setup shows the installed version next to its own, the update
+log (`packaging\CHANGELOG.txt`) and two choices: **Upgrade** (keeps the folder and the data) or **Full uninstall**
+(optionally also deletes the `data` folder; downloaded files are never deleted). Full uninstall appears only when
+an installed copy is found. `--no-compile` reuses the last Nuitka build. The package contains no certificates or keys: File Transfer
+creates fresh keys on the user's device for each session.
+
 **Store package.** `.venv\Scripts\python.exe tools\make_msix.py` builds `NeonTorrent.msix` (about 40 MB): the app with
 its own interpreter, the standard library and only the Qt parts it uses. Add `--sandbox` to sign it with a throwaway
-certificate, install it and start it in Windows Sandbox; the report goes to `F:\neon-build\msix\results`. The package
+certificate, install it and start it in Windows Sandbox; the report goes to `neon-build\msix\results` next to the project folder. The package
 adds inbound firewall rules for NeonTorrent.exe on install. Windows keeps the Store version's data under
 `%LOCALAPPDATA%\Packages\NeonTorrent_…\LocalCache\Roaming\NeonTorrent` instead of `%APPDATA%\NeonTorrent`.
 
@@ -222,7 +235,7 @@ Limits:
   without the progress and download-speed columns) and **All transfers**. Each page has its own status chips (All,
   Active, Paused, Stopped, Errors, and Seeding where it applies; All transfers keeps every chip). The page and chip you
   chose are remembered.
-- System tray with pause all/resume all, optional close-to-tray, and download-complete notifications.
+- System tray with pause all/resume all and download-complete notifications. The window's X asks **Minimize to tray** or **Exit**, with *Remember my choice*; change it later in Preferences → General → Close button.
 - Quitting hides the window at once. The engine then flushes the disk cache and saves every torrent's state (up to 45 s
   for big sessions) before the process exits. If you start NEON again meanwhile, the new window waits for that save
   instead of disappearing.

@@ -9,7 +9,7 @@ from pathlib import Path
 from PySide6.QtCore import QEvent, QPoint, QStandardPaths, QThread, QTimer, Qt, Signal, Slot
 from PySide6.QtGui import QAction, QFont, QGuiApplication, QKeySequence, QShortcut
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
-from PySide6.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QLabel, QMainWindow, QMenu,
+from PySide6.QtWidgets import (QApplication, QCheckBox, QFileDialog, QHBoxLayout, QLabel, QMainWindow, QMenu,
                                QStackedWidget, QSystemTrayIcon, QVBoxLayout, QWidget)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -17,7 +17,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from neontorrent import APP_NAME  # noqa: E402
 from neontorrent import theme as T  # noqa: E402
 
-if sys.stderr is None:  # pythonw.exe: no console, so keep errors in a log file
+# pythonw.exe, or the Nuitka-compiled NeonTorrent.exe (no console; __compiled__ is Nuitka's marker): keep errors in
+# a log file
+if sys.stderr is None or "__compiled__" in globals():
     sys.stderr = open(T.app_data_dir() / "error.log", "a", encoding="utf-8", buffering=1)
     sys.stdout = sys.stderr
 from neontorrent.dialogs import (AddTorrentDialog, DetailsDialog, FirstRunDialog, NeonDialog,  # noqa: E402
@@ -152,6 +154,38 @@ class ConfirmDialog(NeonDialog):
         self.root.addLayout(row)
 
 
+class CloseDialog(NeonDialog):
+    """Asked when the window's X is clicked: keep running in the tray or exit, optionally remembered."""
+    TRAY, EXIT = "tray", "exit"
+
+    def __init__(self, parent=None):
+        super().__init__("Close NEON Torrent", parent)
+        self.setMinimumWidth(470)
+        self.choice: str | None = None
+        label = QLabel("Keep NEON Torrent running in the system tray, so downloads and seeding continue, "
+                       "or exit completely?")
+        label.setWordWrap(True)
+        label.setFont(T.font(10.5))
+        self.root.addWidget(label)
+        self.remember = QCheckBox("Remember my choice (change it later in Preferences → General)")
+        self.root.addWidget(self.remember)
+        row = QHBoxLayout()
+        row.addStretch(1)
+        tray = GlowButton("MINIMIZE TO TRAY", "min", "cyan", "outline")
+        tray.clicked.connect(lambda: self._pick(self.TRAY))
+        leave = GlowButton("EXIT", "power", "red", "outline")
+        leave.clicked.connect(lambda: self._pick(self.EXIT))
+        for b in (tray, leave):
+            b.setMinimumWidth(150)
+            row.addWidget(b)
+        tray.setDefault(True)
+        self.root.addLayout(row)
+
+    def _pick(self, choice: str):
+        self.choice = choice
+        self.accept()
+
+
 class TorrentWindow(QMainWindow):
     sig_add_uri = Signal(str)
     sig_add_file = Signal(str)
@@ -230,7 +264,10 @@ class TorrentWindow(QMainWindow):
         prefs.setdefault("download_kib", 0)
         prefs.setdefault("listen_port", 6881)
         prefs.setdefault("max_connections", 500)
-        prefs.setdefault("close_to_tray", False)
+        # X button: ask | tray | exit. The old close_to_tray checkbox maps to tray; unset asks every time
+        if "close_action" not in prefs:
+            prefs["close_action"] = "tray" if prefs.get("close_to_tray") else "ask"
+        prefs.pop("close_to_tray", None)
         prefs.setdefault("notify_complete", True)
         prefs.setdefault("blocked_hosts", list(DEFAULT_BLOCKED))
         prefs.setdefault("shield_learn", True)
@@ -1095,15 +1132,24 @@ class TorrentWindow(QMainWindow):
         self.close()
 
     def closeEvent(self, event):
-        if not self.quitting and self.prefs.get("close_to_tray") and self.tray.isVisible():
-            event.ignore()
-            self.hide()
-            self.tray.showMessage(APP_NAME, "Still running in the tray. Right-click the icon to quit.",
-                                  self.windowIcon(), 3000)
-            return
         event.ignore()
         if self.shutting_down:
             return
+        if not self.quitting and self.tray.isVisible():
+            action = self.prefs.get("close_action", "ask")
+            if action not in (CloseDialog.TRAY, CloseDialog.EXIT):
+                dialog = CloseDialog(self)
+                if dialog.exec() != CloseDialog.DialogCode.Accepted or not dialog.choice:
+                    return                                     # dialog closed: keep the window open
+                action = dialog.choice
+                if dialog.remember.isChecked():
+                    self.prefs["close_action"] = action
+                    T.save_preferences(self.prefs)
+            if action == CloseDialog.TRAY:
+                self.hide()
+                self.tray.showMessage(APP_NAME, "Still running in the tray. Right-click the icon to quit.",
+                                      self.windowIcon(), 3000)
+                return
         self.shutting_down = True
         self.share_tab.shutdown()                  # closes the sharing server: nothing listens after quit
         for dialog in (self.details, self.shield_dialog, self.options_dialog):

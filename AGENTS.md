@@ -41,5 +41,6 @@ Read [SHIP_PLAN.md](SHIP_PLAN.md) first. It is the current plan: v1.0 ships on 3
 6. Edit files with an editor tool, not shell heredocs: Git Bash mangles `\n` and `\\` inside strings.
 7. Match the surrounding code: type hints, existing naming, comment density, and the neon theme in `theme.py`.
 8. Update README.md for user-facing changes and SECURITY.md for security behaviour in the same change.
-9. Nothing goes on drive C: (it is full). The project lives at `F:\neon-torrent`. Put build output, temp files and
-   caches under `F:\neon-build`: set `TEMP`, `TMP` and `PIP_CACHE_DIR` there before building or installing.
+9. Nothing goes on drive C: (it is full). The project lives at `E:\PROJECTS\NEON\neon-torrent`. Put build output,
+   temp files and caches under `E:\PROJECTS\NEON\neon-build` (the tools default to the `neon-build` folder next to
+   the repo): set `TEMP`, `TMP` and `PIP_CACHE_DIR` there before building or installing.

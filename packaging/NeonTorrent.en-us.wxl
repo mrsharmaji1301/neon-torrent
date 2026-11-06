@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Installer wording for NEON Torrent; overrides the stock WixUI strings with the same Id. -->
+<WixLocalization Culture="en-us" Codepage="65001" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <String Id="WelcomeDlgTitle">{\WixUI_Font_Bigger}Welcome to NEON Torrent Setup</String>
+  <String Id="WelcomeDlgDescription">NEON Torrent is a free-to-use BitTorrent client with a built-in File Transfer module for your devices.
+
+Made by SharmaJi with ❤ for the Community.
+
+Click Next to continue.</String>
+  <String Id="LicenseAgreementDlgTitle">{\WixUI_Font_Title}User Agreement, Privacy Policy and Disclaimer</String>
+  <String Id="LicenseAgreementDlgDescription">Please read the agreement carefully. You must accept it to install NEON Torrent.</String>
+  <String Id="LicenseAgreementDlgLicenseAcceptedCheckBox">I &amp;accept the User Agreement, Privacy Policy and Disclaimer</String>
+  <String Id="ExitDialogDescription">[NEONEXITTEXT]</String>
+</WixLocalization>

@@ -1,0 +1,20 @@
+NEON Torrent 1.1.0 (6 Nov 2026)
+- Native Windows app: NeonTorrent.exe is now compiled (Nuitka). Python, a browser and the VC++ Redistributable are no longer needed.
+- New Windows Installer (MSI) setup: installs for all users and shows in Programs and Features.
+- Setup detects an installed version, compares versions, shows this update log, and offers Upgrade or Full uninstall.
+- User Agreement, Privacy Policy and Disclaimer in Setup. No certificates or keys of the author are shipped.
+- New neon installer design.
+- Errors are logged to data\error.log again.
+- Closing the window asks: Minimize to tray or Exit, with "Remember my choice" (Preferences > General > Close button).
+
+NEON Torrent 1.0.1 (3 Nov 2026)
+- File Sharing: LAN / INTERNET toggle with auto-detect; the QR code appears only once the tunnel is up.
+- File Sharing: the QR hint never overlaps the code; click the QR to zoom.
+- The setup file shows its real version in Explorer.
+
+NEON Torrent 1.0.0 (Nov 2026)
+- QR file sharing between this PC and your phone, both ways, end-to-end encrypted (LAN and internet).
+- Add dialog on every add: choose files and priorities first.
+- Downloading, Completed and All pages, status chips, FLASH mode.
+- Shield peer filtering with antivirus learning; Download Guard.
+- Torrent list survives crashes and updates (atomic resume data, daily backups).

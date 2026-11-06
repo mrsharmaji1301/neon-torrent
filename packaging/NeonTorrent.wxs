@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Windows Installer (MSI) package for NEON Torrent. Built by tools\build_msi.py, which compiles the app with Nuitka,
+     generates the file list (files.wxs) and passes -dLayout, -dAppVer and -dPackaging to candle.
+     Per-machine install: registered under HKLM, so it shows in Control Panel > Programs and Features for every user.
+     The app keeps its data in <install dir>\data (portable.ini); uninstall never deletes that folder's contents. -->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+  <Product Id="*" Name="NEON Torrent" Language="1033" Codepage="65001" Version="$(var.AppVer)"
+           Manufacturer="SharmaJi" UpgradeCode="{7C3E9A51-2B64-4F0D-9E18-6A2D5C4B3F71}">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" Platform="x64"
+             Description="NEON Torrent $(var.AppVer) Setup" Manufacturer="SharmaJi"
+             Comments="Free-to-use BitTorrent client with a built-in File Transfer module for your devices. Made by SharmaJi with love for the Community." />
+
+    <!-- rebuilding the same version replaces it in place instead of installing a second copy -->
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+                  DowngradeErrorMessage="A newer version of NEON Torrent is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="NeonTorrent.ico" SourceFile="$(var.Packaging)\NeonTorrent.ico" />
+    <Property Id="ARPPRODUCTICON" Value="NeonTorrent.ico" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+    <Property Id="ARPCOMMENTS" Value="Free-to-use BitTorrent client with a built-in File Transfer module for your devices. Made by SharmaJi with ❤ for the Community." />
+    <Property Id="ARPHELPTEXT" Value="Free for everyone. No telemetry, no ads, no account." />
+
+    <!-- default folder F:\Apps\NEON Torrent; an upgrade reuses the folder chosen at first install -->
+    <Property Id="ROOTDRIVE" Value="F:\" />
+    <Property Id="INSTALLFOLDER">
+      <RegistrySearch Id="PreviousInstallDir" Root="HKLM" Key="Software\NEON\NEON Torrent" Name="InstallDir"
+                      Type="raw" Win64="yes" />
+    </Property>
+    <SetProperty Id="ARPINSTALLLOCATION" Value="[INSTALLFOLDER]" After="CostFinalize" />
+
+    <!-- an installed copy (any version, found by MajorUpgrade's FindRelatedProducts as WIX_UPGRADE_DETECTED) switches
+         Setup to the Upgrade / Full uninstall page; its version comes from our key, or from its Programs and Features
+         entry for builds that did not write it yet -->
+    <Property Id="INSTALLEDVERSION">
+      <RegistrySearch Id="InstalledVersion" Root="HKLM" Key="Software\NEON\NEON Torrent" Name="Version" Type="raw"
+                      Win64="yes" />
+    </Property>
+    <Property Id="INSTALLEDVERSION_ARP">
+      <RegistrySearch Id="InstalledVersionArp" Root="HKLM" Type="raw" Win64="yes" Name="DisplayVersion"
+                      Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\[WIX_UPGRADE_DETECTED]" />
+    </Property>
+    <SetProperty Id="INSTALLEDVERSION" Value="[INSTALLEDVERSION_ARP]" After="AppSearch" Sequence="both">
+      NOT INSTALLEDVERSION AND INSTALLEDVERSION_ARP
+    </SetProperty>
+    <!-- upgrade | uninstall, chosen on DetectedDlg; REMOVEDATA=1 also deletes the data folder on Full uninstall -->
+    <Property Id="NEONACTION" Value="upgrade" Secure="yes" />
+    <Property Id="REMOVEDATA" Secure="yes" />
+    <Property Id="NEONEXITTEXT" Value="NEON Torrent is installed. Thank you for using it. Made by SharmaJi with ❤ for the Community." />
+
+    <!-- Full uninstall installs nothing: MajorUpgrade removes the installed copy, and with every feature absent this
+         package is not registered either. Data is deleted only if the user ticked it, and only a real NEON data folder
+         (it holds settings.json); downloads live elsewhere and are never touched. -->
+    <SetProperty Id="DeleteUserData" Before="DeleteUserData" Sequence="execute"
+                 Value="&quot;[System64Folder]cmd.exe&quot; /c if exist &quot;[INSTALLFOLDER]data\settings.json&quot; rmdir /s /q &quot;[INSTALLFOLDER]data&quot; &amp; rmdir &quot;[INSTALLFOLDER].&quot;">
+      NEONACTION = "uninstall" AND REMOVEDATA = "1"
+    </SetProperty>
+    <CustomAction Id="DeleteUserData" BinaryKey="WixCA" DllEntry="WixQuietExec64" Execute="deferred" Return="ignore"
+                  Impersonate="no" />
+    <InstallExecuteSequence>
+      <Custom Action="DeleteUserData" After="InstallInitialize">NEONACTION = "uninstall" AND REMOVEDATA = "1"</Custom>
+    </InstallExecuteSequence>
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="AppsFolder" Name="Apps">
+        <Directory Id="INSTALLFOLDER" Name="NEON Torrent">
+          <Directory Id="DataFolder" Name="data" />
+        </Directory>
+      </Directory>
+      <Directory Id="ProgramMenuFolder" />
+      <Directory Id="DesktopFolder" />
+    </Directory>
+
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="InstallDirRegistry" Guid="{3F1B7D20-8C4E-4A6B-9D35-21E7A0C9B864}" Win64="yes">
+        <RegistryValue Root="HKLM" Key="Software\NEON\NEON Torrent" Name="InstallDir" Type="string"
+                       Value="[INSTALLFOLDER]" KeyPath="yes" />
+        <RegistryValue Root="HKLM" Key="Software\NEON\NEON Torrent" Name="Version" Type="string"
+                       Value="[ProductVersion]" />
+      </Component>
+    </DirectoryRef>
+
+    <!-- the app writes its torrents, settings and Shield data here as a normal user, wherever it is installed -->
+    <DirectoryRef Id="DataFolder">
+      <Component Id="DataFolderAccess" Guid="{A84C2E61-5D97-4B13-8F0A-6C3E9B2D7F45}" Win64="yes">
+        <CreateFolder>
+          <util:PermissionEx User="Users" GenericRead="yes" GenericWrite="yes" GenericExecute="yes" Delete="yes" />
+        </CreateFolder>
+        <RegistryValue Root="HKLM" Key="Software\NEON\NEON Torrent" Name="DataDir" Type="string"
+                       Value="[DataFolder]" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="ProgramMenuFolder">
+      <Component Id="StartMenuShortcut" Guid="{5E2D8B47-1A3C-4F96-B0E7-94C1D6A28E53}" Win64="yes">
+        <Shortcut Id="StartMenuShortcut" Name="NEON Torrent" Description="NEON Torrent BitTorrent client"
+                  Target="[#NeonTorrentExe]" WorkingDirectory="INSTALLFOLDER" Icon="NeonTorrent.ico">
+          <ShortcutProperty Key="System.AppUserModel.ID" Value="NeonTorrent.Client" />
+        </Shortcut>
+        <RegistryValue Root="HKLM" Key="Software\NEON\NEON Torrent" Name="StartMenuShortcut" Type="integer"
+                       Value="1" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="DesktopFolder">
+      <Component Id="DesktopShortcut" Guid="{C19F4A73-6E28-4D05-A3B1-7F82E5D04C96}" Win64="yes">
+        <Condition>INSTALLDESKTOPSHORTCUT = "1"</Condition>
+        <Shortcut Id="DesktopShortcut" Name="NEON Torrent" Description="NEON Torrent BitTorrent client"
+                  Target="[#NeonTorrentExe]" WorkingDirectory="INSTALLFOLDER" Icon="NeonTorrent.ico">
+          <ShortcutProperty Key="System.AppUserModel.ID" Value="NeonTorrent.Client" />
+        </Shortcut>
+        <RegistryValue Root="HKLM" Key="Software\NEON\NEON Torrent" Name="DesktopShortcut" Type="integer"
+                       Value="1" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <Feature Id="Main" Title="NEON Torrent" Level="1" Absent="disallow">
+      <Condition Level="0">NEONACTION = "uninstall"</Condition>
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="InstallDirRegistry" />
+      <ComponentRef Id="DataFolderAccess" />
+      <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="DesktopShortcut" />
+    </Feature>
+
+    <!-- installer UI: Welcome > Privacy policy > Destination folder > Options > Install > Finish (launch) -->
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+    <Property Id="INSTALLDESKTOPSHORTCUT" Value="1" Secure="yes" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.LicenseRtf)" />
+    <!-- neon artwork from tools\make_installer_art.py -->
+    <WixVariable Id="WixUIDialogBmp" Value="$(var.Packaging)\installer-side.bmp" />
+    <WixVariable Id="WixUIBannerBmp" Value="$(var.Packaging)\installer-banner.bmp" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch NEON Torrent" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+    <Property Id="WixShellExecTarget" Value="[#NeonTorrentExe]" />
+    <CustomAction Id="LaunchApplication" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" />
+
+    <UI Id="NeonUI">
+      <TextStyle Id="WixUI_Font_Normal" FaceName="Segoe UI" Size="9" />
+      <TextStyle Id="WixUI_Font_Bigger" FaceName="Segoe UI" Size="12" />
+      <TextStyle Id="WixUI_Font_Title" FaceName="Segoe UI" Size="9" Bold="yes" />
+      <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
+      <Property Id="WixUI_Mode" Value="InstallDir" />
+
+      <DialogRef Id="BrowseDlg" />
+      <DialogRef Id="DiskCostDlg" />
+      <DialogRef Id="ErrorDlg" />
+      <DialogRef Id="FatalError" />
+      <DialogRef Id="FilesInUse" />
+      <DialogRef Id="MsiRMFilesInUse" />
+      <DialogRef Id="PrepareDlg" />
+      <DialogRef Id="ProgressDlg" />
+      <DialogRef Id="ResumeDlg" />
+      <DialogRef Id="UserExit" />
+
+      <Dialog Id="OptionsDlg" Width="370" Height="270" Title="[ProductName] Setup">
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no"
+                 Text="!(loc.InstallDirDlgBannerBitmap)" />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Transparent="yes" NoPrefix="yes"
+                 Text="{\WixUI_Font_Title}Additional options" />
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Transparent="yes"
+                 NoPrefix="yes" Text="Choose the shortcuts Setup should create." />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
+        <Control Id="DesktopCheckbox" Type="CheckBox" X="20" Y="60" Width="330" Height="18"
+                 Property="INSTALLDESKTOPSHORTCUT" CheckBoxValue="1" Text="Create a &amp;desktop shortcut" />
+        <Control Id="StartMenuNote" Type="Text" X="20" Y="84" Width="330" Height="30" NoPrefix="yes"
+                 Text="A Start menu shortcut is always created. NEON Torrent keeps its torrents and settings in the data folder inside the install folder." />
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.WixUIBack)" />
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes"
+                 Text="!(loc.WixUINext)" />
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes"
+                 Text="!(loc.WixUICancel)">
+          <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
+        </Control>
+      </Dialog>
+
+      <!-- shown only when an installed copy is found: versions, update log, Upgrade or Full uninstall -->
+      <Dialog Id="DetectedDlg" Width="370" Height="270" Title="[ProductName] Setup">
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no"
+                 Text="!(loc.InstallDirDlgBannerBitmap)" />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="260" Height="15" Transparent="yes" NoPrefix="yes"
+                 Text="{\WixUI_Font_Title}NEON Torrent is already installed" />
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="260" Height="15" Transparent="yes"
+                 NoPrefix="yes" Text="Choose what Setup should do." />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
+        <Control Id="Versions" Type="Text" X="20" Y="51" Width="330" Height="11" NoPrefix="yes"
+                 Text="Installed version: [INSTALLEDVERSION]          This setup: [ProductVersion]" />
+        <Control Id="StatusNewer" Type="Text" X="20" Y="63" Width="330" Height="11" NoPrefix="yes" Hidden="yes"
+                 Text="This setup is a different version. Upgrade replaces the installed one.">
+          <Condition Action="show">INSTALLEDVERSION &lt;&gt; ProductVersion</Condition>
+        </Control>
+        <Control Id="StatusSame" Type="Text" X="20" Y="63" Width="330" Height="11" NoPrefix="yes" Hidden="yes"
+                 Text="Same version. Upgrade reinstalls it, for example to repair it.">
+          <Condition Action="show">INSTALLEDVERSION = ProductVersion</Condition>
+        </Control>
+        <Control Id="LogLabel" Type="Text" X="20" Y="77" Width="330" Height="10" NoPrefix="yes"
+                 Text="Update log:" />
+        <Control Id="UpdateLog" Type="ScrollableText" X="20" Y="88" Width="330" Height="78" Sunken="yes"
+                 TabSkip="no">
+          <Text SourceFile="$(var.ChangelogRtf)" />
+        </Control>
+        <Control Id="ActionChoice" Type="RadioButtonGroup" X="20" Y="171" Width="330" Height="32"
+                 Property="NEONACTION">
+          <RadioButtonGroup Property="NEONACTION">
+            <RadioButton Value="upgrade" X="0" Y="0" Width="330" Height="15"
+                         Text="&amp;Upgrade (keeps your torrents, settings and Shield data)" />
+            <RadioButton Value="uninstall" X="0" Y="16" Width="330" Height="15"
+                         Text="&amp;Full uninstall (removes NEON Torrent from this PC)" />
+          </RadioButtonGroup>
+        </Control>
+        <Control Id="RemoveDataCheckbox" Type="CheckBox" X="32" Y="205" Width="318" Height="24"
+                 Property="REMOVEDATA" CheckBoxValue="1"
+                 Text="Also &amp;delete my NEON data (torrent list, settings, Shield learning). Downloaded files are never deleted.">
+          <Condition Action="disable">NEONACTION &lt;&gt; "uninstall"</Condition>
+          <Condition Action="enable">NEONACTION = "uninstall"</Condition>
+        </Control>
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.WixUIBack)" />
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes"
+                 Text="!(loc.WixUINext)" />
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes"
+                 Text="!(loc.WixUICancel)">
+          <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
+        </Control>
+      </Dialog>
+
+      <Dialog Id="UninstallDlg" Width="370" Height="270" Title="[ProductName] Setup">
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no"
+                 Text="!(loc.InstallDirDlgBannerBitmap)" />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="260" Height="15" Transparent="yes" NoPrefix="yes"
+                 Text="{\WixUI_Font_Title}Ready to uninstall NEON Torrent" />
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="260" Height="15" Transparent="yes"
+                 NoPrefix="yes" Text="Nothing is removed until you click Uninstall." />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
+        <Control Id="What" Type="Text" X="20" Y="60" Width="330" Height="24" NoPrefix="yes"
+                 Text="Setup will remove NEON Torrent [INSTALLEDVERSION], its shortcuts and its Programs and Features entry from this PC." />
+        <Control Id="KeepData" Type="Text" X="20" Y="92" Width="330" Height="36" NoPrefix="yes" Hidden="yes"
+                 Text="Your torrent list, settings and Shield data stay in [INSTALLFOLDER]data, so a later install picks them up again.">
+          <Condition Action="show">REMOVEDATA &lt;&gt; "1"</Condition>
+        </Control>
+        <Control Id="DeleteData" Type="Text" X="20" Y="92" Width="330" Height="36" NoPrefix="yes" Hidden="yes"
+                 Text="Your NEON data folder ([INSTALLFOLDER]data: torrent list, settings, Shield learning) will be deleted too. Downloaded files are not deleted.">
+          <Condition Action="show">REMOVEDATA = "1"</Condition>
+        </Control>
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Id="Back" Type="PushButton" X="156" Y="243" Width="56" Height="17" Text="!(loc.WixUIBack)" />
+        <Control Id="Uninstall" Type="PushButton" X="212" Y="243" Width="80" Height="17" Default="yes"
+                 ElevationShield="yes" Text="&amp;Uninstall" />
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes"
+                 Text="!(loc.WixUICancel)">
+          <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
+        </Control>
+      </Dialog>
+
+      <Publish Dialog="DetectedDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg">1</Publish>
+      <Publish Dialog="DetectedDlg" Control="Next" Event="NewDialog" Value="LicenseAgreementDlg">NEONACTION = "upgrade"</Publish>
+      <Publish Dialog="DetectedDlg" Control="Next" Event="NewDialog" Value="UninstallDlg">NEONACTION = "uninstall"</Publish>
+      <Publish Dialog="UninstallDlg" Control="Back" Event="NewDialog" Value="DetectedDlg">1</Publish>
+      <Publish Dialog="UninstallDlg" Control="Uninstall" Property="NEONEXITTEXT" Value="NEON Torrent has been uninstalled. Thank you for using it." Order="1">1</Publish>
+      <Publish Dialog="UninstallDlg" Control="Uninstall" Property="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="{}" Order="2">1</Publish>
+      <Publish Dialog="UninstallDlg" Control="Uninstall" Property="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="{}" Order="3">1</Publish>
+      <Publish Dialog="UninstallDlg" Control="Uninstall" Event="EndDialog" Value="Return" Order="4">1</Publish>
+
+      <Publish Dialog="BrowseDlg" Control="OK" Event="DoAction" Value="WixUIValidatePath" Order="3">1</Publish>
+      <Publish Dialog="BrowseDlg" Control="OK" Event="SpawnDialog" Value="InvalidDirDlg" Order="4"><![CDATA[NOT WIXUI_DONTVALIDATEPATH AND WIXUI_INSTALLDIR_VALID<>"1"]]></Publish>
+
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchApplication" Order="998">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed AND NOT REMOVE</Publish>
+      <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999">1</Publish>
+
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="LicenseAgreementDlg">NOT Installed AND NOT WIX_UPGRADE_DETECTED</Publish>
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="DetectedDlg">NOT Installed AND WIX_UPGRADE_DETECTED</Publish>
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">Installed AND PATCH</Publish>
+
+      <Publish Dialog="LicenseAgreementDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg">NOT WIX_UPGRADE_DETECTED</Publish>
+      <Publish Dialog="LicenseAgreementDlg" Control="Back" Event="NewDialog" Value="DetectedDlg">WIX_UPGRADE_DETECTED</Publish>
+      <!-- an upgrade keeps the folder of the installed copy, so it skips the folder page -->
+      <Publish Dialog="LicenseAgreementDlg" Control="Next" Event="NewDialog" Value="InstallDirDlg">LicenseAccepted = "1" AND NOT WIX_UPGRADE_DETECTED</Publish>
+      <Publish Dialog="LicenseAgreementDlg" Control="Next" Event="NewDialog" Value="OptionsDlg">LicenseAccepted = "1" AND WIX_UPGRADE_DETECTED</Publish>
+
+      <Publish Dialog="InstallDirDlg" Control="Back" Event="NewDialog" Value="LicenseAgreementDlg">1</Publish>
+      <Publish Dialog="InstallDirDlg" Control="Next" Event="SetTargetPath" Value="[WIXUI_INSTALLDIR]" Order="1">1</Publish>
+      <Publish Dialog="InstallDirDlg" Control="Next" Event="DoAction" Value="WixUIValidatePath" Order="2">NOT WIXUI_DONTVALIDATEPATH</Publish>
+      <Publish Dialog="InstallDirDlg" Control="Next" Event="SpawnDialog" Value="InvalidDirDlg" Order="3"><![CDATA[NOT WIXUI_DONTVALIDATEPATH AND WIXUI_INSTALLDIR_VALID<>"1"]]></Publish>
+      <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="OptionsDlg" Order="4">WIXUI_DONTVALIDATEPATH OR WIXUI_INSTALLDIR_VALID="1"</Publish>
+      <Publish Dialog="InstallDirDlg" Control="ChangeFolder" Property="_BrowseProperty" Value="[WIXUI_INSTALLDIR]" Order="1">1</Publish>
+      <Publish Dialog="InstallDirDlg" Control="ChangeFolder" Event="SpawnDialog" Value="BrowseDlg" Order="2">1</Publish>
+
+      <Publish Dialog="OptionsDlg" Control="Back" Event="NewDialog" Value="InstallDirDlg">NOT WIX_UPGRADE_DETECTED</Publish>
+      <Publish Dialog="OptionsDlg" Control="Back" Event="NewDialog" Value="LicenseAgreementDlg">WIX_UPGRADE_DETECTED</Publish>
+      <Publish Dialog="OptionsDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="OptionsDlg" Order="1">NOT Installed</Publish>
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="2">Installed AND NOT PATCH</Publish>
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2">Installed AND PATCH</Publish>
+
+      <Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg">1</Publish>
+      <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+      <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+      <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg">1</Publish>
+    </UI>
+    <UIRef Id="WixUI_Common" />
+  </Product>
+</Wix>

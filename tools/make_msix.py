@@ -21,7 +21,7 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 
 ROOT = Path(__file__).resolve().parent.parent
-BUILD = Path(os.environ.get("NEON_BUILD", r"F:\neon-build"))
+BUILD = Path(os.environ.get("NEON_BUILD", str(ROOT.parent / "neon-build")))   # the folder next to the repo
 WORK = BUILD / "msix"
 LAYOUT, OUT, RESULTS = WORK / "layout", WORK / "out", WORK / "results"
 SDK_BIN = BUILD / "tools" / "sdk-buildtools" / "bin" / "10.0.28000.0" / "x64"

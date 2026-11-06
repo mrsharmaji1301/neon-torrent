@@ -16,7 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "tools" / "share_web"
 OUT = ROOT / "src" / "neontorrent" / "share_web"
-BUILD = Path(os.environ.get("NEON_SHARE_BUILD", r"F:\neon-build\share-web"))
+BUILD = Path(os.environ.get("NEON_SHARE_BUILD", str(ROOT.parent / "neon-build" / "share-web")))
 NODE_DIR = Path(os.environ.get("NEON_NODE", r"E:\node"))
 PACKAGES = ["@noble/curves@2.4.0", "@noble/ciphers@2.4.0", "@noble/hashes@2.4.0", "esbuild@0.28.2",
             "tailwindcss@3.4.19"]

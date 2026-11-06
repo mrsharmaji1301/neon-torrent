@@ -1,31 +1,78 @@
-NEON Torrent: privacy and terms of use
-=======================================
+NEON Torrent: User Agreement, Privacy Policy and Disclaimer
+==========================================================
 
-NEON Torrent is a personal BitTorrent client with phone file sharing. Please read this before installing.
+NEON Torrent is a free-to-use BitTorrent client with a built-in File Transfer module for your devices.
+Made by SharmaJi with ❤ for the Community.
 
-PRIVACY
-- No telemetry, no analytics, no account. NEON never sends usage data anywhere.
-- Your data stays on this PC, in the "data" folder inside the install folder: settings, torrent list,
-  resume data, learned Shield blocks and logs. Uninstalling keeps it; delete the folder to remove it.
-- Network connections NEON makes:
-  * peers and trackers of the torrents you add (peers in a swarm can see your IP address; that is how
-    BitTorrent works);
-  * public IP-range lists the Shield downloads to filter VPN and datacenter peers;
+Please read this agreement before installing. By installing or using NEON Torrent you accept it. If you
+do not accept it, click Cancel and do not install or use the software.
+
+1. FREE LICENCE
+- NEON Torrent is free of charge. You may install it on any number of your own devices and use it for
+  personal or non-commercial purposes.
+- You may share unmodified copies of the installer with others, free of charge, together with this
+  agreement. You may not sell it, charge for it, bundle it with adware or malware, or present it as
+  your own work.
+- The author keeps all rights not granted here. The name "NEON Torrent" and its logo belong to the author.
+
+2. ACCEPTABLE USE
+- NEON Torrent is a general-purpose file transfer tool. BitTorrent is a lawful technology used to share
+  Linux distributions, open-licensed media, game updates and large personal files.
+- You agree NOT to use NEON Torrent to download, upload or share material you have no right to share,
+  including copyrighted works without the owner's permission, illegal content, or malware, and not to
+  use it to break any law that applies to you.
+- NEON Torrent contains no content, hosts no content, indexes no content and links to no content. It
+  only transfers what you choose to add.
+
+3. YOUR RESPONSIBILITY
+- You alone are responsible for what you download, share, open and run with NEON Torrent, and for
+  following the laws of your country, your internet provider's terms and any copyright rules.
+- In a BitTorrent swarm, other peers can see your IP address. That is how the protocol works. Protecting
+  your own privacy on public networks is your responsibility.
+
+4. NO WARRANTY
+- NEON Torrent is provided "AS IS" and "AS AVAILABLE", without warranty of any kind, express or implied,
+  including warranties of merchantability, fitness for a particular purpose, security, accuracy and
+  non-infringement. Its Shield, Download Guard and antivirus features reduce risk; they do not
+  guarantee that a file, peer or network is safe.
+
+5. ZERO LIABILITY FOR MISUSE
+- To the fullest extent permitted by law, the author (SharmaJi) and any contributor are NOT liable for
+  any misuse of NEON Torrent by anyone, or for any claim, fine, legal action, loss of data, loss of
+  profit, damage to devices, or any direct, indirect, incidental, special or consequential damage that
+  results from installing, using or being unable to use it.
+- You agree to indemnify and hold the author harmless from any claim by a third party that arises from
+  your use or misuse of NEON Torrent or your breach of this agreement.
+- Where a law does not allow a limitation of liability, the author's liability is limited to the amount
+  you paid for NEON Torrent, which is zero.
+
+6. PRIVACY
+- No telemetry, no analytics, no ads, no account and no tracking. NEON Torrent never sends usage data,
+  personal data or file names to the author or to anyone else.
+- Your data stays on your device, in the "data" folder inside the install folder: settings, torrent list,
+  resume data, learned Shield blocks and logs. Uninstalling keeps it; delete that folder to remove it.
+- Network connections NEON Torrent makes, only for features you use:
+  * the peers and trackers of the torrents you add;
+  * public IP-range lists that the Shield downloads to filter VPN and datacenter peers;
   * optional VirusTotal hash lookups, only if you enter your own API key (only the file hash is sent);
-  * File Sharing: a local server on your Wi-Fi while sharing is on, and, in internet mode, a temporary
-    Cloudflare quick tunnel. Shared files are end-to-end encrypted (X25519 + ChaCha20-Poly1305) and the
-    key exists only in the QR code, so neither the network nor Cloudflare can read them.
-- NEON reads your antivirus' local detection log (Malwarebytes) to learn which peers to block. It never
-  uploads it.
+  * File Transfer: a local server on your Wi-Fi while sharing is on and, in internet mode, a temporary
+    Cloudflare quick tunnel. Shared files are end-to-end encrypted (X25519 + ChaCha20-Poly1305).
+- NEON Torrent reads your antivirus' local detection log (Malwarebytes) to learn which peers to block.
+  It never uploads it.
 
-TERMS
-- Provided as is, without warranty of any kind. Use at your own risk.
-- You are responsible for what you download and share. Do not use NEON to infringe copyright.
+7. KEYS AND CERTIFICATES
+- The installer contains no certificates, signing keys, accounts or credentials of the author.
+- Every encryption key NEON Torrent uses is generated on your own device when you use the feature: each
+  File Transfer session creates fresh keys, and the key reaches the other device only inside the QR code.
+  Neither the author, your network nor Cloudflare can read shared files.
 
-DISCLAIMER
-- NEON Torrent is a general-purpose file transfer tool. To the fullest extent the law allows, its author
-  accepts no liability for any use of it for illegal, harmful or malicious purposes, or for any loss or
-  damage that results from such use.
-- Each user alone is responsible and accountable for what they use NEON for: what they download, share
-  and run, and for following the laws of their country.
-- Third-party components and their licences are listed in THIRD-PARTY-NOTICES.md in the install folder.
+8. THIRD-PARTY COMPONENTS
+- NEON Torrent uses open-source components, including Qt / PySide6 (LGPL-3.0), libtorrent (BSD),
+  cryptography (Apache-2.0 / BSD) and segno (BSD). Their licences and notices are in
+  THIRD-PARTY-NOTICES.md in the install folder. The Qt libraries are separate DLL files that you may
+  replace with your own builds; Qt source code is available from https://download.qt.io.
+
+9. CHANGES AND TERMINATION
+- The author may change NEON Torrent or this agreement in later versions. This agreement ends
+  automatically if you break it; you must then uninstall NEON Torrent. Sections 3, 4 and 5 survive.
+- If any part of this agreement is found unenforceable, the rest stays in effect.

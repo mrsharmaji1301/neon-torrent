@@ -27,8 +27,10 @@ from .widgets import GlowButton, NeonBackground, NeonPanel, WindowButton
 
 KEY_ROLE = Qt.ItemDataRole.UserRole + 10
 SORT_ROLE = Qt.ItemDataRole.UserRole + 11
-# the project root in a checkout, the package root in the MSIX (tools/make_msix.py copies the file there)
-NOTICES_FILE = Path(__file__).resolve().parents[2] / "THIRD-PARTY-NOTICES.md"
+# next to NeonTorrent.exe in the compiled (MSI) build; else the project root in a checkout, the package root in the
+# MSIX (tools/make_msix.py copies the file there)
+NOTICES_FILE = next((p for p in (Path(sys.executable).resolve().parent / "THIRD-PARTY-NOTICES.md",)
+                     if p.exists()), Path(__file__).resolve().parents[2] / "THIRD-PARTY-NOTICES.md")
 
 
 class NeonDialog(QDialog):
@@ -271,14 +273,17 @@ class SettingsDialog(NeonDialog):
         browse.clicked.connect(self._browse)
         fl.addWidget(self.folder, 1)
         fl.addWidget(browse)
-        self.tray = QCheckBox("Keep running in the system tray when the window is closed")
-        self.tray.setChecked(bool(prefs.get("close_to_tray", False)))
+        self.close_action = QComboBox()
+        for label, value in (("Ask every time", "ask"), ("Minimize to tray", "tray"), ("Exit", "exit")):
+            self.close_action.addItem(label, value)
+        self.close_action.setCurrentIndex(max(0, self.close_action.findData(prefs.get("close_action", "ask"))))
+        self.close_action.setToolTip("What the window's X button does. Quit from the tray icon always exits.")
         self.notify = QCheckBox("Show a notification when a download completes")
         self.notify.setChecked(bool(prefs.get("notify_complete", True)))
         general, gf = page()
         add(gf, "Theme", self.theme)
         add(gf, "Download folder", folder_box)
-        add(gf, "", self.tray)
+        add(gf, "Close button", self.close_action)
         add(gf, "", self.notify)
         gf.addRow("", note("A new folder applies to torrents added from now on. Use “Move data…” in a "
                            "torrent’s menu to relocate existing downloads."))
@@ -452,7 +457,7 @@ class SettingsDialog(NeonDialog):
         return {
             "theme": self.theme.currentText(), "download_dir": self.folder.text(),
             "upload_kib": self.up.value(), "download_kib": self.down.value(), "listen_port": self.port.value(),
-            "max_connections": self.conns.value(), "close_to_tray": self.tray.isChecked(),
+            "max_connections": self.conns.value(), "close_action": self.close_action.currentData(),
             "notify_complete": self.notify.isChecked(),
             "shield_learn": self.learn.isChecked(), "shield_scope": self.scope.currentData(),
             "file_only": self.file_only.isChecked(), "use_dht": self.use_dht.isChecked(),

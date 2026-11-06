@@ -10,9 +10,11 @@
 - Check the PC before claiming anything about it (installed tools, paths, drives). The user's terminal is PowerShell.
 - Market or business claims need real data with source links; label your own estimates.
 - Show progress during long tests. Ship the controls users expect from similar apps without being asked.
-- Never write to drive C:. Project `F:\neon-torrent`; builds, temp and caches `F:\neon-build`; app data
-  `F:\neon-data\NeonTorrent` (junction at `%APPDATA%\NeonTorrent`).
-- Start the app detached, so it survives session restarts: `explorer.exe "F:\neon-torrent\run.bat"`.
+- Never write to drive C:. Project `E:\PROJECTS\NEON\neon-torrent`; builds, temp, caches and Inno Setup
+  `E:\PROJECTS\NEON\neon-build`. The installed app is `F:\Apps\NEON Torrent` (its data in the `data` folder there).
+- Start the installed app detached, so it survives session restarts: its desktop shortcut, or
+  `explorer.exe "E:\PROJECTS\NEON\neon-torrent\run.bat"` for the development copy.
+- The final setup goes to `H:\COMPLETED APPS` (replacing the old one) only when the user asks for it.
 - Only Claude commits and pushes (private repo `mrsharmaji1301/neon-torrent`), and only when the user says so. Until
   then, no commits and no pushes.
 - The app is for the user's personal use, not for sale or the Store: no licences, payments, Dodo or Partner Center.

@@ -21,7 +21,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SHOTS = Path(os.environ.get("NEON_BUILD", r"F:\neon-build")) / "shots"
+SHOTS = Path(os.environ.get("NEON_BUILD", str(ROOT.parent / "neon-build"))) / "shots"
 PROFILE, DOWNLOADS, OUT = SHOTS / "appdata", SHOTS / "downloads", SHOTS / "out"
 SITE_ASSETS = ROOT / "site" / "assets"
 TORRENTS = [  # official images only: nothing third-party in published screenshots
