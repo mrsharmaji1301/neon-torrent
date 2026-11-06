@@ -388,6 +388,17 @@ def test_share() -> None:
         check("Share: a tampered chunk is rejected; a traversal name is saved inside the FTP folder, tagged MotW",
               tampered == 403 and saved.parent == save / "FTP" and saved.name == "evil.exe"
               and G.has_mark_of_the_web(saved), f"tamper HTTP {tampered}, saved {saved}")
+
+        def text_call(text: object, counter: int) -> dict:
+            sealed = channel.seal({"op": "text", "text": text}, counter, f"C{sid}:{counter}".encode())
+            _, reply = post(server.port, "/api/c", json.dumps({"s": sid, "c": counter, "d": sealed}).encode())
+            return channel.open(json.loads(reply)["d"], json.loads(reply)["c"], f"R{sid}:{counter}".encode())
+
+        text_call("<b>hi</b>‮exe.gpj\x07", 3)
+        too_long = text_call("x" * (S.MAX_TEXT + 1), 4).get("error", "")
+        got = [t["text"] for t in server.take_texts()]
+        check("Share: text from the phone arrives without control or bidi-override characters; oversized is refused",
+              got == ["<b>hi</b>exe.gpj"] and "longer than" in too_long, f"{got!r}, {too_long!r}")
         rebind, _ = post(server.port, "/api/hello", body, host="evil.example:80")
         check("Share: requests for another host name are refused (DNS rebinding)", rebind == 421, f"HTTP {rebind}")
         server.public_ips = {"203.0.113.5"}

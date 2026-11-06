@@ -181,6 +181,11 @@ header. Files are end-to-end encrypted on both paths; Cloudflare relays only cip
    tick what you want and tap *Save to phone*. They go to the phone's Downloads.
    **Phone → PC**: on the phone, *Choose files*, remove any with its X, tap *Send to PC*. Files are saved in
    `<download folder>\FTP\` (names are cleaned; an existing name becomes `name (1).ext`).
+   **Text phone → PC**: on the phone, open the *Text* tab, paste (or type) up to 20,000 characters and tap
+   *Send text*. *Paste* reads the clipboard in INTERNET mode (HTTPS); on LAN, long-press the box and paste. On the
+   PC, **TEXT FROM PHONE** (under the network panel) shows the unread count; click it to pop out the chat panel.
+   Each message has a one-click **COPY** at its top right, and any part can be selected with the mouse (Ctrl+C).
+   *Clear* empties the panel; messages are never saved to disk.
 
 Both sides show thumbnails (photos and video first frames; a type icon otherwise), an X on every tile (remove before
 sending, cancel during a transfer), per-file progress with a ✓ when done, and the overall count (5/12), speed and

@@ -40,6 +40,8 @@
     <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
     <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a15 15 0 0 1 20 0"/><circle cx="12" cy="19.5" r="1"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/></symbol>
+    <symbol id="i-paste" viewBox="0 0 24 24"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6"/></symbol>
     <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></symbol>
   </defs>
 </svg>
@@ -78,9 +80,10 @@
   </section>
 
   <!-- mode switch -->
-  <nav class="grid grid-cols-2 gap-1 p-1 rounded-[12px] bg-surface-container-low border border-outline-variant/40" aria-label="Mode">
+  <nav class="grid grid-cols-3 gap-1 p-1 rounded-[12px] bg-surface-container-low border border-outline-variant/40" aria-label="Mode">
     <button id="tab-send" class="mode-tab flex items-center justify-center gap-1.5 py-2 rounded-[9px] font-label-md text-label-md font-bold uppercase"><svg class="ico w-4 h-4"><use href="#i-upload"/></svg>Send to PC</button>
     <button id="tab-recv" class="mode-tab flex items-center justify-center gap-1.5 py-2 rounded-[9px] font-label-md text-label-md font-bold uppercase"><svg class="ico w-4 h-4"><use href="#i-download"/></svg>Get from PC</button>
+    <button id="tab-text" class="mode-tab flex items-center justify-center gap-1.5 py-2 rounded-[9px] font-label-md text-label-md font-bold uppercase"><svg class="ico w-4 h-4"><use href="#i-chat"/></svg>Text</button>
   </nav>
 
   <!-- device -->
@@ -145,6 +148,24 @@
       <span id="up-queued" class="font-label-sm text-[10px] text-outline tracking-wider"></span>
     </div>
     <section id="up-grid" class="grid grid-cols-3 gap-2.5 pb-2"></section>
+  </div>
+
+  <!-- TEXT: paste and send to the PC -->
+  <div id="v-text" class="hidden flex flex-col gap-3.5">
+    <section class="bg-surface-container-low border border-primary-container/40 rounded-[14px] p-3.5 neon-glow-cyan flex flex-col gap-2.5">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2"><svg class="ico w-5 h-5 text-primary"><use href="#i-chat"/></svg><span class="font-headline-sm text-[15px] font-bold text-on-surface tracking-wide uppercase">Text to PC</span></div>
+        <button id="text-paste" class="hidden font-label-sm text-label-sm text-primary border border-primary-container/30 px-2.5 py-1 rounded-[8px] bg-primary-container/10 flex items-center gap-1"><svg class="ico w-3.5 h-3.5"><use href="#i-paste"/></svg>Paste</button>
+      </div>
+      <textarea id="text-box" maxlength="20000" rows="7" placeholder="Paste or type text here: a link, an address, a note…" class="w-full bg-surface-container border border-primary-container/40 rounded-[10px] px-3 py-2.5 text-[16px] text-on-surface outline-none resize-y" aria-label="Text to send"></textarea>
+      <div class="flex items-center justify-between gap-2">
+        <span id="text-count" class="font-label-sm text-[11px] text-outline">0 / 20000</span>
+        <button id="text-clear" class="font-label-sm text-label-sm text-secondary flex items-center gap-1"><svg class="ico w-3.5 h-3.5"><use href="#i-trash"/></svg>Clear</button>
+      </div>
+      <button id="text-send" disabled class="w-full rounded-[12px] py-3 px-4 bg-gradient-to-r from-primary-container via-primary-container to-secondary-container text-surface-container-lowest flex items-center justify-center gap-2 font-headline-sm text-[16px] font-bold tracking-wider active:scale-[0.98] disabled:opacity-40"><svg class="ico w-5 h-5"><use href="#i-send"/></svg>SEND TEXT</button>
+    </section>
+    <div id="text-sent-head" class="hidden font-label-sm text-[11px] text-outline tracking-wider uppercase">Sent this session</div>
+    <section id="text-sent" class="flex flex-col gap-2 pb-2"></section>
   </div>
 
   <!-- RECEIVE -->

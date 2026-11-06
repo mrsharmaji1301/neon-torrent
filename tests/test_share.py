@@ -191,6 +191,26 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(phone.call({"op": "ping", "name": "Renamed"})[1]["state"], "allowed")
         return phone
 
+    def test_text_from_phone(self) -> None:
+        phone = Phone(self.server)
+        phone.hello()
+        self.assertEqual(phone.call({"op": "text", "text": "early"})[1].get("error"), "not allowed on the PC yet")
+        self.server.decide(phone.sid, True)
+        phone.call({"op": "ping", "name": "Pixel"})
+        status, reply = phone.call({"op": "text", "text": "https://example.org/a\r\nline 2\x00‮"})
+        self.assertEqual((status, reply), (200, {"ok": True, "chars": 28}))
+        texts = self.server.take_texts()
+        self.assertEqual([(t["text"], t["name"]) for t in texts], [("https://example.org/a\nline 2", "Pixel")])
+        self.assertEqual(self.server.take_texts(), [])                       # taken once
+        for bad, error in ((" \n ", "empty text"), (7, "text must be a string"),
+                           ("x" * (S.MAX_TEXT + 1), f"text is longer than {S.MAX_TEXT} characters")):
+            self.assertEqual(phone.call({"op": "text", "text": bad})[1].get("error"), error)
+        self.assertEqual(phone.call({"op": "text", "text": "é" * S.MAX_TEXT})[0], 200)   # the largest fits
+        for i in range(S.MAX_INBOX + 5):
+            phone.call({"op": "text", "text": str(i)})
+        texts = self.server.take_texts()
+        self.assertEqual((len(texts), texts[-1]["text"]), (S.MAX_INBOX, str(S.MAX_INBOX + 4)))
+
     def test_wrong_token_is_refused(self) -> None:
         status, reply = Phone(self.server, token=os.urandom(16)).hello()
         self.assertEqual(status, 403)

@@ -63,6 +63,8 @@ MAX_HELLO_FAILS = 8                  # wrong-token attempts per IP before it is 
 MAX_FAIL_IPS = 4096                  # distinct failing IPs remembered; beyond that every new one is refused
 MAX_CONNECTIONS = 48                 # concurrent HTTP connections (handler threads); more are dropped
 MAX_UPLOADS = 4                      # open uploads per phone
+MAX_TEXT = 20_000                    # characters per text message from the phone (fits MAX_CONTROL when sealed)
+MAX_INBOX = 200                      # text messages waiting for the UI; the oldest go first
 DISK_RESERVE = 64 << 20              # keep this much free on the target drive
 PART_SUFFIX = ".neonpart"
 WEB_DIR = Path(__file__).resolve().parent / "share_web"
@@ -203,6 +205,25 @@ def clean_label(value: object, limit: int) -> str:
     text = "".join(" " if ch.isspace() else ch for ch in str(value or "") if unicodedata.category(ch)[0] != "C"
                    or ch.isspace())
     return " ".join(text.split())[:limit]
+
+
+# bidirectional overrides and isolates: they can make shown text read differently from what was sent
+_BIDI_CONTROLS = set("‪‫‬‭‮⁦⁧⁨⁩")
+
+
+def clean_text(value: object, limit: int = MAX_TEXT) -> str:
+    """Text pasted on the phone, safe to show and copy as plain text: line breaks and tabs kept, other control and
+    bidirectional-override characters removed. Raises ShareError when it is not text, empty or too long."""
+    if not isinstance(value, str):
+        raise ShareError(400, "text must be a string")
+    if len(value) > limit:
+        raise ShareError(413, f"text is longer than {limit} characters")
+    value = value.replace("\r\n", "\n").replace("\r", "\n")
+    text = "".join(ch for ch in value if ch in "\n\t" or (unicodedata.category(ch) not in ("Cc", "Cs", "Co", "Cn")
+                                                          and ch not in _BIDI_CONTROLS))
+    if not text.strip():
+        raise ShareError(400, "empty text")
+    return text
 
 
 def unique_path(folder: Path, name: str) -> Path:
@@ -524,6 +545,7 @@ class ShareServer:
         self.offers: dict[str, Offer] = {}
         self.offers_rev = 0
         self.transfers: dict[int, Transfer] = {}
+        self.inbox: list[dict] = []                  # text messages from the phone, until the UI takes them
         self.next_number = 1
         self.fails: dict[str, int] = {}
         self.web = {route: (self._read_web(name), ctype) for route, (name, ctype) in WEB_FILES.items()}
@@ -615,6 +637,12 @@ class ShareServer:
                           "elapsed": now - t.started} for t in self.transfers.values()]
             return {"phones": phones, "transfers": transfers, "pairing_rev": self.pairing_rev,
                     "tunnel": self.tunnel_url}
+
+    def take_texts(self) -> list[dict]:
+        """Text messages received since the last call, oldest first: {"text", "name", "at"} (at = time.time())."""
+        with self.lock:
+            texts, self.inbox = self.inbox, []
+            return texts
 
     def decide(self, sid: str, allow: bool) -> None:
         with self.lock:
@@ -796,7 +824,7 @@ class ShareServer:
                 name = clean_label(message.get("name"), 40)
                 if name:
                     phone.name = name
-                if message.get("mode") in ("send", "recv"):
+                if message.get("mode") in ("send", "recv", "text"):
                     phone.mode = message["mode"]
                 return {"state": phone.state, "rev": self.offers_rev, "pc": self._pc_info()}
         if op == "bye":
@@ -810,6 +838,12 @@ class ShareServer:
                 return {"files": [{"id": o.id, "name": o.name, "size": o.size, "mime": o.mime,
                                    "thumb": base64.b64encode(o.thumb).decode("ascii") if o.thumb else ""}
                                   for o in self.offers.values()], "rev": self.offers_rev}
+        if op == "text":                             # pasted text: arrives sealed like every control message
+            text = clean_text(message.get("text"))
+            with self.lock:
+                self.inbox.append({"text": text, "name": phone.name, "at": time.time()})
+                del self.inbox[:-MAX_INBOX]
+            return {"ok": True, "chars": len(text)}
         if op == "get":
             return self._begin_download(phone, message)
         if op == "begin":

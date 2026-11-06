@@ -739,7 +739,8 @@ function showView() {
   $('v-send').classList.toggle('hidden', mode !== 'send' || sending);
   $('v-sending').classList.toggle('hidden', !sending);
   $('v-recv').classList.toggle('hidden', mode !== 'recv');
-  for (const [id, m] of [['tab-send', 'send'], ['tab-recv', 'recv']]) {
+  $('v-text').classList.toggle('hidden', mode !== 'text');
+  for (const [id, m] of [['tab-send', 'send'], ['tab-recv', 'recv'], ['tab-text', 'text']]) {
     $(id).className = m === mode
       ? 'mode-tab flex items-center justify-center gap-1.5 py-2 rounded-[9px] font-label-md text-label-md font-bold uppercase bg-primary-container text-surface-container-lowest shadow-[0_0_12px_rgba(34,211,238,0.45)]'
       : 'mode-tab flex items-center justify-center gap-1.5 py-2 rounded-[9px] font-label-md text-label-md font-bold uppercase text-on-surface-variant';
@@ -757,7 +758,8 @@ function renderButtons() {
   show('btn-save', mode === 'recv' && !dn.running);
   $('btn-save').disabled = !ready || !visibleOffers().some((o) => o.sel);
   show('btn-cancel', (mode === 'send' && up.running) || (mode === 'recv' && dn.running));
-  $('tab-send').disabled = busy; $('tab-recv').disabled = busy;
+  $('tab-send').disabled = busy; $('tab-recv').disabled = busy; $('tab-text').disabled = busy;
+  renderText();
   const foot = mode === 'recv' ? [icon('folder', 'w-3.5 h-3.5'), 'Files go to your Downloads']
     : busy ? [icon('clock', 'w-3.5 h-3.5'), 'Keep this screen on until it finishes']
       : [icon('shield', 'w-3.5 h-3.5 text-tertiary'), 'Encrypted on this phone before it leaves'];
@@ -772,11 +774,51 @@ function setMode(m) {
   sessionStorage.setItem('neon.mode', m);
   showView();
   if (m === 'send') { if (up.batch.length) renderSending(true); else renderSend(); }
-  else { renderRecv(); loadList(); }
+  else if (m === 'recv') { renderRecv(); loadList(); }
   if (S) call({ op: 'ping', name: deviceName(), mode }).then(applyStatus).catch(() => {});
 }
 $('tab-send').onclick = () => setMode('send');
 $('tab-recv').onclick = () => setMode('recv');
+$('tab-text').onclick = () => setMode('text');
+
+// ------------------------------------------------------------------ text: pasted on the phone, shown on the PC
+// it travels sealed like every control message; the PC shows it as plain text with a copy button
+const TEXT_MAX = 20000;
+var textSending = false;   // var: renderButtons may run before this line during start-up
+function renderText() {
+  const box = $('text-box'), n = box.value.length;
+  $('text-count').textContent = `${n} / ${TEXT_MAX}`;
+  $('text-send').disabled = textSending || !(state === 'allowed' && online) || !box.value.trim();
+}
+$('text-box').addEventListener('input', renderText);
+$('text-clear').onclick = () => { $('text-box').value = ''; renderText(); $('text-box').focus(); };
+// reading the clipboard needs a secure page (HTTPS: INTERNET mode); on LAN the phone's own long-press paste works
+if (window.isSecureContext && navigator.clipboard && navigator.clipboard.readText) {
+  $('text-paste').classList.remove('hidden');
+  $('text-paste').onclick = async () => {
+    try {
+      const clip = await navigator.clipboard.readText();
+      if (clip) { $('text-box').value = clip.slice(0, TEXT_MAX); renderText(); }
+      else toast('The clipboard is empty');
+    } catch (e) { toast('Paste was blocked: long-press the box and choose Paste'); }
+  };
+}
+$('text-send').onclick = async () => {
+  const text = $('text-box').value;
+  if (!text.trim() || textSending) return;
+  textSending = true; renderText();
+  try {
+    await call({ op: 'text', text });
+    $('text-box').value = '';
+    const item = el('div', 'bg-surface-container-low border border-outline-variant/40 rounded-[10px] px-3 py-2 font-body-sm text-body-sm text-on-surface-variant whitespace-pre-wrap break-words max-h-24 overflow-hidden', text.length > 300 ? text.slice(0, 300) + '…' : text);
+    $('text-sent').prepend(item);
+    $('text-sent-head').classList.remove('hidden');
+    toast('Text sent to ' + pcName);
+  } catch (e) {
+    if (e.status === 401) return sessionEnded();
+    toast('Not sent: ' + (e.message || 'connection lost'));
+  } finally { textSending = false; renderText(); }
+};
 
 // device name: remembered on this phone, sent with every heartbeat
 function showName() { $('dev-name').textContent = deviceName(); }

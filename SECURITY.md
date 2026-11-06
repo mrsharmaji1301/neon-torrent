@@ -84,6 +84,11 @@ promise any client can honestly make. NEON Torrent works on everything a client 
   Windows device names, no trailing dots; an existing name gets ` (1)`. Files are written as hidden `.neonpart`
   files, renamed only when every chunk has passed authentication, and tagged with Mark-of-the-Web like downloads.
   Partial files are deleted on cancel, disconnect or stop. Free space is checked before an upload starts.
+- Text from the phone (*Text* tab) travels as a sealed control message like every other request, only from an
+  allowed phone. It is capped at 20,000 characters (larger is refused with 413); control characters except line
+  breaks and tabs, and bidirectional overrides/isolates, are removed. The PC shows it as plain text only (no HTML,
+  no links opened), keeps at most 200 unread messages per session and 500 in the panel, and never writes it to
+  disk. COPY puts it on the clipboard only when the user clicks.
 - Limit: the phone page itself is served over plain HTTP (browsers need a trusted certificate for HTTPS, which a
   LAN address cannot get). File contents stay confidential against anyone who only watches the Wi-Fi, but an
   attacker who can actively tamper with traffic on your own network while you scan could swap the page's script

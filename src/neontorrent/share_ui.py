@@ -18,10 +18,10 @@ from typing import Callable
 import segno
 from PySide6.QtCore import (QBuffer, QByteArray, QIODevice, QObject, QPointF, QRectF, QRunnable, QSize,
                             QThreadPool, QTimer, Qt, Signal)
-from PySide6.QtGui import (QColor, QFont, QFontMetricsF, QImage, QImageReader, QLinearGradient,
-                           QPainter, QPainterPath, QPen, QPixmap)
+from PySide6.QtGui import (QColor, QFont, QFontMetricsF, QGuiApplication, QImage, QImageReader, QLinearGradient,
+                           QPainter, QPainterPath, QPen, QPixmap, QTextOption)
 from PySide6.QtWidgets import (QFileDialog, QFrame, QGridLayout, QHBoxLayout, QLabel, QPushButton, QScrollArea,
-                               QStackedWidget, QVBoxLayout, QWidget)
+                               QStackedWidget, QTextEdit, QVBoxLayout, QWidget)
 
 from . import share as S
 from . import theme as T
@@ -564,6 +564,132 @@ class QrZoomDialog(NeonDialog):
             self.source.mirror = None
 
 
+class _TextBody(QTextEdit):
+    """A message's text: plain text only (nothing in it is a link or markup), selectable with the mouse and
+    keyboard, wrapped anywhere so a long URL cannot widen the panel, and as tall as its text up to MAX_HEIGHT."""
+    MAX_HEIGHT = 300
+
+    def __init__(self, text: str, parent=None):
+        super().__init__(parent)
+        self.setReadOnly(True)
+        self.setAcceptRichText(False)
+        self.setPlainText(text)
+        self.setFont(T.font(10.5))
+        self.setFrameShape(QFrame.Shape.NoFrame)
+        self.setWordWrapMode(QTextOption.WrapMode.WrapAtWordBoundaryOrAnywhere)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse
+                                     | Qt.TextInteractionFlag.TextSelectableByKeyboard)
+        self.setStyleSheet("QTextEdit { background: transparent; }")
+        self.document().setDocumentMargin(2)
+        self.document().documentLayout().documentSizeChanged.connect(self._fit)
+
+    def _fit(self, *_args) -> None:
+        height = int(self.document().size().height()) + 6
+        self.setFixedHeight(min(height, self.MAX_HEIGHT))
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded if height > self.MAX_HEIGHT
+                                        else Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._fit()
+
+
+class TextBubble(QFrame):
+    """One text message from the phone: who and when, a one-click COPY at the top right, then the text."""
+
+    def __init__(self, entry: dict, parent=None):
+        super().__init__(parent)
+        self.text = entry["text"]
+        self.setObjectName("textBubble")
+        self.setStyleSheet(f"QFrame#textBubble {{ background: {T.hexc('panel_hi')}; "
+                           f"border: 1px solid {T.hexc('line')}; border-radius: 10px; }}")
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(12, 8, 8, 10)
+        lay.setSpacing(4)
+        head = QHBoxLayout()
+        stamp = time.strftime("%d %b, %H:%M", time.localtime(entry["at"]))
+        meta = QLabel(f"{entry.get('name') or 'Phone'}  ·  {stamp}  ·  {len(self.text):,} characters")
+        meta.setObjectName("muted")
+        meta.setTextFormat(Qt.TextFormat.PlainText)                  # the name comes from the phone
+        head.addWidget(meta, 1, Qt.AlignmentFlag.AlignVCenter)
+        self.copy_btn = GlowButton("COPY", "copy", "cyan", "outline")
+        self.copy_btn.setFixedSize(96, 30)
+        self.copy_btn.icon_size = 13
+        self.copy_btn.setFont(T.head_font(8.4, QFont.Weight.DemiBold, 1.2))
+        self.copy_btn.setToolTip("Copy the whole message to the clipboard")
+        self.copy_btn.clicked.connect(self.copy)
+        head.addWidget(self.copy_btn, 0, Qt.AlignmentFlag.AlignTop)
+        lay.addLayout(head)
+        lay.addWidget(_TextBody(self.text))
+
+    def copy(self) -> None:
+        QGuiApplication.clipboard().setText(self.text)
+        self.copy_btn.setText("COPIED")
+        QTimer.singleShot(1500, lambda: self.copy_btn.setText("COPY"))
+
+
+class TextInbox(NeonDialog):
+    """The pop-out chat panel with the text the phone sent, newest at the bottom. Stays open beside the window."""
+    cleared = Signal()
+
+    def __init__(self, parent=None):
+        super().__init__("Text from phone", parent, resizable=True)
+        self.setModal(False)
+        self.setMinimumSize(440, 340)
+        self.resize(540, 580)
+        note = QLabel("Text sent from the phone’s TEXT tab. COPY takes a whole message; drag over the text to copy "
+                      "a part of it (Ctrl+C).")
+        note.setObjectName("muted")
+        note.setWordWrap(True)
+        self.root.addWidget(note)
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll.setStyleSheet("QScrollArea { background: transparent; }")
+        self.scroll.viewport().setStyleSheet("background: transparent;")
+        holder = QWidget()
+        holder.setStyleSheet("background: transparent;")
+        self.list = QVBoxLayout(holder)
+        self.list.setContentsMargins(0, 0, 6, 0)
+        self.list.setSpacing(10)
+        self.empty = QLabel("Nothing yet. On the phone, open the TEXT tab, paste and press SEND TEXT.")
+        self.empty.setObjectName("muted")
+        self.empty.setWordWrap(True)
+        self.empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.list.addStretch(1)                                   # messages sit at the bottom, like a chat
+        self.list.addWidget(self.empty)
+        self.scroll.setWidget(holder)
+        self.root.addWidget(self.scroll, 1)
+        row = QHBoxLayout()
+        clear = GlowButton("CLEAR", "trash", "purple", "outline")
+        clear.setFixedSize(110, 40)
+        clear.setToolTip("Remove every message from this panel")
+        clear.clicked.connect(self.clear)
+        row.addWidget(clear)
+        row.addStretch(1)
+        close = GlowButton("CLOSE", "check", "cyan", "solid", "cyan2")
+        close.setFixedSize(120, 40)
+        close.clicked.connect(self.reject)
+        row.addWidget(close)
+        self.root.addLayout(row)
+
+    def add(self, entry: dict) -> None:
+        self.empty.hide()
+        self.list.addWidget(TextBubble(entry))
+        bar = self.scroll.verticalScrollBar()
+        QTimer.singleShot(0, lambda: bar.setValue(bar.maximum()))
+
+    def clear(self) -> None:
+        while self.list.count() > 2:                              # keep the stretch and the empty note
+            item = self.list.takeAt(2)
+            if item.widget() is not None:
+                item.widget().deleteLater()
+        self.empty.show()
+        self.cleared.emit()
+
+
 class _Relay(QObject):
     pc_info = Signal(dict)
 
@@ -573,10 +699,14 @@ class ShareTab(QWidget):
     """FILE SHARING page. ``download_dir`` returns the torrent download folder; files land in its FTP subfolder."""
 
     def __init__(self, download_dir: Callable[[], str], register: Callable[[NeonPanel], None],
-                 attention: Callable[[str], None], parent=None):
+                 attention: Callable[[str], None], notify: Callable[[str], None] | None = None, parent=None):
         super().__init__(parent)
         self.download_dir = download_dir
         self.attention = attention
+        self.notify = notify or (lambda _text: None)      # a tray message that does not raise the window
+        self.texts: list[dict] = []                      # text from the phone, kept until CLEAR or quit
+        self.unread_texts = 0
+        self.text_inbox: TextInbox | None = None
         self.server: S.ShareServer | None = None
         self.tunnel: S.Tunnel | None = None
         self.pairing_rev = -1
@@ -708,6 +838,13 @@ class ShareTab(QWidget):
         head = QHBoxLayout()
         self.files_title = SectionTitle("upload", "FILES TO SEND", "")
         head.addWidget(self.files_title, 1)
+        # text from the phone, with the unread count; the chat panel pops out when it is clicked. It lives here, not
+        # under the network panel: the left column has no height to spare once a phone is connected
+        self.text_btn = GlowButton("TEXT FROM PHONE", "copy", "magenta", "outline")
+        self.text_btn.setFixedSize(250, 42)
+        self.text_btn.setToolTip("Open the text the phone sent from its TEXT tab")
+        self.text_btn.clicked.connect(self.show_texts)
+        head.addWidget(self.text_btn)
         self.add_btn = GlowButton("ADD FILES", "file_plus", "cyan", "solid", "cyan2")
         self.add_btn.clicked.connect(self._pick_files)
         self.clear_btn = GlowButton("CLEAR", "trash", "purple", "outline")
@@ -744,6 +881,48 @@ class ShareTab(QWidget):
         self._on_mode("send")
         self._set_status("stopped")
         self.qr.set_message("Sharing is off.\nPress START to show the QR code.")
+
+    # ---------------------------------------------------------- text from the phone
+    MAX_TEXTS = 500
+
+    def _add_text(self, entry: dict) -> None:
+        self.texts.append(entry)
+        del self.texts[:-self.MAX_TEXTS]
+        inbox = self.text_inbox
+        if inbox is not None and inbox.isVisible():
+            inbox.add(entry)
+        else:
+            if inbox is not None:
+                inbox.add(entry)
+            self.unread_texts += 1
+            self.notify(f"Text from {entry.get('name') or 'the phone'}: open FILE TRANSFER → TEXT FROM PHONE")
+        self._show_text_count()
+
+    def _show_text_count(self) -> None:
+        if self.unread_texts:
+            label = f"TEXT FROM PHONE  ·  {self.unread_texts} NEW"
+        elif self.texts:
+            label = f"TEXT FROM PHONE  ·  {len(self.texts)}"
+        else:
+            label = "TEXT FROM PHONE"
+        self.text_btn.setText(label)
+
+    def show_texts(self) -> None:
+        if self.text_inbox is None:
+            self.text_inbox = TextInbox(self.window())
+            self.text_inbox.cleared.connect(self._clear_texts)
+            for entry in self.texts:
+                self.text_inbox.add(entry)
+        self.unread_texts = 0
+        self._show_text_count()
+        self.text_inbox.show()
+        self.text_inbox.raise_()
+        self.text_inbox.activateWindow()
+
+    def _clear_texts(self) -> None:
+        self.texts.clear()
+        self.unread_texts = 0
+        self._show_text_count()
 
     # ---------------------------------------------------------- session lifecycle
     def activate(self) -> None:
@@ -807,6 +986,8 @@ class ShareTab(QWidget):
 
     def shutdown(self) -> None:
         self.stop_session()
+        if self.text_inbox is not None:
+            self.text_inbox.close()
         self.pool.clear()
 
     def _toggle_session(self) -> None:
@@ -984,6 +1165,8 @@ class ShareTab(QWidget):
         if server is None:
             return
         snap = server.snapshot()
+        for entry in server.take_texts():
+            self._add_text(entry)
         tunnel = self.tunnel
         if self.net_mode == "internet" and not snap["tunnel"]:
             # INTERNET: the code appears only once the tunnel is up; a LAN code would strand a phone elsewhere
@@ -1155,7 +1338,8 @@ class ShareTab(QWidget):
             return
         mac = phone["mac"] or "not in the ARP table yet"
         if phone["mac"] and S.mac_is_private(phone["mac"]):
-            mac += "\nprivate MAC: randomized by the phone for this Wi-Fi"
+            mac += "  (private)"                         # one line: the left column has no height to spare
+            self.net_values["ph_mac"].setToolTip("Private MAC: randomized by the phone for this Wi-Fi")
         self.net_values["ph_name"].setText(phone["name"])
         self.net_values["ph_model"].setText(phone["model"] or "not reported by the browser")
         internet = phone.get("path") == "internet"

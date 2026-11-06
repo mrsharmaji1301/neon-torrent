@@ -1,3 +1,9 @@
+NEON Torrent 2.0.0 (6 Nov 2026)
+- File Transfer: send text from the phone. Paste or type in the phone's new Text tab and tap Send text.
+- On the PC, TEXT FROM PHONE shows how many are new; click it to open the chat panel.
+- Every message has a one-click COPY at its top right, and any part can be selected with the mouse.
+- Text is end-to-end encrypted like files, plain text only, up to 20,000 characters, never saved to disk.
+
 NEON Torrent 1.1.0 (6 Nov 2026)
 - Native Windows app: NeonTorrent.exe is now compiled (Nuitka). Python, a browser and the VC++ Redistributable are no longer needed.
 - New Windows Installer (MSI) setup: installs for all users and shows in Programs and Features.

@@ -18,6 +18,9 @@
     <Icon Id="NeonTorrent.ico" SourceFile="$(var.Packaging)\NeonTorrent.ico" />
     <Property Id="ARPPRODUCTICON" Value="NeonTorrent.ico" />
     <Property Id="ARPNOMODIFY" Value="1" />
+    <!-- 1: no System Restore point (it is made before the install starts and delayed the UAC prompt by many
+         seconds), 2: file costing only, 4: fewer progress messages -->
+    <Property Id="MSIFASTINSTALL" Value="7" />
     <Property Id="ARPCOMMENTS" Value="Free-to-use BitTorrent client with a built-in File Transfer module for your devices. Made by SharmaJi with ❤ for the Community." />
     <Property Id="ARPHELPTEXT" Value="Free for everyone. No telemetry, no ads, no account." />
 

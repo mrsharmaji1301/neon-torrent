@@ -245,8 +245,11 @@ class TorrentWindow(QMainWindow):
         self._apply_theme()
         self._start_engine()
         self.resize(1240, 770)
-        # never narrower than the title bar needs, or the tabs would paint over the wordmark
-        self.setMinimumSize(max(1000, self.title_bar.minimumSizeHint().width() + 28), 640)
+        # never narrower than the title bar needs, or the tabs would paint over the wordmark, and never shorter than
+        # the pages need: an explicit minimum overrides the layout's own, and a squeezed FILE SHARING page painted
+        # its QR code over the hint and buttons once a phone was connected
+        self.setMinimumSize(max(1000, self.title_bar.minimumSizeHint().width() + 28),
+                            max(640, self.centralWidget().minimumSizeHint().height()))
         self.notice_timer = QTimer(self)
         self.notice_timer.setSingleShot(True)
         self.notice_timer.timeout.connect(self._refresh_status)
@@ -359,7 +362,8 @@ class TorrentWindow(QMainWindow):
         page.setContentsMargins(0, 0, 0, 0)
         page.setSpacing(14)
         self.views.addWidget(torrent_page)
-        self.share_tab = ShareTab(lambda: self.prefs["download_dir"], self.bg.register, self._share_attention)
+        self.share_tab = ShareTab(lambda: self.prefs["download_dir"], self.bg.register, self._share_attention,
+                                  self._share_notify)
         self.views.addWidget(self.share_tab)
         root.addWidget(self.views, 1)
 
@@ -1075,6 +1079,11 @@ class TorrentWindow(QMainWindow):
         if share:
             self.share_tab.activate()
         self.bg.update()                           # panel glows follow the visible view
+
+    def _share_notify(self, text: str):
+        """Text arrived from the phone: a tray message only, the window stays where it is."""
+        if not self.isActiveWindow() and self.tray.isVisible():
+            self.tray.showMessage(APP_NAME, text, self.windowIcon(), 4000)
 
     def _share_attention(self, text: str):
         """A phone asks to connect: bring the window forward so the Allow dialog is seen."""
