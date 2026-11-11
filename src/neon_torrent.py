@@ -1223,7 +1223,10 @@ def first_run() -> None:
     if prefs.get("download_dir"):
         return
     exe = Path(sys.executable).resolve()
-    if (exe.parent / "portable.ini").exists():          # installed copy: suggest the install drive, e.g. F:\Downloads\NEON
+    system_drive = Path(os.environ.get("SystemDrive", "C:") + "\\").anchor.upper()
+    if (exe.parent / "portable.ini").exists() and exe.anchor.upper() != system_drive:
+        # installed on another drive (e.g. F:\Apps): suggest that drive, F:\Downloads\NEON. In Program Files on the
+        # system drive the user's own Downloads folder is the better default
         default = Path(exe.anchor) / "Downloads" / "NEON"
     else:
         downloads = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DownloadLocation)

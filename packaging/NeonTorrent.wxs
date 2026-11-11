@@ -24,8 +24,8 @@
     <Property Id="ARPCOMMENTS" Value="Free-to-use BitTorrent client with a built-in File Transfer module for your devices. Made by SharmaJi with ❤ for the Community." />
     <Property Id="ARPHELPTEXT" Value="Free for everyone. No telemetry, no ads, no account." />
 
-    <!-- default folder F:\Apps\NEON Torrent; an upgrade reuses the folder chosen at first install -->
-    <Property Id="ROOTDRIVE" Value="F:\" />
+    <!-- default folder C:\Program Files\NEON Torrent, which exists on every PC (a fixed drive letter made Setup quit
+         with "Invalid Drive" where that drive was missing); an upgrade reuses the folder chosen at first install -->
     <Property Id="INSTALLFOLDER">
       <RegistrySearch Id="PreviousInstallDir" Root="HKLM" Key="Software\NEON\NEON Torrent" Name="InstallDir"
                       Type="raw" Win64="yes" />
@@ -65,7 +65,7 @@
     </InstallExecuteSequence>
 
     <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="AppsFolder" Name="Apps">
+      <Directory Id="ProgramFiles64Folder">
         <Directory Id="INSTALLFOLDER" Name="NEON Torrent">
           <Directory Id="DataFolder" Name="data" />
         </Directory>

@@ -1,3 +1,8 @@
+NEON Torrent 2.1.0 (11 Nov 2026)
+- Setup works on every PC: it installs to C:\Program Files\NEON Torrent by default (it used to need an F: drive and quit without one). An upgrade keeps the folder of the installed copy.
+- Setup.exe with the NEON icon; it opens the same installer.
+- First start: installed in Program Files, NEON suggests your own Downloads\NEON folder for downloads.
+
 NEON Torrent 2.0.0 (6 Nov 2026)
 - File Transfer: send text from the phone. Paste or type in the phone's new Text tab and tap Send text.
 - On the PC, TEXT FROM PHONE shows how many are new; click it to open the chat panel.
