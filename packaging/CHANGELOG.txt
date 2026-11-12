@@ -1,5 +1,6 @@
 NEON Torrent 3.1.0 (12 Nov 2026)
 - Magnet links from the browser open in NEON again: "Use NEON" registered a python.exe that does not exist in the installed app. NEON now registers NeonTorrent.exe and repairs that registration by itself at start.
+- Magnets fetch their file list again: since the Add dialog arrived, a magnet paused itself before asking any peer for its file list and stayed at "Metadata" for ever (stop_when_ready). Magnets saved in the list start fetching again too.
 - Magnets without trackers (common from websites) no longer stall at "Fetching the file list" while DHT is off: NEON asks its public trackers for them. Peers are still Shield-filtered.
 - The Malwarebytes allow-list path in Preferences > Shield shows NeonTorrent.exe.
 

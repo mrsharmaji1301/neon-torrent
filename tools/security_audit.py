@@ -328,6 +328,47 @@ def test_trackerless_magnet(e: en.TorrentEngine) -> None:
           trackers == boosters, f"{len(trackers)} trackers given")
 
 
+def test_magnet_metadata(e: en.TorrentEngine, save: str) -> None:
+    """A magnet fetches its file list and then waits, with no file data, for the Add dialog. A local seeder on
+    127.0.0.1 with random data stands in for the swarm, so nothing leaves this PC."""
+    base = Path(tempfile.mkdtemp(prefix="neon_seed_"))
+    (base / "sample.bin").write_bytes(os.urandom(700_000))
+    ct = lt.create_torrent(_storage(base / "sample.bin"))
+    lt.set_piece_hashes(ct, str(base))
+    ti = lt.torrent_info(ct.generate())
+    seeder = lt.session({"listen_interfaces": "127.0.0.1:6931", "enable_dht": False, "enable_lsd": False,
+                         "enable_upnp": False, "enable_natpmp": False})
+    sp = lt.add_torrent_params()
+    sp.ti, sp.save_path = ti, str(base)
+    sp.flags |= lt.torrent_flags.seed_mode
+    seeder.add_torrent(sp)
+    key = str(ti.info_hashes().v1)
+    e._queue_add(lt.parse_magnet_uri(f"magnet:?xt=urn:btih:{key}&dn=sample"))
+    run(800)
+    handle = next((h for h in e.session.get_torrents() if en.handle_key(h) == key), None)
+    if handle is not None:
+        handle.connect_peer(("127.0.0.1", 6931))
+    deadline = time.monotonic() + 15
+    while handle is not None and time.monotonic() < deadline and not handle.status().has_metadata:
+        run(300)
+    run(800)
+    status = handle.status() if handle is not None else None
+    ok = bool(status and status.has_metadata and status.total_wanted_done == 0
+              and status.flags & lt.torrent_flags.paused)
+    check("A magnet fetches its file list, then waits paused with no file data for the Add dialog", ok,
+          f"metadata {bool(status and status.has_metadata)}, "
+          f"bytes {status.total_wanted_done if status else '-'}, paused {bool(status and status.flags & lt.torrent_flags.paused)}")
+    if handle is not None:
+        e.session.remove_torrent(handle)
+    del seeder
+
+
+def _storage(path: Path):
+    fs = lt.file_storage()
+    fs.add_file(path.name, path.stat().st_size)
+    return fs
+
+
 def test_static() -> None:
     sources = {p.name: p.read_text(encoding="utf-8") for p in (ROOT / "src").rglob("*.py")}
     launches = [(name, line.strip()) for name, text in sources.items() for line in text.splitlines()
@@ -509,6 +550,7 @@ def main() -> int:
         test_guard(e, save)
         test_inputs(e)
         test_trackerless_magnet(e)
+        test_magnet_metadata(e, save)
         test_ssrf(e, save)
         test_ui()
         test_finish(e, save)

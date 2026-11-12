@@ -695,11 +695,14 @@ class TorrentEngine(QObject):
     @staticmethod
     def _await_flags(params) -> None:
         """A .torrent stays paused with every file at Don't download. A magnet fetches its file list only:
-        upload_mode requests no piece data and stop_when_ready pauses it once metadata is in."""
+        upload_mode requests no piece data, and metadata_received_alert pauses it before upload_mode is lifted.
+        Not stop_when_ready: a magnet without metadata counts as ready at once, so it paused before asking any peer
+        for the file list and stayed at "Metadata" for ever."""
         params.flags &= ~lt.torrent_flags.auto_managed
         if params.ti is None:
             params.flags &= ~lt.torrent_flags.paused
-            params.flags |= lt.torrent_flags.upload_mode | lt.torrent_flags.stop_when_ready
+            params.flags |= lt.torrent_flags.upload_mode
+            params.flags &= ~lt.torrent_flags.stop_when_ready
         else:
             params.flags |= lt.torrent_flags.paused
             params.file_priorities = [0] * params.ti.num_files()
@@ -868,7 +871,8 @@ class TorrentEngine(QObject):
                 # still waiting for its file selection: show the Add dialog again instead of downloading
                 if not handle.status().has_metadata:
                     handle.unset_flags(lt.torrent_flags.auto_managed)
-                    handle.set_flags(lt.torrent_flags.upload_mode | lt.torrent_flags.stop_when_ready)
+                    handle.unset_flags(lt.torrent_flags.stop_when_ready)
+                    handle.set_flags(lt.torrent_flags.upload_mode)
                     handle.resume()
                 self._offer_selection(handle)
                 continue
