@@ -59,11 +59,37 @@ def compile_app(version: str) -> None:
         raise SystemExit("Nuitka compile failed (see the output above)")
 
 
+# cloudflared for File Transfer over the internet, shipped inside Setup so a clean PC needs nothing else. Pinned: the
+# official release from github.com/cloudflare/cloudflared, signed by Cloudflare, Inc.; the hash is the release's digest
+CLOUDFLARED_VERSION = "2026.10.7"
+CLOUDFLARED_SHA256 = "2493dbc168923bb3e59e5e7716f71deced92992eea9acd6e9d74f84ac7751343"
+CLOUDFLARED_URL = ("https://github.com/cloudflare/cloudflared/releases/download/"
+                   f"{CLOUDFLARED_VERSION}/cloudflared-windows-amd64.exe")
+
+
+def cloudflared_exe() -> Path:
+    """The pinned cloudflared in neon-build\\dl, downloaded once; its SHA-256 is checked on every build."""
+    from hashlib import sha256
+    from urllib.request import urlopen
+    path = BUILD / "dl" / f"cloudflared-{CLOUDFLARED_VERSION}" / "cloudflared.exe"
+    if not path.is_file():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with urlopen(CLOUDFLARED_URL, timeout=120) as response:     # noqa: S310 (fixed https URL)
+            path.write_bytes(response.read())
+    digest = sha256(path.read_bytes()).hexdigest()
+    if digest != CLOUDFLARED_SHA256:
+        path.unlink()
+        raise SystemExit(f"cloudflared {CLOUDFLARED_VERSION} has SHA-256 {digest}, expected {CLOUDFLARED_SHA256}")
+    return path
+
+
 def make_layout() -> None:
     if not (DIST / "NeonTorrent.exe").exists():
         raise SystemExit(f"{DIST / 'NeonTorrent.exe'} is missing: run without --no-compile first")
     shutil.rmtree(LAYOUT, ignore_errors=True)
     shutil.copytree(DIST, LAYOUT)
+    (LAYOUT / "cloudflared").mkdir()
+    shutil.copy2(cloudflared_exe(), LAYOUT / "cloudflared" / "cloudflared.exe")
     # Nuitka only bundles the VC++ runtime when Visual Studio is installed; the PySide6 wheel ships the same
     # redistributable DLLs, so the MSI runs on a PC without the VC++ Redistributable too
     pyside = Path(sys.prefix) / "Lib" / "site-packages" / "PySide6"

@@ -399,6 +399,34 @@ def test_share() -> None:
         got = [t["text"] for t in server.take_texts()]
         check("Share: text from the phone arrives without control or bidi-override characters; oversized is refused",
               got == ["<b>hi</b>exe.gpj"] and "longer than" in too_long, f"{got!r}, {too_long!r}")
+        from neontorrent import peer as PR
+        frag = f"#v=1&k={S.b64e(os.urandom(32))}&t={S.b64e(os.urandom(16))}"
+        refused = []
+        for code in (f"http://8.8.8.8:80/{frag}", f"https://evil.example/{frag}", f"http://127.0.0.1:{server.port}/{frag}",
+                     f"https://x.trycloudflare.com.evil.io/{frag}", f"file:///C:/Windows/{frag}"):
+            try:
+                PR.parse_code(code)
+            except PR.PeerError:
+                refused.append(code)
+        check("PC to PC: a pasted pair code can only reach a LAN address or a trycloudflare.com tunnel",
+              len(refused) == 5, f"{len(refused)}/5 hostile codes refused")
+        ids = Path(tempfile.mkdtemp(prefix="neon_ids_"))
+        trusted_id, intruder = PR.Identity.load(ids / "a"), PR.Identity.load(ids / "b")
+        store = PR.PeerStore(ids / "host")
+        store.remember(trusted_id.public, "Trusted PC")
+        host = S.ShareServer("127.0.0.1", save / "FTP2", "HOST", allow_loopback=True,
+                             identity=PR.Identity.load(ids / "host"), trusted=store.is_trusted)
+        host.start()
+        try:
+            forged = PR.PeerClient(host.url("send"), trusted_id, "Fake", allow_loopback=True)
+            forged.identity.sign = intruder.sign                  # claims the trusted key without its private key
+            state = forged.hello()["state"]
+            honest = PR.PeerClient(host.url("send"), PR.Identity.load(ids / "a"), "Trusted",
+                                   allow_loopback=True).hello()["state"]
+        finally:
+            host.stop()
+        check("PC to PC: a PC claiming a paired key without that key's signature still needs Allow",
+              state == "pending" and honest == "allowed", f"forged {state}, real paired PC {honest}")
         rebind, _ = post(server.port, "/api/hello", body, host="evil.example:80")
         check("Share: requests for another host name are refused (DNS rebinding)", rebind == 421, f"HTTP {rebind}")
         server.public_ips = {"203.0.113.5"}

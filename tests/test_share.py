@@ -374,7 +374,7 @@ class TunnelProcessTests(unittest.TestCase):
         tunnel = S.Tunnel("http://192.168.1.5:5000", temp_dir(), lambda url: None, exe=Path("Z:/nope.exe"))
         tunnel.start()
         self.assertIsNone(tunnel.process)
-        self.assertIn("not installed", tunnel.error)
+        self.assertIn("cloudflared is missing", tunnel.error)
 
 
 if __name__ == "__main__":

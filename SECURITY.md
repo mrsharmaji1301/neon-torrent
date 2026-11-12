@@ -89,6 +89,19 @@ promise any client can honestly make. NEON Torrent works on everything a client 
   breaks and tabs, and bidirectional overrides/isolates, are removed. The PC shows it as plain text only (no HTML,
   no links opened), keeps at most 200 unread messages per session and 500 in the panel, and never writes it to
   disk. COPY puts it on the clipboard only when the user clicks.
+- Text from the PC goes only to the session that is connected when it is sent; it is dropped when that session ends,
+  so a later device never sees it. The phone shows it as plain text (`textContent`), never as HTML.
+- PC to PC: the other PC is a client of the same server and protocol, so files and text use the same sealed channel.
+  A pair code is accepted only when it points at a private LAN address (http) or a `*.trycloudflare.com` quick tunnel
+  (https); anything else is refused before any connection. Each install has an Ed25519 identity key, created on first
+  use and stored with Windows DPAPI (`data\identity.key`, readable only by this Windows user). During pairing both
+  sides sign `label | server pairing key | client session key` with it, inside the sealed hello, so a signature
+  cannot be replayed into another session. A remembered PC (`data\peers.json`, keyed by its public key) skips the
+  Allow prompt only when its signature verifies; a PC that only claims a remembered key still needs Allow. A fresh
+  pair code is still needed for every session. Received files go to the FTP folder with the same name cleaning,
+  `.neonpart` handling and Mark-of-the-Web as phone uploads.
+- cloudflared is shipped inside Setup (`cloudflared\cloudflared.exe`): Cloudflare's signed release, pinned by version
+  and SHA-256 in `tools\build_msi.py`. NEON runs only that copy (or, in a source checkout, the system-wide install).
 - Limit: the phone page itself is served over plain HTTP (browsers need a trusted certificate for HTTPS, which a
   LAN address cannot get). File contents stay confidential against anyone who only watches the Wi-Fi, but an
   attacker who can actively tamper with traffic on your own network while you scan could swap the page's script

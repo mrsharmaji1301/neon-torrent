@@ -10,19 +10,20 @@ from PySide6.QtCore import QEvent, QPoint, QStandardPaths, QThread, QTimer, Qt, 
 from PySide6.QtGui import QAction, QFont, QGuiApplication, QKeySequence, QShortcut
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import (QApplication, QCheckBox, QFileDialog, QHBoxLayout, QLabel, QMainWindow, QMenu,
-                               QStackedWidget, QSystemTrayIcon, QVBoxLayout, QWidget)
+                               QMenuBar, QStackedWidget, QSystemTrayIcon, QVBoxLayout, QWidget)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from neontorrent import APP_NAME  # noqa: E402
 from neontorrent import theme as T  # noqa: E402
+from neontorrent import assoc  # noqa: E402
 
 # pythonw.exe, or the Nuitka-compiled NeonTorrent.exe (no console; __compiled__ is Nuitka's marker): keep errors in
 # a log file
 if sys.stderr is None or "__compiled__" in globals():
     sys.stderr = open(T.app_data_dir() / "error.log", "a", encoding="utf-8", buffering=1)
     sys.stdout = sys.stderr
-from neontorrent.dialogs import (AddTorrentDialog, DetailsDialog, FirstRunDialog, NeonDialog,  # noqa: E402
+from neontorrent.dialogs import (AboutDialog, AddTorrentDialog, DetailsDialog, FirstRunDialog, NeonDialog,  # noqa: E402
                                  SettingsDialog, ShieldDialog, SpeedLimitsDialog, TorrentOptionsDialog)
 from neontorrent.engine import DEFAULT_BLOCKED, TorrentEngine  # noqa: E402
 from neontorrent.icons import logo_icon, make_icon  # noqa: E402
@@ -113,6 +114,10 @@ def build_qss() -> str:
     QMenu::item:selected {{ background: {c['line']}; color: {c['cyan']}; }}
     QMenu::item:disabled {{ color: {c['muted']}; }}
     QMenu::separator {{ height: 1px; background: {c['line']}; margin: 6px 8px; }}
+    QMenuBar#mainMenu {{ background: transparent; color: {c['muted']}; font-size: 9.5pt; spacing: 2px; }}
+    QMenuBar#mainMenu::item {{ background: transparent; padding: 3px 10px; border-radius: 6px; }}
+    QMenuBar#mainMenu::item:selected {{ background: {c['line']}; color: {c['cyan']}; }}
+    QMenuBar#mainMenu::item:pressed {{ background: {c['panel_hi']}; color: {c['cyan']}; }}
     QMenu::icon {{ padding-left: 8px; }}
     QMenu::indicator {{ width: 14px; height: 14px; left: 6px; }}
     """
@@ -184,6 +189,44 @@ class CloseDialog(NeonDialog):
     def _pick(self, choice: str):
         self.choice = choice
         self.accept()
+
+
+class MagnetDialog(NeonDialog):
+    """Asked once at start when another app (e.g. uTorrent) opens magnet links: make NEON Torrent that app?"""
+
+    def __init__(self, current: str, parent=None):
+        super().__init__("Magnet links", parent)
+        self.setMinimumWidth(500)
+        where = f"open in {current}" if current else "do not open any app"
+        label = QLabel(f"Magnet links you click in Chrome, Brave or another browser {where} right now, not in "
+                       "NEON Torrent. Make NEON Torrent the app for magnet links and .torrent files?")
+        label.setTextFormat(Qt.TextFormat.PlainText)
+        label.setWordWrap(True)
+        label.setFont(T.font(10.5))
+        self.root.addWidget(label)
+        self.never = QCheckBox("Don't ask again (Preferences → General → Magnet links does it later)")
+        self.root.addWidget(self.never)
+        row = QHBoxLayout()
+        row.addStretch(1)
+        later = GlowButton("NOT NOW", "", "muted", "outline")
+        later.clicked.connect(self.reject)
+        make = GlowButton("USE NEON", "magnet", "cyan", "solid", "cyan2")
+        make.clicked.connect(self.accept)
+        for b in (later, make):
+            b.setMinimumWidth(150)
+            row.addWidget(b)
+        make.setDefault(True)
+        self.root.addLayout(row)
+
+
+def open_command() -> tuple[str, str]:
+    """How Windows should start this copy for a magnet link or .torrent file: (command with "%1", icon)."""
+    exe = Path(sys.executable).resolve()
+    icon = exe.parent / "NeonTorrent.ico"
+    icon_ref = str(icon) if icon.exists() else f"{exe},0"
+    if "__compiled__" in globals():                       # the installed, compiled NeonTorrent.exe
+        return f'"{exe}" "%1"', icon_ref
+    return f'"{exe}" "{Path(__file__).resolve()}" "%1"', icon_ref   # a source checkout: runtime\NeonTorrent.exe
 
 
 class TorrentWindow(QMainWindow):
@@ -294,6 +337,9 @@ class TorrentWindow(QMainWindow):
         root = QVBoxLayout(self.bg)
         root.setContentsMargins(14, 10, 14, 14)
         root.setSpacing(14)
+
+        # --- menu bar (File, View, Transfer, Settings, Help), above the title bar like a desktop app
+        root.addWidget(self._build_menu())
 
         # --- title bar
         title = DragArea()
@@ -472,6 +518,85 @@ class TorrentWindow(QMainWindow):
         page.addWidget(footer)
         self._update_actions()
 
+    def _build_menu(self) -> QMenuBar:
+        bar = QMenuBar()
+        bar.setObjectName("mainMenu")
+        bar.setNativeMenuBar(False)
+
+        def menu(title: str, items: list) -> None:
+            m = bar.addMenu(title)
+            for item in items:
+                if item is None:
+                    m.addSeparator()
+                    continue
+                text, slot, keys = item
+                action = m.addAction(text)
+                action.triggered.connect(lambda _checked=False, fn=slot: fn())
+                if keys:
+                    action.setShortcut(QKeySequence(keys))
+                    action.setShortcutContext(Qt.ShortcutContext.WidgetShortcut)   # shown only; QShortcuts run it
+
+        def view(key: str):
+            return lambda: self.view_tabs.select(key)
+
+        def page(key: str):
+            return lambda: (self.view_tabs.select("torrents"), self.page_tabs.select(key))
+
+        data = T.app_data_dir()
+        menu("&File", [("Add torrent file…", self.open_torrent, "Ctrl+O"),
+                       ("Add magnet link…", lambda: (self.view_tabs.select("torrents"), self.uri_input.setFocus()),
+                        "Ctrl+N"),
+                       None,
+                       ("Open download folder", lambda: show_in_explorer(Path(self.prefs["download_dir"])), ""),
+                       ("Open received files (FTP)", lambda: show_in_explorer(self.share_tab.save_dir())
+                        if self.share_tab.save_dir().is_dir() else self._on_notice("NO FILES RECEIVED YET", "info"), ""),
+                       None,
+                       ("Resume all", self.sig_resume_all.emit, ""),
+                       ("Pause all", self.sig_pause_all.emit, ""),
+                       None,
+                       ("Exit", self.quit_app, "Ctrl+Q")])
+        menu("&View", [("Torrents", view("torrents"), ""),
+                       ("File sharing", view("share"), ""),
+                       None,
+                       *[(f"{label.title()} torrents", page(key), f"Ctrl+{n}")
+                         for n, (key, label, _color, _chips) in enumerate(PAGES, 1)],
+                       None,
+                       ("Shield connection map", self.show_shield, "Ctrl+M")])
+        menu("&Transfer", [("Copy pair code", lambda: (self.view_tabs.select("share"), self.share_tab.copy_pair_code()),
+                            ""),
+                           ("Connect to PC…", self.show_connect_pc, "Ctrl+Shift+P"),
+                           ("Paired devices…", self.show_paired, ""),
+                           None,
+                           ("Text with phone or PC…", lambda: (self.view_tabs.select("share"),
+                                                                self.share_tab.show_texts()), "")])
+        menu("&Settings", [("Preferences…", self.show_settings, "Ctrl+,"),
+                           ("Speed limits…", self.show_speed_limits, ""),
+                           ("FLASH mode on/off", self.toggle_flash, "Ctrl+Shift+F"),
+                           None,
+                           ("Shield and antivirus…", lambda: self.show_settings("shield"), ""),
+                           ("Download safety…", lambda: self.show_settings("safety"), ""),
+                           None,
+                           ("Open magnet links with NEON", self.make_magnet_default, "")])
+        menu("&Help", [("About NEON Torrent", lambda: AboutDialog(self).exec(), ""),
+                       None,
+                       ("Show error log", lambda: show_in_explorer(data / "error.log", select=True)
+                        if (data / "error.log").exists() else self._on_notice("NO ERRORS LOGGED", "info"), ""),
+                       ("Open data folder", lambda: show_in_explorer(data), "")])
+        return bar
+
+    def show_connect_pc(self):
+        from neontorrent.peer_ui import ConnectPCDialog
+        if getattr(self, "connect_dialog", None) is None:
+            self.connect_dialog = ConnectPCDialog(self.share_tab.identity(), self.share_tab.peers(),
+                                                  self.share_tab.save_dir, self)
+        self.connect_dialog.show()
+        self.connect_dialog.raise_()
+        self.connect_dialog.activateWindow()
+
+    def show_paired(self):
+        from neontorrent.peer_ui import PairedDevicesDialog
+        PairedDevicesDialog(self.share_tab.identity(), self.share_tab.peers(), self).exec()
+
     def _build_shortcuts(self):
         self.torrent_shortcuts: list[QShortcut] = []
 
@@ -491,6 +616,7 @@ class TorrentWindow(QMainWindow):
         sc("Ctrl+T", lambda: self.show_options(self.table.selected_keys()[0]) if self.table.selected_keys() else None,
            torrents_only=True)
         sc("Ctrl+Q", self.quit_app)
+        sc("Ctrl+Shift+P", self.show_connect_pc)
         sc("Ctrl+P", self.pause_selected, torrents_only=True)
         sc("Ctrl+Shift+S", self.stop_selected, torrents_only=True)
         sc("Ctrl+R", self.resume_selected, torrents_only=True)
@@ -1080,6 +1206,41 @@ class TorrentWindow(QMainWindow):
             self.share_tab.activate()
         self.bg.update()                           # panel glows follow the visible view
 
+    # ------------------------------------------------------------ magnet links
+    def check_magnet_handler(self):
+        """At start: when magnet links open in another app, ask once whether NEON should open them."""
+        if sys.platform != "win32" or not self.prefs.get("magnet_ask", True):
+            return
+        command, _locked = assoc.magnet_handler()
+        if assoc.is_ours(command, Path(sys.executable)):
+            return
+        dialog = MagnetDialog(assoc.handler_name(command) if command else "", self)
+        accepted = dialog.exec() == MagnetDialog.DialogCode.Accepted
+        if dialog.never.isChecked():
+            self.prefs["magnet_ask"] = False
+            T.save_preferences(self.prefs)
+        if accepted:
+            self.make_magnet_default()
+
+    def make_magnet_default(self):
+        exe = Path(sys.executable)
+        command, locked = assoc.magnet_handler()
+        if locked and not assoc.is_ours(command, exe):
+            # chosen in Windows Settings: only Settings may change it (Windows protects that choice)
+            assoc.open_default_apps()
+            self._on_notice("MAGNET LINKS · in Settings choose NEON Torrent for MAGNET and .torrent", "warn")
+            return
+        try:
+            assoc.make_default(*open_command())
+        except OSError as exc:
+            self._on_notice(f"MAGNET LINKS · could not register: {exc}", "error")
+            return
+        if assoc.is_ours(assoc.magnet_handler()[0], exe):
+            self._on_notice("MAGNET LINKS · browsers now open magnet links in NEON Torrent", "info")
+        else:
+            assoc.open_default_apps()
+            self._on_notice("MAGNET LINKS · in Settings choose NEON Torrent for MAGNET and .torrent", "warn")
+
     def _share_notify(self, text: str):
         """Text arrived from the phone: a tray message only, the window stays where it is."""
         if not self.isActiveWindow() and self.tray.isVisible():
@@ -1177,6 +1338,13 @@ class TorrentWindow(QMainWindow):
             self.sig_shutdown.emit()
         else:
             app.quit()
+
+
+def show_in_explorer(target: Path, select: bool = False) -> None:
+    """Open a folder in Explorer, or select a file there (never runs it). Explorer by its absolute path."""
+    explorer = str(Path(os.environ.get("WINDIR", r"C:\Windows")) / "explorer.exe")
+    args = [explorer, "/select,", str(target)] if select else [explorer, str(target)]
+    subprocess.Popen(args, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
 
 
 def explorer_command(save_path: str, name: str) -> list[str] | None:
@@ -1288,6 +1456,7 @@ def main() -> int:
         sock.readyRead.connect(read)
     server.newConnection.connect(on_connection)
     window.show()
+    QTimer.singleShot(2500, window.check_magnet_handler)
     for arg in args:
         if not arg.startswith("--"):
             QTimer.singleShot(1500, lambda a=arg: window.add_any(a))

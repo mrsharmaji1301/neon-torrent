@@ -83,7 +83,7 @@
   <nav class="grid grid-cols-3 gap-1 p-1 rounded-[12px] bg-surface-container-low border border-outline-variant/40" aria-label="Mode">
     <button id="tab-send" class="mode-tab flex items-center justify-center gap-1.5 py-2 rounded-[9px] font-label-md text-label-md font-bold uppercase"><svg class="ico w-4 h-4"><use href="#i-upload"/></svg>Send to PC</button>
     <button id="tab-recv" class="mode-tab flex items-center justify-center gap-1.5 py-2 rounded-[9px] font-label-md text-label-md font-bold uppercase"><svg class="ico w-4 h-4"><use href="#i-download"/></svg>Get from PC</button>
-    <button id="tab-text" class="mode-tab flex items-center justify-center gap-1.5 py-2 rounded-[9px] font-label-md text-label-md font-bold uppercase"><svg class="ico w-4 h-4"><use href="#i-chat"/></svg>Text</button>
+    <button id="tab-text" class="mode-tab flex items-center justify-center gap-1.5 py-2 rounded-[9px] font-label-md text-label-md font-bold uppercase"><svg class="ico w-4 h-4"><use href="#i-chat"/></svg>Text<span id="text-badge" class="hidden ml-0.5 min-w-[16px] h-4 px-1 rounded-full bg-secondary text-surface-container-lowest text-[10px] leading-4 text-center"></span></button>
   </nav>
 
   <!-- device -->
@@ -152,6 +152,8 @@
 
   <!-- TEXT: paste and send to the PC -->
   <div id="v-text" class="hidden flex flex-col gap-3.5">
+    <div id="text-in-head" class="hidden flex items-center gap-2"><svg class="ico w-4 h-4 text-secondary"><use href="#i-computer"/></svg><span class="font-headline-sm text-[14px] font-bold text-on-surface tracking-wide uppercase">From the PC</span></div>
+    <section id="text-in" class="flex flex-col gap-2"></section>
     <section class="bg-surface-container-low border border-primary-container/40 rounded-[14px] p-3.5 neon-glow-cyan flex flex-col gap-2.5">
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-2"><svg class="ico w-5 h-5 text-primary"><use href="#i-chat"/></svg><span class="font-headline-sm text-[15px] font-bold text-on-surface tracking-wide uppercase">Text to PC</span></div>

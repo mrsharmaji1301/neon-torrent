@@ -1,4 +1,54 @@
-# NEON Torrent
+<p align="center"><img src="docs/screenshots/installer.png" alt="NEON Torrent, built by SharmaJi" width="246"></p>
+
+<h1 align="center">NEON Torrent</h1>
+
+<p align="center"><b>A free BitTorrent client for Windows with a built-in, end-to-end encrypted File Transfer module for
+your phone and your other PCs.</b><br>Made by SharmaJi with ❤ for the Community.</p>
+
+<p align="center">
+<img alt="Version" src="https://img.shields.io/badge/version-3.0.0-22d3ee">
+<img alt="Windows" src="https://img.shields.io/badge/Windows-10%20%7C%2011-38bdf8">
+<img alt="Price" src="https://img.shields.io/badge/price-free-e040fb">
+<img alt="Telemetry" src="https://img.shields.io/badge/telemetry-none-22e5a0">
+</p>
+
+![Torrents](site/assets/screenshot-1.png)
+
+## Why NEON
+
+- **Torrents, done safely.** libtorrent 2.x underneath; File-only mode by default; the **Shield** filters VPN and
+  datacenter peers and learns from your antivirus; **Download Guard** catches disguised programs (`movie.mkv.exe`)
+  before a byte is written. **FLASH** mode when you want every source at once.
+- **Phone ⇄ PC.** Scan a QR code and send files and text both ways, over your Wi-Fi or from anywhere. Nothing to
+  install on the phone: it is a page in its browser.
+- **PC ⇄ PC.** Two PCs with NEON swap files and text over LAN or the internet with a one-time pair code. Remember a
+  PC once and it connects without asking.
+- **Private by design.** X25519 + ChaCha20-Poly1305 end to end; the key lives only in the QR code or pair code.
+  Over the internet a temporary Cloudflare quick tunnel only relays sealed bytes. No account, no ads, no telemetry.
+- **A real Windows app.** Native compiled `NeonTorrent.exe`, Windows Installer setup with upgrade and full
+  uninstall, magnet links from Chrome, Brave or Edge, and everything a feature needs (cloudflared too) inside Setup.
+
+## Screenshots
+
+| File Sharing with a phone | PC to PC |
+|---|---|
+| ![File Sharing](docs/screenshots/file-sharing.png) | ![Connect to PC](docs/screenshots/connect-to-pc.png) |
+| **Text, both ways, one-click copy** | **Paired devices** |
+| ![Text panel](docs/screenshots/text-panel.png) | ![Paired devices](docs/screenshots/paired-devices.png) |
+
+![Shield connection map](site/assets/screenshot-2.png)
+
+<sub>Torrent pictures: Ubuntu and Debian images on a throwaway profile (`tools\screenshots.py`). File Sharing
+pictures: made-up names and example addresses on a throwaway profile (`tools\feature_shots.py`).</sub>
+
+## Install
+
+Download **NEON-Torrent-Setup.exe** from Releases and run it. Setup shows the user agreement, installs to
+`C:\Program Files\NEON Torrent` (choose another folder if you like), registers NEON for magnet links and `.torrent`
+files, and offers a desktop shortcut. Running it again offers **Upgrade** or **Full uninstall**. Windows SmartScreen
+may say "Unknown publisher" because the setup is not code-signed: choose *More info → Run anyway*.
+
+## For developers
 
 A Windows desktop BitTorrent client in Python, using PySide6 for the interface and libtorrent 2.x for transfers.
 
@@ -186,13 +236,28 @@ header. Files are end-to-end encrypted on both paths; Cloudflare relays only cip
    `<download folder>\FTP\` (names are cleaned; an existing name becomes `name (1).ext`).
    **Text phone → PC**: on the phone, open the *Text* tab, paste (or type) up to 20,000 characters and tap
    *Send text*. *Paste* reads the clipboard in INTERNET mode (HTTPS); on LAN, long-press the box and paste. On the
-   PC, **TEXT FROM PHONE** (under the network panel) shows the unread count; click it to pop out the chat panel.
+   PC, **TEXT** (in the files header) shows the unread count; click it to pop out the chat panel.
    Each message has a one-click **COPY** at its top right, and any part can be selected with the mouse (Ctrl+C).
    *Clear* empties the panel; messages are never saved to disk.
+   **Text PC → phone or PC**: type in the box at the bottom of the TEXT panel and press *Send* (Ctrl+Enter). The phone
+   shows it under *From the PC* in its Text tab with a *Copy* button.
+
+**PC to PC** (both PCs need NEON). On the PC with the files or that should receive them, open **FILE SHARING** and
+press **COPY PAIR CODE FOR ANOTHER PC**. Send the code to yourself (any messenger), and on the other PC choose
+**Transfer → Connect to PC…** (Ctrl+Shift+P), paste it and press *Connect*. The first PC asks **Allow this PC?** and
+shows the other PC's key. After that the second PC can download the files the first one offers, send it files, and
+text with it. Over the internet the code is an `https://….trycloudflare.com` link; on the same Wi-Fi it is a LAN
+address. A code works once. **Transfer → Paired devices** lists remembered PCs (rename, forget); a remembered PC
+connects without the Allow prompt, but still needs a fresh code each time, because the internet link changes every
+session and NEON uses no server of its own.
+
+**Menu bar.** File (add torrents, folders, resume or pause all, exit), View (torrents, file sharing, pages, Shield
+map), Transfer (pair code, connect to PC, paired devices, text), Settings (preferences, speed limits, FLASH, magnet
+links) and Help (about, error log, data folder).
 
 Both sides show thumbnails (photos and video first frames; a type icon otherwise), an X on every tile (remove before
 sending, cancel during a transfer), per-file progress with a ✓ when done, and the overall count (5/12), speed and
-time left. The status reads *Ready to connect*, *Waiting for approval*, *Connected*, *Transferring* or
+time left. The status reads *Ready*, *Waiting for approval*, *Connected*, *Transferring* or
 *Disconnected* (no heartbeat for 8 s). The network panel shows this PC's IP, MAC and Wi-Fi name, and the phone's
 name, IP and MAC.
 

@@ -230,6 +230,7 @@ function applyStatus(r) {
   } else if (state === 'allowed') {
     if (prev !== 'allowed' && overlay.kind === 'wait') overlay(null);
     if (mode === 'recv' && r.rev !== rev) loadList();
+    if (typeof r.trev === 'number' && r.trev > textRev) loadTexts();
   }
   renderConn();
 }
@@ -775,6 +776,7 @@ function setMode(m) {
   showView();
   if (m === 'send') { if (up.batch.length) renderSending(true); else renderSend(); }
   else if (m === 'recv') { renderRecv(); loadList(); }
+  else if (m === 'text') { textUnread = 0; renderBadge(); }
   if (S) call({ op: 'ping', name: deviceName(), mode }).then(applyStatus).catch(() => {});
 }
 $('tab-send').onclick = () => setMode('send');
@@ -785,6 +787,52 @@ $('tab-text').onclick = () => setMode('text');
 // it travels sealed like every control message; the PC shows it as plain text with a copy button
 const TEXT_MAX = 20000;
 var textSending = false;   // var: renderButtons may run before this line during start-up
+var textRev = 0, textUnread = 0, textLoading = false;
+
+// text the PC sends to this phone: shown newest first, each with a Copy button and selectable by long-press
+async function loadTexts() {
+  if (textLoading) return;
+  textLoading = true;
+  try {
+    const r = await call({ op: 'texts', after: textRev });
+    for (const m of r.texts || []) {
+      if (typeof m.n !== 'number' || m.n <= textRev || typeof m.text !== 'string') continue;
+      textRev = m.n;
+      addIncoming(m.text, m.at);
+      if (mode !== 'text') textUnread++;
+    }
+    renderBadge();
+  } catch (e) { /* the next heartbeat tries again */ } finally { textLoading = false; }
+}
+function renderBadge() {
+  const b = $('text-badge');
+  b.textContent = textUnread > 9 ? '9+' : String(textUnread);
+  b.classList.toggle('hidden', !textUnread);
+}
+function copyText(text) {
+  // the clipboard API needs HTTPS (INTERNET mode); on LAN fall back to a hidden textarea and the copy command
+  if (window.isSecureContext && navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
+  const area = el('textarea');
+  area.value = text; area.setAttribute('readonly', ''); area.style.position = 'fixed'; area.style.opacity = '0';
+  document.body.appendChild(area); area.select();
+  const ok = document.execCommand('copy');
+  area.remove();
+  return ok ? Promise.resolve() : Promise.reject(new Error('copy blocked'));
+}
+function addIncoming(text, at) {
+  const card = el('div', 'bg-surface-container-low border border-secondary/40 rounded-[12px] p-3 flex flex-col gap-1.5');
+  const head = el('div', 'flex items-center justify-between gap-2');
+  const when = new Date((at || Date.now() / 1000) * 1000);
+  head.appendChild(el('span', 'font-label-sm text-[11px] text-outline', `${pcName} · ${when.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`));
+  const btn = el('button', 'shrink-0 font-label-sm text-label-sm text-secondary border border-secondary/40 px-2.5 py-1 rounded-[8px] bg-secondary/10', 'Copy');
+  btn.onclick = () => copyText(text).then(() => { btn.textContent = 'Copied'; setTimeout(() => { btn.textContent = 'Copy'; }, 1500); })
+    .catch(() => toast('Copy was blocked: long-press the text and choose Copy'));
+  head.appendChild(btn);
+  card.appendChild(head);
+  card.appendChild(el('div', 'font-body-md text-[15px] text-on-surface whitespace-pre-wrap break-words select-text', text));
+  $('text-in').prepend(card);
+  $('text-in-head').classList.remove('hidden');
+}
 function renderText() {
   const box = $('text-box'), n = box.value.length;
   $('text-count').textContent = `${n} / ${TEXT_MAX}`;

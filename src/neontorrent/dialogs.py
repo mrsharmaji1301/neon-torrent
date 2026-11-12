@@ -285,6 +285,12 @@ class SettingsDialog(NeonDialog):
         add(gf, "Download folder", folder_box)
         add(gf, "Close button", self.close_action)
         add(gf, "", self.notify)
+        if parent is not None and hasattr(parent, "make_magnet_default"):
+            magnet = GlowButton("OPEN MAGNET LINKS WITH NEON", "magnet", "cyan", "outline")
+            magnet.setFixedHeight(38)
+            magnet.setToolTip("Make NEON Torrent the app for magnet links (Chrome, Brave, Edge) and .torrent files")
+            magnet.clicked.connect(parent.make_magnet_default)
+            add(gf, "Magnet links", magnet)
         gf.addRow("", note("A new folder applies to torrents added from now on. Use “Move data…” in a "
                            "torrent’s menu to relocate existing downloads."))
         tabs.addTab(general, "GENERAL")

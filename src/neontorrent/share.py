@@ -43,8 +43,9 @@ from typing import Callable
 from urllib.parse import parse_qs, urlsplit
 from urllib.request import Request, urlopen
 
-from cryptography.exceptions import InvalidTag
+from cryptography.exceptions import InvalidSignature, InvalidTag
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
 from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
@@ -74,7 +75,16 @@ WEB_FILES = {"/": ("index.html", "text/html; charset=utf-8"),
              "/app.css": ("app.css", "text/css; charset=utf-8")}
 CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; media-src blob:; "
        "connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
-CLOUDFLARED = Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "cloudflared" / "cloudflared.exe"
+def _find_cloudflared() -> Path:
+    """The cloudflared that Setup installs next to NeonTorrent.exe (cloudflared\\cloudflared.exe), so a clean PC needs
+    nothing else; a source checkout falls back to a system-wide install."""
+    bundled = Path(sys.executable).resolve().parent / "cloudflared" / "cloudflared.exe"
+    if bundled.is_file():
+        return bundled
+    return Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "cloudflared" / "cloudflared.exe"
+
+
+CLOUDFLARED = _find_cloudflared()
 TUNNEL_URL = re.compile(r"https://[a-z0-9-]+\.trycloudflare\.com")
 TRACE_URLS = ("https://1.1.1.1/cdn-cgi/trace", "https://[2606:4700:4700::1111]/cdn-cgi/trace",
               "https://www.cloudflare.com/cdn-cgi/trace")
@@ -83,6 +93,22 @@ PRIVATE_NETS = [ipaddress.ip_network(n) for n in ("10.0.0.0/8", "172.16.0.0/12",
 
 # nonce kinds: byte 0 of every nonce, so the two directions and the two message types can never collide
 K_CTL_UP, K_CTL_DOWN, K_FILE_UP, K_FILE_DOWN = 1, 2, 3, 4
+
+
+# identity signatures for PC to PC pairing (peer.py): label + the server's pairing key + the client's ephemeral key
+ID_HELLO = b"NEON-ID-1|hello|"                 # signed by the connecting PC
+ID_REPLY = b"NEON-ID-1|reply|"                 # signed by the PC that shows the code
+
+
+def verify_identity(public: object, signature: object, label: bytes, server_key: bytes,
+                    client_key: bytes) -> bytes | None:
+    """The Ed25519 identity key when ``signature`` is valid for this session's keys, else None."""
+    try:
+        key = b64d(public)
+        Ed25519PublicKey.from_public_bytes(key).verify(b64d(signature), label + server_key + client_key)
+        return key
+    except (InvalidSignature, ValueError, TypeError):
+        return None
 
 
 class ShareError(Exception):
@@ -411,7 +437,7 @@ class Tunnel:
 
     def start(self) -> None:
         if not self.exe.is_file():
-            self.error = "cloudflared is not installed"
+            self.error = "cloudflared is missing (reinstall NEON Torrent to restore it)"
             return
         try:
             self.workdir.mkdir(parents=True, exist_ok=True)
@@ -466,6 +492,8 @@ class Phone:
     path: str = "lan"                                # "lan" or "internet" (through the tunnel)
     tx: int = 0                                      # last counter used for a reply
     mode: str = "send"
+    kind: str = "phone"                              # "phone" or "pc" (another NEON, peer.py)
+    peer_id: bytes = b""                             # a PC's verified Ed25519 identity key
 
 
 @dataclass
@@ -533,8 +561,11 @@ class _HTTPServer(ThreadingHTTPServer):
 class ShareServer:
     """One sharing session: the listening socket, the pairing, the phones and the transfers. Thread-safe."""
 
-    def __init__(self, host: str, save_dir: Path, pc_name: str | None = None, allow_loopback: bool = False):
+    def __init__(self, host: str, save_dir: Path, pc_name: str | None = None, allow_loopback: bool = False,
+                 identity=None, trusted: Callable[[bytes], bool] | None = None):
         self.host = host
+        self.identity = identity                     # peer.Identity: proves this PC to another NEON
+        self.trusted = trusted                       # paired PCs that are let in without the Allow prompt
         self.save_dir = Path(save_dir)
         self.pc_name = clean_label(pc_name or socket.gethostname(), 40) or "PC"
         self.allow_loopback = allow_loopback         # tests only: the real server refuses 127.0.0.1
@@ -546,6 +577,8 @@ class ShareServer:
         self.offers_rev = 0
         self.transfers: dict[int, Transfer] = {}
         self.inbox: list[dict] = []                  # text messages from the phone, until the UI takes them
+        self.outbox: list[dict] = []                 # text from this PC, each for the session it was sent to
+        self.out_seq = 0
         self.next_number = 1
         self.fails: dict[str, int] = {}
         self.web = {route: (self._read_web(name), ctype) for route, (name, ctype) in WEB_FILES.items()}
@@ -629,7 +662,8 @@ class ShareServer:
                         (phone.state == "allowed" and age > SESSION_EXPIRY):
                     self._drop(phone.sid)
             phones = [{"sid": p.sid, "ip": self.shown_ip(p.ip), "mac": p.mac, "name": p.name, "model": p.model, "state": p.state,
-                       "alive": now - p.seen < HEARTBEAT_LOST, "mode": p.mode, "path": p.path}
+                       "alive": now - p.seen < HEARTBEAT_LOST, "mode": p.mode, "path": p.path, "kind": p.kind,
+                       "peer_id": b64e(p.peer_id) if p.peer_id else ""}
                       for p in self.phones.values()]
             transfers = [{"number": t.number, "direction": t.direction, "name": t.name, "size": t.size,
                           "done": t.done, "state": t.state, "offer_id": t.offer_id,
@@ -637,6 +671,19 @@ class ShareServer:
                           "elapsed": now - t.started} for t in self.transfers.values()]
             return {"phones": phones, "transfers": transfers, "pairing_rev": self.pairing_rev,
                     "tunnel": self.tunnel_url}
+
+    def send_text(self, text: str) -> dict:
+        """Text typed on this PC for the connected device (phone or PC). Raises ShareError when none is connected."""
+        text = clean_text(text)
+        with self.lock:
+            phone = next((p for p in self.phones.values() if p.state == "allowed"), None)
+            if phone is None:
+                raise ShareError(409, "no device is connected")
+            self.out_seq += 1
+            entry = {"n": self.out_seq, "sid": phone.sid, "text": text, "at": time.time()}
+            self.outbox.append(entry)
+            del self.outbox[:-MAX_INBOX]
+            return {"text": text, "at": entry["at"], "name": phone.name}
 
     def take_texts(self) -> list[dict]:
         """Text messages received since the last call, oldest first: {"text", "name", "at"} (at = time.time())."""
@@ -722,6 +769,7 @@ class ShareServer:
 
     def _drop(self, sid: str) -> None:
         self.phones.pop(sid, None)
+        self.outbox = [e for e in self.outbox if e["sid"] != sid]   # nothing is kept for a later device
         for t in self.transfers.values():
             if t.sid == sid and t.state == "active":
                 self._cancel(t)
@@ -778,13 +826,22 @@ class ShareServer:
                 raise ShareError(429, "too many phones waiting")
             pairing.used.add(phone_pub)
             sid = b64e(secrets.token_bytes(16))
-            phone = Phone(sid, ip, channel, clean_label(info.get("name"), 40) or "Phone",
-                          clean_label(info.get("model"), 60), mac, path="internet" if internet else "lan")
+            peer_id = verify_identity(info.get("id"), info.get("sig"), ID_HELLO, pairing.public, phone_pub) or b""
+            kind = "pc" if info.get("kind") == "pc" and peer_id else "phone"
+            phone = Phone(sid, ip, channel, clean_label(info.get("name"), 40) or ("PC" if kind == "pc" else "Phone"),
+                          clean_label(info.get("model"), 60), mac, path="internet" if internet else "lan",
+                          kind=kind, peer_id=peer_id)
             self.phones[sid] = phone
+            if peer_id and self.trusted is not None and self.trusted(peer_id):
+                phone.state = "allowed"              # a paired PC proved its key: no Allow prompt
+                self.rotate()
             phone.tx += 1
             counter = phone.tx
-        reply = channel.seal({"state": "pending", "pc": self._pc_info(), "path": phone.path}, counter,
-                             f"R{sid}:0".encode())
+        message = {"state": phone.state, "pc": self._pc_info(), "path": phone.path}
+        if self.identity is not None:
+            message.update(id=b64e(self.identity.public),
+                           sig=self.identity.sign(ID_REPLY, pairing.public, phone_pub))
+        reply = channel.seal(message, counter, f"R{sid}:0".encode())
         return {"s": sid, "c": counter, "d": reply}
 
     def control(self, ip: str, body: bytes) -> dict:
@@ -826,7 +883,8 @@ class ShareServer:
                     phone.name = name
                 if message.get("mode") in ("send", "recv", "text"):
                     phone.mode = message["mode"]
-                return {"state": phone.state, "rev": self.offers_rev, "pc": self._pc_info()}
+                return {"state": phone.state, "rev": self.offers_rev, "pc": self._pc_info(),
+                        "trev": max((e["n"] for e in self.outbox if e["sid"] == phone.sid), default=0)}
         if op == "bye":
             with self.lock:
                 self._drop(phone.sid)
@@ -838,6 +896,11 @@ class ShareServer:
                 return {"files": [{"id": o.id, "name": o.name, "size": o.size, "mime": o.mime,
                                    "thumb": base64.b64encode(o.thumb).decode("ascii") if o.thumb else ""}
                                   for o in self.offers.values()], "rev": self.offers_rev}
+        if op == "texts":                            # text this PC sent to this session, after number "after"
+            after = message.get("after") if isinstance(message.get("after"), int) else 0
+            with self.lock:
+                return {"texts": [{"n": e["n"], "text": e["text"], "at": e["at"]} for e in self.outbox
+                                  if e["sid"] == phone.sid and e["n"] > after]}
         if op == "text":                             # pasted text: arrives sealed like every control message
             text = clean_text(message.get("text"))
             with self.lock:

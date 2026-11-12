@@ -1,3 +1,15 @@
+NEON Torrent 3.0.0 (12 Nov 2026)
+- PC to PC: two PCs with NEON transfer files and text, on the same Wi-Fi or anywhere over the internet. Copy the pair code on one PC (File Sharing > COPY PAIR CODE), paste it on the other (Transfer > Connect to PC). End-to-end encrypted like the phone.
+- Paired devices: a PC you allow can be remembered by its key and connects without the Allow prompt next time (Transfer > Paired devices).
+- Text from the PC: type in the TEXT panel to send text to the connected phone or PC. The phone shows it in its Text tab with a Copy button.
+- Menu bar: File, View, Transfer, Settings and Help.
+- cloudflared is now part of Setup, so File Sharing over the internet works on a PC without it.
+- File Sharing fits short screens: the left column scrolls instead of growing the window. The status reads READY.
+
+NEON Torrent 2.1.1 (12 Nov 2026)
+- Magnet links work: Setup registers NEON Torrent for magnet links and .torrent files, and lists it in Settings > Default apps.
+- When another app (e.g. uTorrent) still opens magnet links, NEON asks once at start whether to take over. Preferences > General > Magnet links does it any time.
+
 NEON Torrent 2.1.0 (11 Nov 2026)
 - Setup works on every PC: it installs to C:\Program Files\NEON Torrent by default (it used to need an F: drive and quit without one). An upgrade keeps the folder of the installed copy.
 - Setup.exe with the NEON icon; it opens the same installer.

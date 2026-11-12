@@ -19,9 +19,9 @@ import segno
 from PySide6.QtCore import (QBuffer, QByteArray, QIODevice, QObject, QPointF, QRectF, QRunnable, QSize,
                             QThreadPool, QTimer, Qt, Signal)
 from PySide6.QtGui import (QColor, QFont, QFontMetricsF, QGuiApplication, QImage, QImageReader, QLinearGradient,
-                           QPainter, QPainterPath, QPen, QPixmap, QTextOption)
-from PySide6.QtWidgets import (QFileDialog, QFrame, QGridLayout, QHBoxLayout, QLabel, QPushButton, QScrollArea,
-                               QStackedWidget, QTextEdit, QVBoxLayout, QWidget)
+                           QKeySequence, QPainter, QPainterPath, QPen, QPixmap, QShortcut, QTextOption)
+from PySide6.QtWidgets import (QCheckBox, QFileDialog, QFrame, QGridLayout, QHBoxLayout, QLabel, QPushButton,
+                               QScrollArea, QStackedWidget, QTextEdit, QVBoxLayout, QWidget)
 
 from . import share as S
 from . import theme as T
@@ -36,7 +36,7 @@ KINDS = {"image": ("jpg jpeg png gif webp heic heif bmp avif tif tiff", "cyan"),
          "archive": ("zip rar 7z tar gz tgz bz2 xz iso", "yellow"),
          "document": ("pdf doc docx xls xlsx ppt pptx txt rtf odt csv md", "blue"),
          "app": ("apk exe msi msix appx", "orange")}
-STATUS = {"ready": ("READY TO CONNECT", "info"), "waiting": ("WAITING FOR APPROVAL", "warn"),
+STATUS = {"ready": ("READY", "info"), "waiting": ("WAITING FOR APPROVAL", "warn"),
           "connected": ("CONNECTED", "ok"), "transferring": ("TRANSFERRING", "info"),
           "lost": ("DISCONNECTED", "error"), "stopped": ("STOPPED", "warn"), "offline": ("NO NETWORK", "error")}
 
@@ -503,21 +503,33 @@ class TileGrid(QScrollArea):
 
 class ApproveDialog(NeonDialog):
     def __init__(self, phone: dict, parent=None):
-        super().__init__("Allow this phone?", parent)
+        pc = phone.get("kind") == "pc"
+        super().__init__("Allow this PC?" if pc else "Allow this phone?", parent)
         self.sid = phone["sid"]
+        self.remember: QCheckBox | None = None
         self.setMinimumWidth(500)
         mac = phone["mac"] or "unknown"
         if phone["mac"] and S.mac_is_private(phone["mac"]):
             mac += " (private, randomized by the phone)"
-        text = QLabel(f"Allow “{phone['name']}” to share files with this PC?\n\n"
-                      f"Model: {phone['model'] or 'not reported'}\nIP: {phone['ip']}\nMAC: {mac}\n"
-                      f"Path: {'INTERNET (Cloudflare tunnel)' if phone.get('path') == 'internet' else 'LAN (this Wi-Fi)'}"
-                      "\n\n"
-                      "Accept only if this is your phone. It stays trusted until you disconnect it.")
+        path = "INTERNET (Cloudflare tunnel)" if phone.get("path") == "internet" else "LAN (this Wi-Fi)"
+        if pc:
+            from .peer import fingerprint
+            text = QLabel(f"Allow the PC “{phone['name']}” (NEON Torrent) to transfer files and text with this PC?"
+                          f"\n\nPC key: {fingerprint(S.b64d(phone['peer_id']))}\nIP: {phone['ip']}\nPath: {path}\n\n"
+                          "Accept only if you gave it your pair code. If unsure, compare the PC key with the one that "
+                          "PC shows under Transfer → Paired devices.")
+        else:
+            text = QLabel(f"Allow “{phone['name']}” to share files with this PC?\n\n"
+                          f"Model: {phone['model'] or 'not reported'}\nIP: {phone['ip']}\nMAC: {mac}\nPath: {path}\n\n"
+                          "Accept only if this is your phone. It stays trusted until you disconnect it.")
         text.setTextFormat(Qt.TextFormat.PlainText)          # the name and model come from the phone
         text.setWordWrap(True)
         text.setFont(T.font(10.5))
         self.root.addWidget(text)
+        if pc:
+            self.remember = QCheckBox("Remember this PC: next time it connects without asking (Paired devices)")
+            self.remember.setChecked(True)
+            self.root.addWidget(self.remember)
         row = QHBoxLayout()
         row.addStretch(1)
         deny = GlowButton("DENY", "close", "red", "outline")
@@ -602,14 +614,16 @@ class TextBubble(QFrame):
         super().__init__(parent)
         self.text = entry["text"]
         self.setObjectName("textBubble")
+        border = T.hexc("magenta") if entry.get("mine") else T.hexc("line")     # sent from this PC: magenta edge
         self.setStyleSheet(f"QFrame#textBubble {{ background: {T.hexc('panel_hi')}; "
-                           f"border: 1px solid {T.hexc('line')}; border-radius: 10px; }}")
+                           f"border: 1px solid {border}; border-radius: 10px; }}")
         lay = QVBoxLayout(self)
         lay.setContentsMargins(12, 8, 8, 10)
         lay.setSpacing(4)
         head = QHBoxLayout()
         stamp = time.strftime("%d %b, %H:%M", time.localtime(entry["at"]))
-        meta = QLabel(f"{entry.get('name') or 'Phone'}  ·  {stamp}  ·  {len(self.text):,} characters")
+        who = f"You → {entry.get('name') or 'device'}" if entry.get("mine") else (entry.get("name") or "Phone")
+        meta = QLabel(f"{who}  ·  {stamp}  ·  {len(self.text):,} characters")
         meta.setObjectName("muted")
         meta.setTextFormat(Qt.TextFormat.PlainText)                  # the name comes from the phone
         head.addWidget(meta, 1, Qt.AlignmentFlag.AlignVCenter)
@@ -630,16 +644,18 @@ class TextBubble(QFrame):
 
 
 class TextInbox(NeonDialog):
-    """The pop-out chat panel with the text the phone sent, newest at the bottom. Stays open beside the window."""
+    """The pop-out chat panel: text from the connected phone or PC, and text typed here for it (``send``), newest at
+    the bottom. Stays open beside the window."""
     cleared = Signal()
 
-    def __init__(self, parent=None):
-        super().__init__("Text from phone", parent, resizable=True)
+    def __init__(self, parent=None, send: Callable[[str], dict] | None = None, title: str = "Text · phone and PC"):
+        super().__init__(title, parent, resizable=True)
+        self.send_fn = send
         self.setModal(False)
         self.setMinimumSize(440, 340)
         self.resize(540, 580)
-        note = QLabel("Text sent from the phone’s TEXT tab. COPY takes a whole message; drag over the text to copy "
-                      "a part of it (Ctrl+C).")
+        note = QLabel("Text with the connected phone or PC. COPY takes a whole message; drag over the text to copy "
+                     "a part of it (Ctrl+C).")
         note.setObjectName("muted")
         note.setWordWrap(True)
         self.root.addWidget(note)
@@ -654,7 +670,8 @@ class TextInbox(NeonDialog):
         self.list = QVBoxLayout(holder)
         self.list.setContentsMargins(0, 0, 6, 0)
         self.list.setSpacing(10)
-        self.empty = QLabel("Nothing yet. On the phone, open the TEXT tab, paste and press SEND TEXT.")
+        self.empty = QLabel("Nothing yet. On the phone, open the TEXT tab, paste and press SEND TEXT; or type below "
+                            "for the connected phone or PC.")
         self.empty.setObjectName("muted")
         self.empty.setWordWrap(True)
         self.empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -662,6 +679,24 @@ class TextInbox(NeonDialog):
         self.list.addWidget(self.empty)
         self.scroll.setWidget(holder)
         self.root.addWidget(self.scroll, 1)
+        if send is not None:
+            compose = QHBoxLayout()
+            compose.setSpacing(8)
+            self.box = QTextEdit()
+            self.box.setAcceptRichText(False)
+            self.box.setPlaceholderText("Type or paste text for the connected device… (Ctrl+Enter sends)")
+            self.box.setFixedHeight(64)
+            self.box.setFont(T.font(10.5))
+            compose.addWidget(self.box, 1)
+            self.send_btn = GlowButton("SEND", "upload", "magenta", "solid")
+            self.send_btn.setFixedSize(100, 64)
+            self.send_btn.clicked.connect(self._send)
+            compose.addWidget(self.send_btn)
+            self.root.addLayout(compose)
+            QShortcut(QKeySequence("Ctrl+Return"), self.box, activated=self._send)
+            self.status = QLabel("")
+            self.status.setObjectName("muted")
+            self.root.addWidget(self.status)
         row = QHBoxLayout()
         clear = GlowButton("CLEAR", "trash", "purple", "outline")
         clear.setFixedSize(110, 40)
@@ -680,6 +715,22 @@ class TextInbox(NeonDialog):
         self.list.addWidget(TextBubble(entry))
         bar = self.scroll.verticalScrollBar()
         QTimer.singleShot(0, lambda: bar.setValue(bar.maximum()))
+
+    def _send(self) -> None:
+        text = self.box.toPlainText()
+        if not text.strip():
+            return
+        try:
+            entry = self.send_fn(text)
+        except Exception as exc:                                  # ShareError / PeerError: shown, never raised
+            self.status.setText(f"Not sent: {exc}")
+            return
+        self.box.clear()
+        self.status.setText("")
+        self.add(dict(entry, mine=True))
+        self.sent.emit(dict(entry, mine=True))
+
+    sent = Signal(dict)
 
     def clear(self) -> None:
         while self.list.count() > 2:                              # keep the stretch and the empty note
@@ -707,6 +758,8 @@ class ShareTab(QWidget):
         self.texts: list[dict] = []                      # text from the phone, kept until CLEAR or quit
         self.unread_texts = 0
         self.text_inbox: TextInbox | None = None
+        self._identity = None
+        self._peers = None
         self.server: S.ShareServer | None = None
         self.tunnel: S.Tunnel | None = None
         self.pairing_rev = -1
@@ -793,6 +846,15 @@ class ShareTab(QWidget):
             b.setFont(T.head_font(8.6, QFont.Weight.DemiBold, 1.2))
             buttons.addWidget(b)
         ql.addLayout(buttons)
+        # the QR link as text, for another PC (Transfer -> Connect to PC there): works once, until this PC decides
+        self.code_btn = GlowButton("COPY PAIR CODE FOR ANOTHER PC", "copy", "magenta", "outline")
+        self.code_btn.setFixedHeight(30)
+        self.code_btn.icon_size = 13
+        self.code_btn.setFont(T.head_font(8.4, QFont.Weight.DemiBold, 1.2))
+        self.code_btn.setToolTip("Copy the pair code for another PC with NEON (Transfer → Connect to PC there).\n"
+                                 "It works once; after you allow or deny, a new code is made.")
+        self.code_btn.clicked.connect(self.copy_pair_code)
+        ql.addWidget(self.code_btn)
         left.addWidget(qr_panel)
 
         net = NeonPanel("cyan", 0.5)
@@ -828,7 +890,23 @@ class ShareTab(QWidget):
         nl.setColumnStretch(1, 1)
         left.addWidget(net)
         left.addStretch(1)
-        root.addLayout(left)
+        # the left column scrolls on a short screen (e.g. 1366 x 768) instead of squeezing the QR panel or forcing a
+        # window taller than the screen
+        column = QWidget()
+        column.setObjectName("shareColumn")
+        column.setStyleSheet("QWidget#shareColumn { background: transparent; }")
+        column.setLayout(left)
+        left.setContentsMargins(0, 0, 0, 0)
+        side = QScrollArea()
+        side.setWidget(column)
+        side.setWidgetResizable(True)
+        side.setFrameShape(QFrame.Shape.NoFrame)
+        side.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        side.setStyleSheet("QScrollArea { background: transparent; }")
+        side.viewport().setStyleSheet("background: transparent;")
+        side.setFixedWidth(384 + side.verticalScrollBar().sizeHint().width())
+        side.setMinimumHeight(220)
+        root.addWidget(side)
 
         files = NeonPanel("cyan", 0.55)
         register(files)
@@ -840,9 +918,9 @@ class ShareTab(QWidget):
         head.addWidget(self.files_title, 1)
         # text from the phone, with the unread count; the chat panel pops out when it is clicked. It lives here, not
         # under the network panel: the left column has no height to spare once a phone is connected
-        self.text_btn = GlowButton("TEXT FROM PHONE", "copy", "magenta", "outline")
-        self.text_btn.setFixedSize(250, 42)
-        self.text_btn.setToolTip("Open the text the phone sent from its TEXT tab")
+        self.text_btn = GlowButton("TEXT", "copy", "magenta", "outline")
+        self.text_btn.setFixedSize(150, 42)
+        self.text_btn.setToolTip("Text with the connected phone or PC: read, copy and send")
         self.text_btn.clicked.connect(self.show_texts)
         head.addWidget(self.text_btn)
         self.add_btn = GlowButton("ADD FILES", "file_plus", "cyan", "solid", "cyan2")
@@ -882,6 +960,34 @@ class ShareTab(QWidget):
         self._set_status("stopped")
         self.qr.set_message("Sharing is off.\nPress START to show the QR code.")
 
+    # ---------------------------------------------------------- PC to PC: this install's identity and paired PCs
+    def identity(self):
+        if self._identity is None:
+            from .peer import Identity
+            self._identity = Identity.load(T.app_data_dir())
+        return self._identity
+
+    def peers(self):
+        if self._peers is None:
+            from .peer import PeerStore
+            self._peers = PeerStore(T.app_data_dir())
+        return self._peers
+
+    def pair_code(self) -> str:
+        """The link the QR code shows, for another PC; "" while sharing is off or the tunnel is still starting."""
+        if self.server is None or (self.net_mode == "internet" and not self.server.tunnel_url):
+            return ""
+        return self.server.url(self.mode)
+
+    def copy_pair_code(self) -> None:
+        code = self.pair_code()
+        if not code:
+            self.notify("No pair code yet: press START, and in INTERNET mode wait for the QR code")
+            return
+        QGuiApplication.clipboard().setText(code)
+        self.code_btn.setText("COPIED")
+        QTimer.singleShot(1500, lambda: self.code_btn.setText("COPY PAIR CODE FOR ANOTHER PC"))
+
     # ---------------------------------------------------------- text from the phone
     MAX_TEXTS = 500
 
@@ -895,21 +1001,22 @@ class ShareTab(QWidget):
             if inbox is not None:
                 inbox.add(entry)
             self.unread_texts += 1
-            self.notify(f"Text from {entry.get('name') or 'the phone'}: open FILE TRANSFER → TEXT FROM PHONE")
+            self.notify(f"Text from {entry.get('name') or 'the phone'}: open FILE SHARING → TEXT")
         self._show_text_count()
 
     def _show_text_count(self) -> None:
         if self.unread_texts:
-            label = f"TEXT FROM PHONE  ·  {self.unread_texts} NEW"
+            label = f"TEXT  ·  {self.unread_texts} NEW"
         elif self.texts:
-            label = f"TEXT FROM PHONE  ·  {len(self.texts)}"
+            label = f"TEXT  ·  {len(self.texts)}"
         else:
-            label = "TEXT FROM PHONE"
+            label = "TEXT"
         self.text_btn.setText(label)
 
     def show_texts(self) -> None:
         if self.text_inbox is None:
-            self.text_inbox = TextInbox(self.window())
+            self.text_inbox = TextInbox(self.window(), send=self._send_text)
+            self.text_inbox.sent.connect(self._remember_sent)
             self.text_inbox.cleared.connect(self._clear_texts)
             for entry in self.texts:
                 self.text_inbox.add(entry)
@@ -918,6 +1025,16 @@ class ShareTab(QWidget):
         self.text_inbox.show()
         self.text_inbox.raise_()
         self.text_inbox.activateWindow()
+
+    def _send_text(self, text: str) -> dict:
+        if self.server is None:
+            raise S.ShareError(409, "sharing is off: press START and connect a device")
+        return self.server.send_text(text)
+
+    def _remember_sent(self, entry: dict) -> None:
+        self.texts.append(entry)
+        del self.texts[:-self.MAX_TEXTS]
+        self._show_text_count()
 
     def _clear_texts(self) -> None:
         self.texts.clear()
@@ -942,7 +1059,8 @@ class ShareTab(QWidget):
             self.power_btn.setText("START")
             return
         try:
-            self.server = S.ShareServer(ip, self.save_dir())
+            self.server = S.ShareServer(ip, self.save_dir(), identity=self.identity(),
+                                        trusted=self.peers().is_trusted)
         except OSError as error:
             self._set_status("offline")
             self.qr.set_message(f"Could not open the sharing server:\n{error.strerror or error}")
@@ -1214,6 +1332,8 @@ class ShareTab(QWidget):
 
         def done(result: int, sid=phone["sid"]):
             self.prompts.pop(sid, None)
+            if result == NeonDialog.DialogCode.Accepted and dialog.remember is not None and dialog.remember.isChecked():
+                self.peers().remember(S.b64d(phone["peer_id"]), phone["name"])
             if self.server is not None:
                 self.server.decide(sid, result == NeonDialog.DialogCode.Accepted)
                 self._poll()

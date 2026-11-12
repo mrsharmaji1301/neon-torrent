@@ -17,6 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 LICENSES = ROOT / "packaging" / "licenses"
+CLOUDFLARED = "2026.10.7"          # keep in step with CLOUDFLARED_VERSION in tools/build_msi.py
 OUT = ROOT / "THIRD-PARTY-NOTICES.md"
 BASE = Path(sys.base_prefix)
 NOBLE = {"ciphers": "2.4.0", "curves": "2.4.0", "hashes": "2.4.0"}  # versions bundled by tools/build_share_web.py
@@ -116,6 +117,7 @@ def build() -> str:
         ("pycparser (used by cffi)", pycparser, "BSD-3-Clause"),
         ("segno (QR codes)", segno, "BSD-3-Clause"),
         ("@noble/ciphers, @noble/curves, @noble/hashes (phone page, bundled)", NOBLE["curves"], "MIT"),
+        ("cloudflared (File Transfer over the internet, unmodified binary)", CLOUDFLARED, "Apache-2.0"),
         ("libffi, bzip2, zlib, expat, libmpdec, mimalloc and others in Python", "",
          "MIT, BSD-style and zlib licences (below)"),
         ("xz / liblzma (Python's lzma module)", "", "Public domain"),
@@ -139,7 +141,8 @@ NEON uses Qt {qt} and Qt for Python (PySide6, Shiboken6) {qt} from The Qt Compan
 License version 3. They are unmodified and loaded at run time as separate files (`Qt6*.dll`, `pyside6.abi3.dll`,
 `shiboken6.abi3.dll`, the `PySide6` and `shiboken6` Python packages and the Qt plugins), so you may replace them with
 your own builds of the same interface: copy NEON's install folder to a folder you can write to, replace those files,
-and run `NeonTorrent.exe` from there. NEON's Python code ships as readable `.py` files next to them.
+and run `NeonTorrent.exe` from there. NEON's own code is compiled into `NeonTorrent.exe` (Nuitka) and calls Qt only
+through these replaceable DLLs.
 
 Source code for these exact versions:
 - Qt: https://download.qt.io/official_releases/qt/ (version {qt}) and https://code.qt.io/
@@ -201,6 +204,14 @@ https://github.com/paulmillr/noble-ciphers, https://github.com/paulmillr/noble-c
 https://github.com/paulmillr/noble-hashes.
 
 {noble_text}
+
+## cloudflared {CLOUDFLARED}
+
+`cloudflared\\cloudflared.exe` is Cloudflare's official, unmodified, Cloudflare-signed release binary. NEON starts it
+only while File Transfer runs in INTERNET mode, for a temporary quick tunnel; no Cloudflare account is used. Source:
+https://github.com/cloudflare/cloudflared (tag {CLOUDFLARED}). Its LICENSE file:
+
+{fenced((LICENSES / f"cloudflared-{CLOUDFLARED}-LICENSE.txt").read_text(encoding="utf-8"))}
 
 ## Python {py}
 

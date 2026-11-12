@@ -83,6 +83,42 @@
       </Component>
     </DirectoryRef>
 
+    <!-- magnet: links and .torrent files. HKLM registration for every user, and Capabilities so NEON Torrent is listed
+         in Settings > Default apps. A per-user registration by another client (HKCU, e.g. uTorrent) still wins; the
+         app asks at start whether to take over for this user (src/neontorrent/assoc.py). -->
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="MagnetAndTorrentHandler" Guid="{6B0E3F92-4C7A-4D18-9E25-B3A1F07C8D64}" Win64="yes">
+        <RegistryValue Root="HKLM" Key="Software\Classes\NeonTorrent.Magnet" Type="string" Value="URL:Magnet link"
+                       KeyPath="yes" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\NeonTorrent.Magnet" Name="URL Protocol" Type="string" Value="" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\NeonTorrent.Magnet\DefaultIcon" Type="string"
+                       Value="[INSTALLFOLDER]NeonTorrent.ico" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\NeonTorrent.Magnet\shell\open\command" Type="string"
+                       Value="&quot;[#NeonTorrentExe]&quot; &quot;%1&quot;" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\NeonTorrent.Torrent" Type="string" Value="Torrent file" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\NeonTorrent.Torrent\DefaultIcon" Type="string"
+                       Value="[INSTALLFOLDER]NeonTorrent.ico" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\NeonTorrent.Torrent\shell\open\command" Type="string"
+                       Value="&quot;[#NeonTorrentExe]&quot; &quot;%1&quot;" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\magnet" Type="string" Value="URL:Magnet link" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\magnet" Name="URL Protocol" Type="string" Value="" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\magnet\shell\open\command" Type="string"
+                       Value="&quot;[#NeonTorrentExe]&quot; &quot;%1&quot;" />
+        <RegistryValue Root="HKLM" Key="Software\Classes\.torrent\OpenWithProgids" Name="NeonTorrent.Torrent"
+                       Type="string" Value="" />
+        <RegistryValue Root="HKLM" Key="Software\NEON\NEON Torrent\Capabilities" Name="ApplicationName"
+                       Type="string" Value="NEON Torrent" />
+        <RegistryValue Root="HKLM" Key="Software\NEON\NEON Torrent\Capabilities" Name="ApplicationDescription"
+                       Type="string" Value="Free-to-use BitTorrent client with a built-in File Transfer module." />
+        <RegistryValue Root="HKLM" Key="Software\NEON\NEON Torrent\Capabilities\UrlAssociations" Name="magnet"
+                       Type="string" Value="NeonTorrent.Magnet" />
+        <RegistryValue Root="HKLM" Key="Software\NEON\NEON Torrent\Capabilities\FileAssociations" Name=".torrent"
+                       Type="string" Value="NeonTorrent.Torrent" />
+        <RegistryValue Root="HKLM" Key="Software\RegisteredApplications" Name="NEON Torrent" Type="string"
+                       Value="Software\NEON\NEON Torrent\Capabilities" />
+      </Component>
+    </DirectoryRef>
+
     <!-- the app writes its torrents, settings and Shield data here as a normal user, wherever it is installed -->
     <DirectoryRef Id="DataFolder">
       <Component Id="DataFolderAccess" Guid="{A84C2E61-5D97-4B13-8F0A-6C3E9B2D7F45}" Win64="yes">
@@ -121,6 +157,7 @@
       <Condition Level="0">NEONACTION = "uninstall"</Condition>
       <ComponentGroupRef Id="AppFiles" />
       <ComponentRef Id="InstallDirRegistry" />
+      <ComponentRef Id="MagnetAndTorrentHandler" />
       <ComponentRef Id="DataFolderAccess" />
       <ComponentRef Id="StartMenuShortcut" />
       <ComponentRef Id="DesktopShortcut" />
