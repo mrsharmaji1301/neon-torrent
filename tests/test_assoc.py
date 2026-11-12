@@ -45,6 +45,16 @@ class AssocTests(unittest.TestCase):
                          "uTorrent")
         self.assertEqual(assoc.handler_name(r"C:\qbt\qbittorrent.exe %1"), "qbittorrent")
 
+    def test_points_into_own_folder(self) -> None:
+        folder = Path(r"F:\Apps\NEON Torrent")
+        self.assertTrue(assoc.points_into(r'"F:\Apps\NEON Torrent\python.exe" "%1"', folder))
+        self.assertFalse(assoc.points_into(r'"F:\Apps\NEON Torrent Old\x.exe" "%1"', folder))
+        self.assertFalse(assoc.points_into(r'"C:\uTorrent\uTorrent.exe" "%1"', folder))
+
+    def test_app_exe_is_a_real_file(self) -> None:
+        from neontorrent import theme
+        self.assertTrue(theme.app_exe().is_file())                       # never Nuitka's python.exe stand-in
+
     def test_make_default_writes_protocol_and_file_type(self) -> None:
         command = r'"E:\Apps\NEON Torrent\NeonTorrent.exe" "%1"'
         assoc.make_default(command, r"E:\Apps\NEON Torrent\NeonTorrent.ico", classes=SCRATCH)

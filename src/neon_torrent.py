@@ -221,7 +221,7 @@ class MagnetDialog(NeonDialog):
 
 def open_command() -> tuple[str, str]:
     """How Windows should start this copy for a magnet link or .torrent file: (command with "%1", icon)."""
-    exe = Path(sys.executable).resolve()
+    exe = T.app_exe()
     icon = exe.parent / "NeonTorrent.ico"
     icon_ref = str(icon) if icon.exists() else f"{exe},0"
     if "__compiled__" in globals():                       # the installed, compiled NeonTorrent.exe
@@ -1208,11 +1208,21 @@ class TorrentWindow(QMainWindow):
 
     # ------------------------------------------------------------ magnet links
     def check_magnet_handler(self):
-        """At start: when magnet links open in another app, ask once whether NEON should open them."""
-        if sys.platform != "win32" or not self.prefs.get("magnet_ask", True):
+        """At start: when magnet links open in another app, ask once whether NEON should open them. A registration
+        of NEON's own that points at a wrong file in its folder (3.0.0 wrote python.exe) is repaired without asking."""
+        if sys.platform != "win32":
             return
-        command, _locked = assoc.magnet_handler()
-        if assoc.is_ours(command, Path(sys.executable)):
+        exe = T.app_exe()
+        command, locked = assoc.magnet_handler()
+        if assoc.is_ours(command, exe):
+            return
+        if not locked and assoc.points_into(command, exe.parent):
+            try:
+                assoc.make_default(*open_command())
+            except OSError:
+                pass
+            return
+        if not self.prefs.get("magnet_ask", True):
             return
         dialog = MagnetDialog(assoc.handler_name(command) if command else "", self)
         accepted = dialog.exec() == MagnetDialog.DialogCode.Accepted
@@ -1223,7 +1233,7 @@ class TorrentWindow(QMainWindow):
             self.make_magnet_default()
 
     def make_magnet_default(self):
-        exe = Path(sys.executable)
+        exe = T.app_exe()
         command, locked = assoc.magnet_handler()
         if locked and not assoc.is_ours(command, exe):
             # chosen in Windows Settings: only Settings may change it (Windows protects that choice)
@@ -1390,7 +1400,7 @@ def first_run() -> None:
     prefs = T.load_preferences()
     if prefs.get("download_dir"):
         return
-    exe = Path(sys.executable).resolve()
+    exe = T.app_exe()
     system_drive = Path(os.environ.get("SystemDrive", "C:") + "\\").anchor.upper()
     if (exe.parent / "portable.ini").exists() and exe.anchor.upper() != system_drive:
         # installed on another drive (e.g. F:\Apps): suggest that drive, F:\Downloads\NEON. In Program Files on the

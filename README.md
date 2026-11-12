@@ -1,12 +1,10 @@
-<p align="center"><img src="docs/screenshots/installer.png" alt="NEON Torrent, built by SharmaJi" width="246"></p>
-
-<h1 align="center">NEON Torrent</h1>
+![NEON Torrent, built by SharmaJi](docs/screenshots/banner.png)
 
 <p align="center"><b>A free BitTorrent client for Windows with a built-in, end-to-end encrypted File Transfer module for
 your phone and your other PCs.</b><br>Made by SharmaJi with ❤ for the Community.</p>
 
 <p align="center">
-<img alt="Version" src="https://img.shields.io/badge/version-3.0.0-22d3ee">
+<img alt="Version" src="https://img.shields.io/badge/version-3.1.0-22d3ee">
 <img alt="Windows" src="https://img.shields.io/badge/Windows-10%20%7C%2011-38bdf8">
 <img alt="Price" src="https://img.shields.io/badge/price-free-e040fb">
 <img alt="Telemetry" src="https://img.shields.io/badge/telemetry-none-22e5a0">

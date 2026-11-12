@@ -29,7 +29,7 @@ KEY_ROLE = Qt.ItemDataRole.UserRole + 10
 SORT_ROLE = Qt.ItemDataRole.UserRole + 11
 # next to NeonTorrent.exe in the compiled (MSI) build; else the project root in a checkout, the package root in the
 # MSIX (tools/make_msix.py copies the file there)
-NOTICES_FILE = next((p for p in (Path(sys.executable).resolve().parent / "THIRD-PARTY-NOTICES.md",)
+NOTICES_FILE = next((p for p in (T.app_exe().parent / "THIRD-PARTY-NOTICES.md",)
                      if p.exists()), Path(__file__).resolve().parents[2] / "THIRD-PARTY-NOTICES.md")
 
 
@@ -351,7 +351,7 @@ class SettingsDialog(NeonDialog):
         self.blocked.setFixedHeight(84)
         self.blocked.setObjectName("blocklist")
         av = "found — watching its detections" if MB_DETECTIONS.is_dir() else "not found on this PC"
-        exe = Path(sys.executable)
+        exe = T.app_exe()
         shield, sf = page()
         add(sf, "Antivirus", self.learn)
         add(sf, "Peers", self.avoid_dc)

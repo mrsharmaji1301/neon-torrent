@@ -671,7 +671,13 @@ class TorrentEngine(QObject):
             return
         self._blocked_notice(self._filter_params(params))
         if params.ti is None and not params.trackers and not self._dht_on():
-            self.notice.emit("THIS MAGNET HAS NO TRACKERS · TURN ON DHT IN SHIELD SETTINGS TO FETCH IT", "warn")
+            # a trackerless magnet (common from browsers) cannot find its file list with DHT off: ask the public
+            # booster trackers instead. Peers they return are still Shield-filtered, unlike DHT nodes
+            boost = [url for url in BOOSTER_TRACKERS if not self._is_blocked_url(url)]
+            params.trackers = boost
+            params.tracker_tiers = [0] * len(boost)
+            self.notice.emit("MAGNET HAS NO TRACKERS · ASKING PUBLIC TRACKERS FOR IT (DHT IN SHIELD SETTINGS FINDS MORE)",
+                             "info")
         params.save_path = self.download_dir
         # every add waits for the Add dialog (save folder, files, priorities); the free-space check lives there
         self._await_flags(params)

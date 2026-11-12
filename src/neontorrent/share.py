@@ -78,7 +78,8 @@ CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' 
 def _find_cloudflared() -> Path:
     """The cloudflared that Setup installs next to NeonTorrent.exe (cloudflared\\cloudflared.exe), so a clean PC needs
     nothing else; a source checkout falls back to a system-wide install."""
-    bundled = Path(sys.executable).resolve().parent / "cloudflared" / "cloudflared.exe"
+    from .theme import app_exe                         # the real exe, not Nuitka's python.exe stand-in
+    bundled = app_exe().parent / "cloudflared" / "cloudflared.exe"
     if bundled.is_file():
         return bundled
     return Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "cloudflared" / "cloudflared.exe"

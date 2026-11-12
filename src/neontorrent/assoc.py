@@ -59,6 +59,12 @@ def is_ours(command: str, exe: Path) -> bool:
     return os.path.normcase(str(exe.resolve())) in text
 
 
+def points_into(command: str, folder: Path) -> bool:
+    """True when the command starts a program inside ``folder`` (e.g. NEON's own earlier registration)."""
+    text = os.path.normcase(os.path.expandvars(command)).replace("/", "\\")
+    return os.path.normcase(str(folder.resolve()).rstrip("\\") + "\\") in text
+
+
 def handler_name(command: str) -> str:
     """A short app name for a command, e.g. "uTorrent" for "C:\\...\\uTorrent.exe" "%1" /SHELLASSOC."""
     text = command.strip()

@@ -96,9 +96,21 @@ def head_font(size: float, weight: QFont.Weight = QFont.Weight.DemiBold, spacing
 
 # ---------------------------------------------------------------- storage
 
+def app_exe() -> Path:
+    """The running NeonTorrent.exe. Not sys.executable: in the compiled (Nuitka) build that names a python.exe next
+    to it that does not exist, so a magnet: registration pointing there opened nothing. Windows reports the real file."""
+    if sys.platform == "win32":
+        import ctypes
+        buffer = ctypes.create_unicode_buffer(32768)
+        length = ctypes.windll.kernel32.GetModuleFileNameW(None, buffer, len(buffer))
+        if 0 < length < len(buffer):
+            return Path(buffer.value).resolve()
+    return Path(sys.executable).resolve()
+
+
 def app_data_dir() -> Path:
     # an installed copy (installer writes portable.ini next to NeonTorrent.exe) keeps its data in its own folder
-    exe_dir = Path(sys.executable).resolve().parent
+    exe_dir = app_exe().parent
     if (exe_dir / "portable.ini").exists() and "APPDATA_OVERRIDE" not in os.environ:
         root = exe_dir / "data"
         root.mkdir(parents=True, exist_ok=True)

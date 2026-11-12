@@ -308,6 +308,26 @@ def test_finish(e: en.TorrentEngine, save: str) -> None:
                                       f"guard result: {scan.get('scan')} · {'; '.join(scan.get('detail', []))[:160]}")
 
 
+def test_trackerless_magnet(e: en.TorrentEngine) -> None:
+    """A browser magnet without trackers gets the booster trackers (DHT is off). Nothing is added or contacted: the
+    session's add call is replaced for this check."""
+    captured = []
+    real = e.session.async_add_torrent
+    e.session.async_add_torrent = captured.append
+    en.BOOSTER_TRACKERS = ["udp://booster-a.invalid:1/announce", "udp://booster-b.invalid:1/announce"]
+    try:
+        e._queue_add(lt.parse_magnet_uri("magnet:?xt=urn:btih:" + "ab" * 20 + "&dn=example"))
+    finally:
+        e.session.async_add_torrent = real
+        boosters, en.BOOSTER_TRACKERS = en.BOOSTER_TRACKERS, []          # offline again for the other checks
+        for key in list(e.pending_names):
+            e.pending_names.pop(key, None)
+            e.meta.pop(key, None)
+    trackers = list(captured[0].trackers) if captured else []
+    check("A magnet without trackers is fetched through the public booster trackers when DHT is off",
+          trackers == boosters, f"{len(trackers)} trackers given")
+
+
 def test_static() -> None:
     sources = {p.name: p.read_text(encoding="utf-8") for p in (ROOT / "src").rglob("*.py")}
     launches = [(name, line.strip()) for name, text in sources.items() for line in text.splitlines()
@@ -488,6 +508,7 @@ def main() -> int:
         test_symlink(e, save)
         test_guard(e, save)
         test_inputs(e)
+        test_trackerless_magnet(e)
         test_ssrf(e, save)
         test_ui()
         test_finish(e, save)

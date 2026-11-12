@@ -58,13 +58,13 @@ def glow_text(p: QPainter, font: QFont, text: str, cx: float, baseline: float, c
     p.fillPath(path, grad)
 
 
-def synth_floor(p: QPainter, left: float, right: float, horizon: float, bottom: float) -> None:
+def synth_floor(p: QPainter, left: float, right: float, horizon: float, bottom: float, radius: float = 27,
+                spread: float = 34) -> None:
     """A retro-futuristic perspective grid under a striped neon sun."""
     cx = (left + right) / 2
     p.save()
     p.setClipRect(QRectF(left, 0, right - left, bottom))
     # sun: magenta-to-sky disc above the horizon, cut by horizontal gaps
-    radius = 27
     sun = QLinearGradient(QPointF(0, horizon - radius), QPointF(0, horizon))
     sun.setColorAt(0, QColor(MAGENTA.red(), MAGENTA.green(), MAGENTA.blue(), 235))
     sun.setColorAt(1, QColor(SKY.red(), SKY.green(), SKY.blue(), 200))
@@ -89,7 +89,7 @@ def synth_floor(p: QPainter, left: float, right: float, horizon: float, bottom: 
     p.drawLine(QPointF(left, horizon), QPointF(right, horizon))
     for k in range(-9, 10):                                   # lines to the vanishing point
         p.setPen(QPen(QColor(34, 211, 238, 70 if k else 95), 1))
-        p.drawLine(QPointF(cx + k * 3, horizon), QPointF(cx + k * 34, bottom))
+        p.drawLine(QPointF(cx + k * 3, horizon), QPointF(cx + k * spread, bottom))
     for i in range(1, 9):                                     # rows closer together near the horizon
         y = horizon + (bottom - horizon) * (i / 8) ** 1.9
         p.setPen(QPen(QColor(224, 64, 251, 40 + i * 9), 1))
@@ -166,6 +166,50 @@ def banner(icon: QIcon) -> QImage:
     return img
 
 
+def readme_banner(icon: QIcon) -> QImage:
+    """The wide banner at the top of README.md (docs/screenshots/banner.png): the same neon art, full width."""
+    w, h = 1600, 590
+    img = QImage(w, h, QImage.Format.Format_RGB32)
+    p = QPainter(img)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    p.setRenderHint(QPainter.RenderHint.TextAntialiasing)
+    bg = QLinearGradient(QPointF(0, 0), QPointF(0, h))
+    bg.setColorAt(0, BG_TOP)
+    bg.setColorAt(1, BG_BOTTOM)
+    p.fillRect(QRectF(0, 0, w, h), bg)
+    aura = QRadialGradient(QPointF(w / 2, 170), 520)
+    aura.setColorAt(0, QColor(56, 189, 248, 46))
+    aura.setColorAt(1, QColor(56, 189, 248, 0))
+    p.fillRect(QRectF(0, 0, w, h), aura)
+    p.setPen(Qt.PenStyle.NoPen)
+    for i in range(0, h, 3):                                  # faint scanlines
+        p.fillRect(QRectF(0, i, w, 1), QColor(255, 255, 255, 5))
+    cx = w / 2
+    p.drawPixmap(round(cx - 40), 34, icon.pixmap(80, 80))
+    title = head(118, QFont.Weight.Bold, 6.0)
+    neon_w = QFontMetricsF(title).horizontalAdvance("NEON ") - title.letterSpacing()
+    torrent_w = QFontMetricsF(title).horizontalAdvance("TORRENT") - title.letterSpacing()
+    left = cx - (neon_w + torrent_w) / 2
+    glow_text(p, title, "NEON", left + (neon_w - QFontMetricsF(title).horizontalAdvance(" ")) / 2, 236, SKY, MAGENTA)
+    glow_text(p, title, "TORRENT", left + neon_w + torrent_w / 2, 236, QColor("white"), QColor("white"), glow=False)
+    line = QLinearGradient(QPointF(cx - 300, 0), QPointF(cx + 300, 0))
+    line.setColorAt(0, QColor(56, 189, 248, 0))
+    line.setColorAt(0.5, CYAN)
+    line.setColorAt(1, QColor(224, 64, 251, 0))
+    p.fillRect(QRectF(cx - 300, 262, 600, 2), line)
+    glow_text(p, head(25, QFont.Weight.DemiBold, 3.0), "TORRENTS  ·  PHONE ⇄ PC  ·  PC ⇄ PC  ·  END-TO-END ENCRYPTED",
+              cx, 306, MUTED, MUTED, glow=False)
+    glow_text(p, head(17, QFont.Weight.Normal, 5.0), "BUILT BY", cx, 350, MUTED, MUTED, glow=False)
+    glow_text(p, head(42, QFont.Weight.Bold, 1.5), "SharmaJi", cx, 396, CYAN, MAGENTA)
+    synth_floor(p, 0, w, 516, h, radius=58, spread=110)
+    edge = QLinearGradient(QPointF(0, 0), QPointF(w, 0))
+    edge.setColorAt(0, SKY)
+    edge.setColorAt(1, MAGENTA)
+    p.fillRect(QRectF(0, h - 3, w, 3), edge)
+    p.end()
+    return img
+
+
 def save_bmp(img: QImage, path: Path) -> None:
     if not img.convertToFormat(QImage.Format.Format_RGB888).save(str(path), "BMP"):
         raise SystemExit(f"Cannot write {path}")
@@ -177,6 +221,10 @@ def main() -> int:
     icon = QIcon(str(PACKAGING / "NeonTorrent.ico"))
     save_bmp(side_panel(icon), PACKAGING / "installer-side.bmp")
     save_bmp(banner(icon), PACKAGING / "installer-banner.bmp")
+    out = ROOT / "docs" / "screenshots" / "banner.png"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    readme_banner(icon).save(str(out))
+    print(f"Wrote {out}")
     return 0
 
 

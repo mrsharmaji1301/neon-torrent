@@ -1,4 +1,5 @@
-"""Render the README pictures of File Sharing, PC to PC, Paired devices, the text panel and Setup into docs/screenshots.
+"""Render the README pictures of File Sharing, PC to PC, Paired devices and the text panel into
+docs/screenshots (the README banner comes from tools/make_installer_art.py).
 
 Everything runs on a throwaway profile under ..\\neon-build\\shots-features with made-up names and private example
 addresses (192.168.1.x): no torrent is added, nothing is downloaded, no sharing session or tunnel is opened (the PC to
@@ -24,7 +25,6 @@ os.environ.setdefault("QT_QPA_PLATFORM", "windows")
 sys.path.insert(0, str(ROOT / "src"))
 
 from PySide6.QtCore import QTimer  # noqa: E402
-from PySide6.QtGui import QImage  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
 import neon_torrent as NT  # noqa: E402
@@ -107,9 +107,6 @@ def main() -> int:
         QTimer.singleShot(700, lambda: (save(inbox, "text-panel.png"), inbox.close()))
 
     def finish():
-        art = QImage(str(ROOT / "packaging" / "installer-side.bmp"))
-        art.save(str(OUT / "installer.png"))
-        print("Wrote", OUT / "installer.png")
         connect.disconnect()
         server.stop()
         window.quitting = True
