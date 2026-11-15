@@ -1,0 +1,68 @@
+NEON Torrent 3.5.1 (15 Nov 2026)
+- NEON 3.5.0 closed at once on many PCs ("illegal instruction"): it was built for the newer CPU of the build server. 3.5.1 is built to run on every 64-bit Intel and AMD CPU.
+- Upgrading could leave NEON unable to start (Shiboken.pyd failed to load): files from a newer build were skipped and then removed with the old version. Setup now replaces every file on upgrade.
+
+NEON Torrent 3.5.0 (14 Nov 2026)
+- One ADD box for everything: paste a magnet, info-hash, .torrent link, a direct file link or a web page. NEON works out what it is.
+- Downloads (an IDM-style download manager): many connections per file, pause and resume, resume after a restart, a queue, a speed limit and a start time. Finished files get Mark-of-the-Web; programs are flagged.
+- Web pages: NEON lists the files, magnets and .torrent links on the page and you tick what to download. The page is only read as text: nothing on it runs.
+- Search: one search across all your sources. Internet Archive is built in; add Torznab (Jackett, Prowlarr), RSS feeds, search pages, or sites that open in your browser. Quickwords search one source ("ia ubuntu"). Results are not filtered by topic; sources you add are marked "not verified by NEON".
+- Zero pop-ups: NEON has no web page engine, so ads, scripts, frames and pop-ups never run. Search lists only real magnets and .torrent links.
+- A .torrent your browser saves to Downloads: NEON offers to add it.
+
+NEON Torrent 3.2.0 (14 Nov 2026)
+- PC to PC with a short code: press GET SHORT CODE in File Sharing and tell your friend the code (like 7-tiger-crystal). They type it in Transfer > Connect to PC, anywhere in the world. No long link to copy, no account.
+- The code is checked with SPAKE2 through a public relay that never learns the code or the link; each code allows one try and expires after 15 minutes. Files stay end-to-end encrypted and the PC still has to be allowed.
+- File Transfer: an upload cancelled on the receiving PC now reports Cancelled on the sender instead of a connection error.
+- Windows light mode: Connect to PC's file list, the Paired devices table and the text box were white with pale text; they are dark like the rest of NEON.
+- File Sharing: the TO PHONE | FROM PHONE and LAN | INTERNET switches always stay in view; on a short window only the network panel below the QR code scrolls (the whole column could scroll them out of sight).
+
+NEON Torrent 3.1.0 (12 Nov 2026)
+- Magnet links from the browser open in NEON again: "Use NEON" registered a python.exe that does not exist in the installed app. NEON now registers NeonTorrent.exe and repairs that registration by itself at start.
+- Magnets fetch their file list again: since the Add dialog arrived, a magnet paused itself before asking any peer for its file list and stayed at "Metadata" for ever (stop_when_ready). Magnets saved in the list start fetching again too.
+- Magnets without trackers (common from websites) no longer stall at "Fetching the file list" while DHT is off: NEON asks its public trackers for them. Peers are still Shield-filtered.
+- The Malwarebytes allow-list path in Preferences > Shield shows NeonTorrent.exe.
+
+NEON Torrent 3.0.0 (12 Nov 2026)
+- PC to PC: two PCs with NEON transfer files and text, on the same Wi-Fi or anywhere over the internet. Copy the pair code on one PC (File Sharing > COPY PAIR CODE), paste it on the other (Transfer > Connect to PC). End-to-end encrypted like the phone.
+- Paired devices: a PC you allow can be remembered by its key and connects without the Allow prompt next time (Transfer > Paired devices).
+- Text from the PC: type in the TEXT panel to send text to the connected phone or PC. The phone shows it in its Text tab with a Copy button.
+- Menu bar: File, View, Transfer, Settings and Help.
+- cloudflared is now part of Setup, so File Sharing over the internet works on a PC without it.
+- File Sharing fits short screens: the left column scrolls instead of growing the window. The status reads READY.
+
+NEON Torrent 2.1.1 (12 Nov 2026)
+- Magnet links work: Setup registers NEON Torrent for magnet links and .torrent files, and lists it in Settings > Default apps.
+- When another app (e.g. uTorrent) still opens magnet links, NEON asks once at start whether to take over. Preferences > General > Magnet links does it any time.
+
+NEON Torrent 2.1.0 (11 Nov 2026)
+- Setup works on every PC: it installs to C:\Program Files\NEON Torrent by default (it used to need an F: drive and quit without one). An upgrade keeps the folder of the installed copy.
+- Setup.exe with the NEON icon; it opens the same installer.
+- First start: installed in Program Files, NEON suggests your own Downloads\NEON folder for downloads.
+
+NEON Torrent 2.0.0 (6 Nov 2026)
+- File Transfer: send text from the phone. Paste or type in the phone's new Text tab and tap Send text.
+- On the PC, TEXT FROM PHONE shows how many are new; click it to open the chat panel.
+- Every message has a one-click COPY at its top right, and any part can be selected with the mouse.
+- Text is end-to-end encrypted like files, plain text only, up to 20,000 characters, never saved to disk.
+
+NEON Torrent 1.1.0 (6 Nov 2026)
+- Native Windows app: NeonTorrent.exe is now compiled (Nuitka). Python, a browser and the VC++ Redistributable are no longer needed.
+- New Windows Installer (MSI) setup: installs for all users and shows in Programs and Features.
+- Setup detects an installed version, compares versions, shows this update log, and offers Upgrade or Full uninstall.
+- User Agreement, Privacy Policy and Disclaimer in Setup. No certificates or keys of the author are shipped.
+- New neon installer design.
+- Errors are logged to data\error.log again.
+- Closing the window asks: Minimize to tray or Exit, with "Remember my choice" (Preferences > General > Close button).
+
+NEON Torrent 1.0.1 (3 Nov 2026)
+- File Sharing: LAN / INTERNET toggle with auto-detect; the QR code appears only once the tunnel is up.
+- File Sharing: the QR hint never overlaps the code; click the QR to zoom.
+- The setup file shows its real version in Explorer.
+
+NEON Torrent 1.0.0 (Nov 2026)
+- QR file sharing between this PC and your phone, both ways, end-to-end encrypted (LAN and internet).
+- Add dialog on every add: choose files and priorities first.
+- Downloading, Completed and All pages, status chips, FLASH mode.
+- Shield peer filtering with antivirus learning; Download Guard.
+- Torrent list survives crashes and updates (atomic resume data, daily backups).

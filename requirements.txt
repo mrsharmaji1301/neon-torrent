@@ -1,0 +1,6 @@
+PySide6-Essentials==6.12.0
+libtorrent==2.1.1
+cryptography==50.0.2
+segno==1.6.6
+spake2==0.9
+websocket-client==1.9.2

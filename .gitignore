@@ -1,0 +1,33 @@
+# Only the app is published: its source, tests, build tools, packaging, docs and licences. Everything else in this
+# folder stays on this PC.
+/*
+!/.gitignore
+!/src/
+!/tests/
+!/tools/
+!/packaging/
+!/docs/
+!/README.md
+!/SECURITY.md
+!/THIRD-PARTY-NOTICES.md
+!/requirements.txt
+!/run.bat
+!/setup.bat
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Build output
+build/
+dist/
+*.msi
+*.exe
+*.msix
+*.log
+
+# Secrets
+.env
+*.pfx
+*.pem
+*.key

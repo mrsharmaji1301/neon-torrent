@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.ico { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; display: inline-block; flex-shrink: 0; }
+.neon-glow-cyan { box-shadow: 0 0 16px -3px rgba(34, 211, 238, 0.25); }
+.neon-pulse { animation: neonPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+@keyframes neonPulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.15); } }
+.transmission-sweep {
+  background: linear-gradient(90deg, rgba(224, 64, 251, 0.15) 0%, rgba(34, 211, 238, 0.35) 50%, rgba(224, 64, 251, 0.15) 100%);
+  background-size: 200% 100%; animation: sweep 3s linear infinite;
+}
+@keyframes sweep { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.mode-tab:disabled { opacity: 0.5; }
+button { -webkit-tap-highlight-color: transparent; }
