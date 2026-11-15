@@ -193,3 +193,29 @@ promise any client can honestly make. NEON Torrent works on everything a client 
   - They are tagged with Mark-of-the-Web, and programs are flagged.
   - Progress is saved to `data\downloads`.
 - The security audit feeds NEON a page full of pop-ups, scripts, frames, fake download buttons and `file:`/`javascript:` links, and checks that search returns only the two real torrent links.
+
+### Videos (3.6)
+
+- **Tools.** `media\yt-dlp.exe`, `deno.exe` and `ffmpeg.exe` are the official, unmodified release builds, pinned by
+  version and SHA-256 in `tools\media_tools.py` and checked on every build.
+- **Locked down.** yt-dlp runs hidden with `--ignore-config`, `--no-plugin-dirs` and `--no-remote-components`. It uses only the bundled
+  Deno (`--no-js-runtimes` first, so no node.js or bun on PATH), and Deno runs YouTube's player code with no
+  permissions. yt-dlp's and Deno's caches live in NEON's `data` folder.
+- **The link is never an option.** Only http(s) links reach yt-dlp, always after `--`, so a link like
+  `https://x/--exec=...` is a link, not a command.
+- **What is kept.** yt-dlp writes into a hidden work folder next to the download. Only a media file (`.mp4`, `.mkv`,
+  `.webm`, `.m4a`, `.mp3` and similar) is renamed into place, never over an existing file. It gets Mark-of-the-Web.
+- **Stopping.** Each video runs in its own Windows job object: pause or quit stops yt-dlp, ffmpeg and Deno together,
+  and they stop by themselves if NEON closes.
+
+### Updates (3.6)
+
+- **Where updates come from.** NEON asks `api.github.com` for the latest release of `mrsharmaji1301/neon-torrent` over HTTPS. Drafts and pre-releases are ignored.
+- **Checks before install.** Before anything installs, the downloaded `.msi` must:
+  - have exactly the size and SHA-256 that GitHub reports for that release asset,
+  - carry NEON's UpgradeCode, read with Windows Installer,
+  - and have the version of the release.
+
+  Anything else is deleted.
+- **When it installs.** Only after the user presses INSTALL & RESTART. A small PowerShell script in `data\updates` waits for NEON to exit, runs `msiexec` with elevation (Windows shows its own consent prompt), and starts NEON again.
+- **Test hook.** `NEON_UPDATE_API` points the check elsewhere, for tests only. The package checks still apply.

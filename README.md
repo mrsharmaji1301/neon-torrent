@@ -4,7 +4,7 @@
 your phone and your other PCs.</b><br>Made by SharmaJi with ❤ for the Community.</p>
 
 <p align="center">
-<img alt="Version" src="https://img.shields.io/badge/version-3.5.1-22d3ee">
+<img alt="Version" src="https://img.shields.io/badge/version-3.6.0-22d3ee">
 <img alt="Windows" src="https://img.shields.io/badge/Windows-10%20%7C%2011-38bdf8">
 <img alt="Price" src="https://img.shields.io/badge/price-free-e040fb">
 <img alt="Telemetry" src="https://img.shields.io/badge/telemetry-none-22e5a0">
@@ -31,6 +31,7 @@ your phone and your other PCs.</b><br>Made by SharmaJi with ❤ for the Communit
 - **One ADD box.** Paste anything: a magnet, an info-hash, a .torrent link, a direct file link or a web page.
   - Torrents go to the torrent list.
   - Files go to **DOWNLOADS**.
+  - A video page (YouTube and the like) opens **Download video** (see Videos below).
   - A web page shows the files, magnets and .torrent links on it, and you tick what you want.
 - **DOWNLOADS**, an IDM-style manager:
   - up to 32 connections per file, which keep each other busy to the end
@@ -44,6 +45,33 @@ your phone and your other PCs.</b><br>Made by SharmaJi with ❤ for the Communit
   - Results are not filtered by topic. Sources you add are marked "not verified by NEON".
 - **Zero pop-ups.** NEON has no web page engine: pages and feeds are read as text, and nothing on them runs. Search lists only real magnets and .torrent links. A browser opens only when you press a button that says so.
 - **Browser downloads.** When your browser saves a `.torrent` to Downloads, NEON asks whether to add it.
+
+## Videos (3.6)
+
+Paste a video page into the ADD box, for example a YouTube link. NEON finds the video and opens **Download video**:
+
+- **Format**: MP4 (plays everywhere), MKV, MOV, AVI, MPEG, WEBM or FLV. Audio only: MP3, M4A, OPUS, OGG, WAV or FLAC.
+- **Quality**: only the resolutions this video really has, from 144p up to 4K, with the size of each. For MP3, OPUS
+  and OGG, the bitrate (best variable, 320, 256, 192 or 128 kbps).
+- The video goes into **DOWNLOADS** with the rest: pause and resume, the queue, the speed limit.
+- AVI and MPEG are made by converting the video after it downloads. That takes a while for long or high-resolution
+  videos; the row shows "Converting to AVI · 45%".
+- YouTube, Vimeo, Dailymotion, X, Instagram, Facebook, Reddit, TikTok, SoundCloud and many more sites work. For another
+  page with no files on it, NEON looks for a video embedded in it.
+
+NEON uses yt-dlp, Deno and FFmpeg, installed with it in the `media` folder. Videos protected with DRM (Netflix, Prime
+Video and similar) cannot be downloaded.
+
+## Updates (3.6)
+
+NEON looks for a new release on GitHub at random times, a few minutes after it starts and then every few hours. **Help → Check for updates** checks right away.
+
+When there is a new version, a green arrow appears in the title bar:
+
+1. Click it to see what is new, then press **UPDATE NOW**. The download shows its progress, size, speed and time left.
+2. NEON checks the download: GitHub's SHA-256 for the file, NEON's own package code, and the version.
+3. Press **INSTALL & RESTART**. NEON closes, Windows asks once to allow the install, Setup shows its progress, and the new NEON opens.
+4. The new NEON shows what changed. Your torrents and settings stay.
 
 ## Screenshots
 

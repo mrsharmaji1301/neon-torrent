@@ -240,6 +240,7 @@ def open_command() -> tuple[str, str]:
 
 class TorrentWindow(QMainWindow):
     sig_threadsafe_notice = Signal(str, str)         # notices from download threads, delivered on the UI thread
+    sig_update_found = Signal(dict)                  # a newer release, from the update checker's thread
     sig_add_uri = Signal(str)
     sig_add_file = Signal(str)
     sig_pause = Signal(list)
@@ -388,6 +389,12 @@ class TorrentWindow(QMainWindow):
                                   "so an antivirus alert is possible.")
         self.flash_btn.clicked.connect(self.toggle_flash)
         tl.addWidget(self.flash_btn)
+        self.update_btn = GlowButton("", "download", "green", "ghost")
+        self.update_btn.setFixedSize(44, 44)
+        self.update_btn.icon_size = 22
+        self.update_btn.clicked.connect(self.show_update)
+        self.update_btn.hide()
+        tl.addWidget(self.update_btn)
         self.shield_btn = GlowButton("", "shield", "green", "ghost")
         self.shield_btn.setFixedSize(44, 44)
         self.shield_btn.icon_size = 22
@@ -431,9 +438,16 @@ class TorrentWindow(QMainWindow):
         self.views.addWidget(self.downloads_tab)
         self.search_tab = SearchTab(lambda: self.prefs, T.save_preferences, self._add_one, self.bg.register)
         self.views.addWidget(self.search_tab)
-        self.resolver = Resolver()
+        self.resolver = Resolver(lambda: T.app_data_dir() / "media-cache")
         self.resolver.resolved.connect(self._on_resolved)
         self._watch_downloads()
+        from neontorrent.updater import Updater
+        self.updater = Updater(self.sig_update_found.emit, lambda text: self.sig_threadsafe_notice.emit(text, "ok"),
+                               lambda text: self.sig_threadsafe_notice.emit(f"UPDATE CHECK FAILED · {text}", "warn"))
+        self.update_timer = QTimer(self)
+        self.update_timer.setSingleShot(True)
+        self.update_timer.timeout.connect(self._scheduled_update_check)
+        self.update_timer.start(int(self.updater.next_delay(first=True) * 1000))
         root.addWidget(self.views, 1)
 
         # --- add torrent
@@ -604,6 +618,7 @@ class TorrentWindow(QMainWindow):
                            ("Open magnet links with NEON", self.make_magnet_default, ""),
                            ("Ask about .torrent files the browser saves (on/off)", self._toggle_watch, "")])
         menu("&Help", [("About NEON Torrent", lambda: AboutDialog(self).exec(), ""),
+                       ("Check for updates", lambda: self.updater.check_now(manual=True), ""),
                        None,
                        ("Show error log", lambda: show_in_explorer(data / "error.log", select=True)
                         if (data / "error.log").exists() else self._on_notice("NO ERRORS LOGGED", "info"), ""),
@@ -699,6 +714,7 @@ class TorrentWindow(QMainWindow):
         self.engine.snapshot.connect(self._on_snapshot)
         self.engine.notice.connect(self._on_notice)
         self.sig_threadsafe_notice.connect(self._on_notice)
+        self.sig_update_found.connect(self._on_update_found)
         self.engine.finished.connect(self._on_finished)
         self.engine.magnet.connect(self._on_magnet)
         self.engine.threat.connect(self._on_threat)
@@ -886,7 +902,8 @@ class TorrentWindow(QMainWindow):
             if value.lower().split("?")[0].endswith(".torrent"):
                 self.sig_add_uri.emit(value)
             else:
-                self._on_notice("CHECKING THE LINK…", "info")
+                from neontorrent.media import is_video_site
+                self._on_notice("FINDING THE VIDEO…" if is_video_site(value) else "CHECKING THE LINK…", "info")
                 self.resolver.resolve(value)
         else:
             self._on_notice("NOT A LINK NEON CAN USE · paste a magnet, .torrent, file or web page", "warn")
@@ -895,9 +912,17 @@ class TorrentWindow(QMainWindow):
         return self.prefs.get("download_dir") or str(Path.home() / "Downloads")
 
     def _on_resolved(self, kind: str, payload):
-        from neontorrent.downloads_ui import AddDownloadDialog, LinkPickerDialog
+        from neontorrent.downloads_ui import AddDownloadDialog, LinkPickerDialog, VideoDialog
         if kind == "error":
             self._on_notice(f"LINK FAILED · {payload}", "error")
+        elif kind == "video":
+            dialog = VideoDialog(payload, self._download_folder(), self)
+            if dialog.exec() == VideoDialog.DialogCode.Accepted and dialog.choice() is not None:
+                c = dialog.choice()
+                self.downloads.add_video(payload.url, dialog.folder.text(), dialog.name.text(), c["selector"],
+                                         c["size"], not dialog.later.isChecked(), c["fmt"], c["merge"], c["kbps"],
+                                         c["duration"])
+                self.view_tabs.select("downloads")
         elif kind == "torrent":
             self.sig_add_uri.emit(payload.url)
         elif kind == "file":
@@ -936,6 +961,39 @@ class TorrentWindow(QMainWindow):
             return
         self._watcher = QFileSystemWatcher([folder], self)
         self._watcher.directoryChanged.connect(lambda _p: QTimer.singleShot(1500, self._check_new_torrents))
+
+    # ------------------------------------------------------------ updates
+    def _updates_folder(self) -> Path:
+        return T.app_data_dir() / "updates"
+
+    def _scheduled_update_check(self):
+        if self.prefs.get("auto_update", True):
+            self.updater.check_now()
+        self.update_timer.start(int(self.updater.next_delay(first=False) * 1000))
+
+    def _on_update_found(self, info: dict):
+        self.update_btn.setToolTip(f"Update available: NEON {info['version']} — click to update")
+        self.update_btn.set_active(True)
+        self.update_btn.show()
+        if self.isVisible() and not self.isActiveWindow() and self.tray.isVisible():
+            self.tray.showMessage(APP_NAME, f"NEON {info['version']} is available. Click the green arrow to update.",
+                                  self.windowIcon(), 5000)
+
+    def show_update(self):
+        info = self.updater.available
+        if info is None:
+            self.updater.check_now(manual=True)
+            return
+        from neontorrent.update_ui import UpdateDialog
+        UpdateDialog(info, self._updates_folder(), T.app_exe(), self.quit_app, self).exec()
+
+    def show_updated_notes(self):
+        """The first start after an update shows what changed, once."""
+        from neontorrent.updater import pending_notes
+        notes = pending_notes(self._updates_folder())
+        if notes is not None:
+            from neontorrent.update_ui import UpdatedDialog
+            UpdatedDialog(notes, self).exec()
 
     def _toggle_watch(self):
         self.prefs["watch_downloads"] = not self.prefs.get("watch_downloads", True)
@@ -1586,6 +1644,7 @@ def main() -> int:
     server.newConnection.connect(on_connection)
     window.show()
     QTimer.singleShot(2500, window.check_magnet_handler)
+    QTimer.singleShot(1200, window.show_updated_notes)
     for arg in args:
         if not arg.startswith("--"):
             QTimer.singleShot(1500, lambda a=arg: window.add_any(a))

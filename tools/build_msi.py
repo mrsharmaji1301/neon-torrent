@@ -104,6 +104,9 @@ def make_layout() -> None:
     shutil.copytree(DIST, LAYOUT)
     (LAYOUT / "cloudflared").mkdir()
     shutil.copy2(cloudflared_exe(), LAYOUT / "cloudflared" / "cloudflared.exe")
+    sys.path.insert(0, str(ROOT / "tools"))
+    from media_tools import media_folder                 # yt-dlp, Deno and ffmpeg for videos, pinned by SHA-256
+    shutil.copytree(media_folder(), LAYOUT / "media")
     # Nuitka only bundles the VC++ runtime when Visual Studio is installed; the PySide6 wheel ships the same
     # redistributable DLLs, so the MSI runs on a PC without the VC++ Redistributable too
     pyside = Path(sys.prefix) / "Lib" / "site-packages" / "PySide6"

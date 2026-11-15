@@ -225,6 +225,11 @@ def search_source(source: Source, query: str) -> list[Result]:
     return [r for r in map(_accept, raw) if r is not None]
 
 
+def archive_site_url(query: str) -> str:
+    """Internet Archive's own search page for these words (IN MY BROWSER when no browser source is set up)."""
+    return "https://archive.org/search?query=" + quote_plus(query)
+
+
 def browser_url(source: Source, query: str) -> str:
     return web.check_url(source.url.replace("{query}", quote_plus(query)))
 

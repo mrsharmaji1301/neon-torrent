@@ -38,11 +38,12 @@ def human(n: float) -> str:
     return "—"
 
 
-def open_in_browser(url: str) -> None:
-    """The user's own browser, on an explicit click only. Explorer by its absolute path; http(s) only."""
-    web.check_url(url)
-    explorer = str(Path(os.environ.get("WINDIR", r"C:\Windows")) / "explorer.exe")
-    subprocess.Popen([explorer, url])
+def open_in_browser(url: str) -> bool:
+    """The user's own browser, on an explicit click only; http(s) only. Qt hands the URL to Windows' default-browser
+    handler (ShellExecute): ``explorer.exe <url>`` silently opens nothing on some Windows 11 builds."""
+    from PySide6.QtCore import QUrl
+    from PySide6.QtGui import QDesktopServices
+    return QDesktopServices.openUrl(QUrl(web.check_url(url)))
 
 
 def show_in_explorer(path: str) -> None:
@@ -125,6 +126,114 @@ class AddDownloadDialog(NeonDialog):
             b.setFixedSize(150, 44)
             buttons.addWidget(b)
         self.root.addLayout(buttons)
+
+    def _browse(self) -> None:
+        folder = QFileDialog.getExistingDirectory(self, "Save to", self.folder.text())
+        if folder:
+            self.folder.setText(folder)
+
+
+# ------------------------------------------------------------------ a video page
+class VideoDialog(NeonDialog):
+    """A video page (YouTube and the like): its title, the quality to save, the name and the folder."""
+
+    def __init__(self, info, folder: str, parent=None):
+        super().__init__("Download video", parent)
+        self.setMinimumWidth(600)
+        self.info = info
+        minutes, seconds = divmod(int(info.duration), 60)
+        length = (f"{minutes // 60}:{minutes % 60:02d}:{seconds:02d}" if minutes >= 60 else f"{minutes}:{seconds:02d}") \
+            if info.duration else ""
+        about = QLabel("\n".join(x for x in (info.title, " · ".join(x for x in (info.uploader, info.site, length) if x))
+                                 if x))
+        about.setTextFormat(Qt.TextFormat.PlainText)
+        about.setWordWrap(True)
+        about.setFont(T.font(10.5))
+        self.root.addWidget(about)
+        from . import media
+        pick = QHBoxLayout()
+        pick.addWidget(QLabel("Format"))
+        self.format = QComboBox()
+        has_video = any(not c.audio_only for c in info.choices)
+        for fmt in media.FORMATS:
+            if fmt.audio or has_video:
+                self.format.addItem(fmt.label, fmt)
+        self.format.setCurrentIndex(0 if has_video else self.format.findText(media.FORMAT["mp3"].label))
+        pick.addWidget(self.format, 1)
+        pick.addSpacing(12)
+        pick.addWidget(QLabel("Quality"))
+        self.quality = QComboBox()
+        pick.addWidget(self.quality, 1)
+        self.root.addLayout(pick)
+        self.note = QLabel("")
+        self.note.setObjectName("muted")
+        self.note.setWordWrap(True)
+        self.root.addWidget(self.note)
+        self.format.currentIndexChanged.connect(self._fill_quality)
+        self._fill_quality()
+        from .share import safe_name
+        self.name = QLineEdit(safe_name(info.title) or "video")
+        self.root.addWidget(self.name)
+        row = QHBoxLayout()
+        self.folder = QLineEdit(folder)
+        browse = GlowButton("BROWSE", "folder", "cyan", "outline")
+        browse.setFixedSize(120, 38)
+        browse.clicked.connect(self._browse)
+        row.addWidget(self.folder, 1)
+        row.addWidget(browse)
+        self.root.addLayout(row)
+        self.later = QCheckBox("Add paused (start later)")
+        self.root.addWidget(self.later)
+        buttons = QHBoxLayout()
+        buttons.addStretch(1)
+        cancel = GlowButton("CANCEL", "close", "magenta", "outline")
+        cancel.clicked.connect(self.reject)
+        ok = GlowButton("DOWNLOAD", "download", "cyan", "solid", "cyan2")
+        ok.clicked.connect(self.accept)
+        for b in (cancel, ok):
+            b.setFixedSize(150, 44)
+            buttons.addWidget(b)
+        self.root.addLayout(buttons)
+
+    def _fill_quality(self) -> None:
+        """Only what this video really has: its own resolutions for a video format, bitrates for lossy audio."""
+        from . import media
+        fmt = self.format.currentData()
+        self.quality.clear()
+        audio = next((c for c in self.info.choices if c.audio_only), None)
+        if fmt.audio:
+            if fmt.bitrates:
+                for kbps in media.BITRATES:
+                    self.quality.addItem("Best (variable bitrate)" if kbps == 0 else f"{kbps} kbps", kbps)
+            else:
+                self.quality.addItem("Original quality" if fmt.ext == "m4a" else "Lossless", 0)
+        else:
+            for choice in self.info.choices:
+                if not choice.audio_only:
+                    self.quality.addItem(choice.label + (f"  ·  {human(choice.size)}" if choice.size > 0 else ""),
+                                         choice)
+            best_hd = next((i for i in range(self.quality.count())
+                            if self.quality.itemData(i).label.startswith("1080p")), 0)
+            self.quality.setCurrentIndex(best_hd)           # Full HD when there is one, else the best there is
+        slow = {"avi": "AVI", "mpg": "MPEG", "webm": "WEBM"}.get(fmt.ext)
+        self.note.setText(f"{slow} is made by converting the video after it downloads; that takes a while for long "
+                          "or high-resolution videos." if slow else
+                          "Audio is taken from the video's own soundtrack." if fmt.audio and audio is None else "")
+        self.note.setVisible(bool(self.note.text()))
+
+    def choice(self) -> dict | None:
+        """add_video's arguments for the picked format and quality."""
+        from . import media
+        fmt = self.format.currentData()
+        data = self.quality.currentData()
+        if fmt is None:
+            return None
+        video = None if fmt.audio else data
+        selector, merge = media.plan(self.info, video, fmt)
+        audio = next((c for c in self.info.choices if c.audio_only), None)
+        size = video.size if video is not None else (audio.size if audio is not None and fmt.ext == "m4a" else -1)
+        return {"selector": selector, "merge": merge, "fmt": fmt.ext, "kbps": data if fmt.audio else 0,
+                "size": size, "duration": self.info.duration}
 
     def _browse(self) -> None:
         folder = QFileDialog.getExistingDirectory(self, "Save to", self.folder.text())
@@ -283,7 +392,12 @@ class DownloadsTab(QWidget):
         for i, row in enumerate(rows):
             size, done = row["size"], row["done"]
             progress = f"{done / size * 100:.1f}%" if size > 0 else human(done)
-            state = {"queued": "Queued", "running": f"Downloading · {row['connections']} conn.", "paused": "Paused",
+            running = "Downloading video" if row.get("video") else f"Downloading · {row['connections']} conn."
+            if row.get("video") and row["state"] == "running" and row.get("stage") == "convert":
+                running = f"Converting to {row['fmt'].upper()} · {row['stage_done'] * 100:.0f}%"
+            elif row.get("video") and row["state"] == "running" and size > 0 and done >= size:
+                running = "Joining video and audio"
+            state = {"queued": "Queued", "running": running, "paused": "Paused",
                      "done": "Done" + (" · program ⚠" if row["warning"] else ""), "failed": f"Failed · {row['error']}",
                      "cancelled": "Cancelled"}.get(row["state"], row["state"])
             cells = [_cell(row["name"], row), _cell(human(size), align_right=True), _cell(progress, align_right=True),
@@ -464,13 +578,19 @@ class SearchTab(QWidget):
         SourcesDialog(self.prefs(), self.save_prefs, self.window()).exec()
 
     def _browser(self) -> None:
+        """The search in the user's own browser: every "Open in my browser" source, else Internet Archive's site."""
         sources, words = SR.split_quickword(self.query.text(), SR.sources_from_prefs(self.prefs()))
-        targets = [s for s in sources if s.kind == "browser"]
-        if not words or not targets:
-            self.status.setText("Add a source of the kind “Open in my browser” under SOURCES first.")
+        if not words:
+            self.query.setFocus()
+            self.status.setText("Type what to search for first, then press IN MY BROWSER.")
             return
-        for s in targets:
-            open_in_browser(SR.browser_url(s, words))
+        targets = [SR.browser_url(s, words) for s in sources if s.kind == "browser"] or \
+                  [SR.archive_site_url(words)]
+        opened = sum(open_in_browser(url) for url in targets)
+        if opened:
+            self.status.setText(f"Opened {opened} search{'es' if opened != 1 else ''} in your browser.")
+        else:
+            self.status.setText("Windows did not open a browser. Set a default browser in Settings > Default apps.")
 
     def run(self) -> None:
         sources, words = SR.split_quickword(self.query.text(), SR.sources_from_prefs(self.prefs()))
@@ -520,19 +640,39 @@ class SearchTab(QWidget):
 
 # ------------------------------------------------------------------ resolving a pasted link
 class Resolver(QObject):
-    """Runs ``web.probe`` / ``web.page_links`` off the UI thread for the smart ADD box."""
-    resolved = Signal(str, object)         # kind ("torrent" | "file" | "page" | "error"), payload
+    """Runs ``web.probe`` / ``web.page_links`` / ``media.probe`` off the UI thread for the smart ADD box.
+    Video sites (YouTube and the like) go to yt-dlp; another page with no files or torrents on it is asked too,
+    as a video may be embedded in it."""
+    resolved = Signal(str, object)         # kind ("torrent" | "file" | "page" | "video" | "error"), payload
+
+    def __init__(self, cache, parent=None):
+        super().__init__(parent)
+        self.cache = cache                 # () -> the yt-dlp / Deno cache folder in NEON's data
 
     def resolve(self, url: str) -> None:
+        from . import media
+
         def run():
             try:
+                if media.is_video_site(url):
+                    self.resolved.emit("video", media.probe(url, self.cache()))
+                    return
                 info = web.probe(url)
                 if info.kind == "page":
                     text, final = web.get_text(info.url)
-                    self.resolved.emit("page", (final, web.page_links(text, final)))
+                    links = web.page_links(text, final)
+                    if not links and media.tools_folder() is not None:
+                        try:
+                            self.resolved.emit("video", media.probe(final, self.cache()))
+                            return
+                        except media.MediaError:
+                            pass
+                    self.resolved.emit("page", (final, links))
+                elif info.kind == "file" and info.name.lower().endswith((".m3u8", ".mpd")):
+                    self.resolved.emit("video", media.probe(info.url, self.cache()))     # a stream playlist
                 else:
                     self.resolved.emit(info.kind, info)
-            except web.WebError as exc:
+            except (web.WebError, media.MediaError) as exc:
                 self.resolved.emit("error", str(exc))
         threading.Thread(target=run, daemon=True, name="neon-resolve").start()
 

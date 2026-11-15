@@ -98,8 +98,9 @@ def make_default(open_command: str, icon: str, classes: str = CLASSES) -> None:
 
 def open_default_apps() -> None:
     """Windows Settings > Default apps > NEON Torrent, where the user picks it for magnet links and .torrent files.
-    Explorer opens the fixed ms-settings: link (by its absolute path: no PATH lookup)."""
-    import subprocess
+    Qt hands the fixed ms-settings: link to Windows' own handler (ShellExecute); ``explorer.exe <link>`` silently
+    opens nothing on some Windows 11 builds."""
     from urllib.parse import quote
-    explorer = str(Path(os.environ.get("WINDIR", r"C:\Windows")) / "explorer.exe")
-    subprocess.Popen([explorer, f"ms-settings:defaultapps?registeredAppMachine={quote(REGISTERED_NAME)}"])
+    from PySide6.QtCore import QUrl
+    from PySide6.QtGui import QDesktopServices
+    QDesktopServices.openUrl(QUrl(f"ms-settings:defaultapps?registeredAppMachine={quote(REGISTERED_NAME)}"))

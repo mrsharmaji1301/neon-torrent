@@ -59,6 +59,13 @@ class Job:
     path: str = ""                         # the saved file once done
     segments: list[Segment] = field(default_factory=list)
     warning: str = ""                      # e.g. "program" when Download Guard flags the name
+    media: str = ""                        # a video page: the quality yt-dlp downloads (its -f); "" for a file
+    fmt: str = ""                          # video: the format to save (media.FORMAT key), "" = as downloaded
+    merge: str = "mp4/mkv"                 # video: the container yt-dlp joins the streams into
+    kbps: int = 0                          # video: audio bitrate for lossy audio formats (0 = best VBR)
+    duration: float = 0.0                  # video: seconds, for the conversion's progress
+    stage: str = ""                        # video: "" while downloading, "convert" while ffmpeg converts
+    stage_done: float = 0.0                # video: conversion progress 0..1
 
     @property
     def done(self) -> int:
@@ -153,6 +160,23 @@ class DownloadManager:
             self._save(job)
         return job
 
+    def add_video(self, page: str, folder: str, name: str, selector: str, size: int = -1, start: bool = True,
+                  fmt: str = "mp4", merge: str = "mp4/mkv", kbps: int = 0, duration: float = 0.0) -> Job:
+        """A video page (YouTube and the like) in the quality ``selector`` that media.probe offered, saved as
+        ``fmt`` (media.FORMAT)."""
+        from .media import FORMAT
+        from .share import safe_name
+        web.check_url(page)
+        if fmt not in FORMAT:
+            raise ValueError("unknown format")
+        job = Job(secrets.token_hex(6), page, str(folder), safe_name(name) if name else "video", size, False, 1,
+                  "queued" if start else "paused", media=selector, fmt=fmt, merge=merge, kbps=int(kbps),
+                  duration=float(duration))
+        with self.lock:
+            self.jobs[job.id] = job
+            self._save(job)
+        return job
+
     def pause(self, ids: list[str]) -> None:
         with self.lock:
             for job_id in ids:
@@ -185,6 +209,9 @@ class DownloadManager:
                 for t in threads:
                     t.join(timeout=5)
                 self._part(job).unlink(missing_ok=True)
+                if job.media:
+                    import shutil
+                    shutil.rmtree(self._video_work(job), ignore_errors=True)
                 if delete_file and job.path:
                     Path(job.path).unlink(missing_ok=True)
                 (self.dir / f"{job_id}.json").unlink(missing_ok=True)
@@ -203,7 +230,9 @@ class DownloadManager:
                 rows.append({"id": job.id, "name": job.name, "url": job.url, "size": job.size, "done": job.done,
                              "state": job.state, "error": job.error, "speed": speed, "path": job.path,
                              "connections": sum(1 for t in self.workers.get(job.id, []) if t.is_alive()),
-                             "ranges": job.ranges, "warning": job.warning, "folder": job.folder})
+                             "ranges": job.ranges, "warning": job.warning, "folder": job.folder,
+                             "video": bool(job.media), "fmt": job.fmt, "stage": job.stage,
+                             "stage_done": job.stage_done})
             return rows
 
     def close(self) -> None:
@@ -264,7 +293,11 @@ class DownloadManager:
 
     # ---------------------------------------------------------- one job
     def _run(self, job: Job, stop: threading.Event) -> None:
+        from .media import MediaError
         try:
+            if job.media:
+                self._run_media(job, stop)
+                return
             if not job.segments:
                 info = web.probe(job.url)
                 if info.kind == "page":
@@ -292,7 +325,7 @@ class DownloadManager:
             if any(s.left > 0 for s in job.segments):
                 raise web.WebError("the server stopped sending the file")
             self._finish(job, part)
-        except web.WebError as exc:
+        except (web.WebError, MediaError) as exc:
             with self.lock:
                 if not stop.is_set():
                     job.state, job.error = "failed", str(exc)
@@ -413,3 +446,134 @@ class DownloadManager:
             job.warning = "program" if kind == "program" else ""
         self.notify(f"DOWNLOADED · {saved.name}" + (" · it is a program: run it only if you trust the site"
                                                      if job.warning else ""), "warn" if job.warning else "ok")
+
+    # ---------------------------------------------------------- one video (yt-dlp)
+    def _video_work(self, job: Job) -> Path:
+        return Path(job.folder) / f".{job.id}.neonvideo"
+
+    def _run_media(self, job: Job, stop: threading.Event) -> None:
+        """yt-dlp fetches the chosen streams into a hidden work folder (it resumes its own .part files after a
+        pause), ffmpeg joins them, and the result gets its real name, Mark-of-the-Web and a Download Guard check."""
+        import shutil
+        from . import guard, media
+        from .share import commit_file
+        tools = media.tools_folder()
+        if tools is None:
+            raise media.MediaError("NEON's video tools are missing (reinstall NEON Torrent to restore them)")
+        work = self._video_work(job)
+        work.mkdir(parents=True, exist_ok=True)
+        cache = self.dir.parent / "media-cache"
+        if not job.segments:
+            job.segments = [Segment(0, job.size - 1 if job.size > 0 else -1)]
+        seg = job.segments[0]
+        streams: dict[str, int] = {}                         # bytes per stream (video, then audio)
+
+        def on_download(line: str) -> bool:
+            progress = media.parse_progress(line)
+            if progress is None:
+                return False
+            stream, done, total = progress
+            streams[stream] = done
+            with self.lock:
+                seg.done = sum(streams.values())
+                if job.size <= 0 and total > 0 and len(streams) == 1:
+                    seg.end = total - 1
+            return True
+        with self.lock:
+            job.stage, job.stage_done = "", 0.0
+        command = media.download_command(tools, cache, job.url, job.media, work, self.bucket.rate, job.merge)
+        code, lines = self._tool(command, media._env(cache), stop, on_download)
+        if stop.is_set():
+            return
+        if code:
+            raise media.MediaError(media.error_line("\n".join(lines)) or "the video download failed")
+        results = [p for p in work.iterdir() if p.is_file() and p.stem == "video" and p.suffix.lower() in
+                   (".mp4", ".mkv", ".webm", ".m4a", ".mp3", ".opus", ".ogg", ".mov", ".flv", ".3gp", ".aac")]
+        if not results:
+            raise media.MediaError("yt-dlp finished without a video file")
+        result = max(results, key=lambda p: p.stat().st_size)
+        fmt = media.FORMAT.get(job.fmt)
+        if fmt is not None and (fmt.audio or media.needs_convert(result, fmt)):
+            result = self._convert(job, tools, result, fmt, stop)
+            if result is None:
+                return
+        name = f"{job.name}{result.suffix.lower()}"
+        if web.link_kind(name) == "program":                   # never: the suffix list above is media only
+            raise media.MediaError("the download was not a video; it was deleted")
+        for attempt in range(30):                               # an antivirus may hold the new file for a moment
+            try:
+                saved = commit_file(result, Path(job.folder), name)
+                break
+            except PermissionError:
+                if attempt == 29:
+                    raise
+                time.sleep(0.5)
+        shutil.rmtree(work, ignore_errors=True)
+        guard.mark_of_the_web(saved)
+        size = saved.stat().st_size
+        with self.lock:
+            job.name, job.path, job.state, job.finished = saved.name, str(saved), "done", time.time()
+            job.size, seg.end, seg.done = size, size - 1, size
+        self.notify(f"DOWNLOADED · {saved.name}", "ok")
+
+    def _tool(self, command: list[str], env: dict | None, stop: threading.Event,
+              on_line: Callable[[str], bool]) -> tuple[int, list[str]]:
+        """Runs yt-dlp or ffmpeg hidden, in its own process tree that a pause or quit kills. ``on_line`` gets every
+        output line and returns True for progress lines; the last other lines come back for error messages."""
+        import subprocess
+        from . import media
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+                                   env=env, creationflags=media.NO_WINDOW)
+        tree = media.ProcessTree(process)
+
+        def watch() -> None:
+            while process.poll() is None:
+                if stop.wait(0.3):
+                    tree.kill()
+                    return
+        threading.Thread(target=watch, daemon=True, name="neon-video-watch").start()
+        lines: list[str] = []
+        try:
+            for raw in iter(process.stdout.readline, b""):
+                line = raw.decode("utf-8", "replace").strip()
+                if line and not on_line(line):
+                    lines = (lines + [line])[-30:]
+            process.wait()
+        finally:
+            tree.close()
+        return process.returncode, lines
+
+    def _convert(self, job: Job, tools: Path, source: Path, fmt, stop: threading.Event) -> Path | None:
+        """ffmpeg turns the downloaded file into the chosen format: first by keeping the streams (fast) where the
+        format allows it, else by converting them. None when paused or quit."""
+        import re
+        from . import media
+        target = source.with_name(f"converted.{fmt.ext}")
+        with self.lock:
+            job.stage, job.stage_done = "convert", 0.0
+
+        def on_line(line: str) -> bool:
+            if line.startswith("out_time_us=") and job.duration > 0:
+                try:
+                    seconds = int(line.split("=", 1)[1]) / 1e6
+                except ValueError:
+                    return True
+                with self.lock:
+                    job.stage_done = max(0.0, min(1.0, seconds / job.duration))
+                return True
+            return bool(re.match(r"[a-z_0-9]+=", line))       # ffmpeg's other -progress keys
+        lines: list[str] = []
+        for copy in ([True, False] if fmt.copy_first else [False]):
+            target.unlink(missing_ok=True)
+            code, lines = self._tool(media.convert_command(tools, source, target, fmt, job.kbps, copy), None, stop,
+                                     on_line)
+            if stop.is_set():
+                target.unlink(missing_ok=True)
+                return None
+            if code == 0 and target.is_file() and target.stat().st_size > 0:
+                source.unlink(missing_ok=True)
+                with self.lock:
+                    job.stage_done = 1.0
+                return target
+        target.unlink(missing_ok=True)
+        raise media.MediaError(f"converting to {fmt.ext.upper()} failed" + (f": {lines[-1][:200]}" if lines else ""))

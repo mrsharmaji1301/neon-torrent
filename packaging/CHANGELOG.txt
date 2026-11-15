@@ -1,8 +1,10 @@
-NEON Torrent 3.5.1 (15 Nov 2026)
-- NEON 3.5.0 closed at once on many PCs ("illegal instruction"): it was built for the newer CPU of the build server. 3.5.1 is built to run on every 64-bit Intel and AMD CPU.
-- Upgrading could leave NEON unable to start (Shiboken.pyd failed to load): files from a newer build were skipped and then removed with the old version. Setup now replaces every file on upgrade.
+NEON Torrent 3.6.0 (15 Nov 2026)
+- Videos: paste a YouTube (or Vimeo, X, Instagram, Reddit, TikTok and many more) link into the ADD box. Pick the format (MP4, MKV, MOV, AVI, MPEG, WEBM, FLV, or audio only as MP3, M4A, OPUS, OGG, WAV, FLAC) and the quality: only the resolutions the video really has, up to 4K, or the MP3 bitrate. It downloads in DOWNLOADS with pause, resume and the queue.
+- One-click updates. NEON checks GitHub for a new version now and then. When there is one, a green arrow appears in the title bar.
+- Click the arrow to see what is new, then UPDATE NOW: the download shows its progress. INSTALL & RESTART installs it (Windows asks once) and starts the new NEON, which shows what changed.
+- Every update is checked before it installs: GitHub's SHA-256 for the file, that it is NEON's own package, and its version. Help > Check for updates checks right away.
 
-NEON Torrent 3.5.0 (14 Nov 2026)
+NEON Torrent 3.5.1 (15 Nov 2026)
 - One ADD box for everything: paste a magnet, info-hash, .torrent link, a direct file link or a web page. NEON works out what it is.
 - Downloads (an IDM-style download manager): many connections per file, pause and resume, resume after a restart, a queue, a speed limit and a start time. Finished files get Mark-of-the-Web; programs are flagged.
 - Web pages: NEON lists the files, magnets and .torrent links on the page and you tick what to download. The page is only read as text: nothing on it runs.

@@ -410,8 +410,34 @@ def test_static() -> None:
     executes_downloads = bool(dangerous)
     risky = launches
     check("Code audit: no os.system / startfile / eval; the only programs launched are Explorer, PowerShell "
-          "(antivirus status), Defender and cloudflared (File Sharing internet tunnel)", not executes_downloads,
+          "(antivirus status), Defender, cloudflared (File Sharing internet tunnel) and the bundled yt-dlp / ffmpeg "
+          "(videos)", not executes_downloads,
           "process launches: " + " | ".join(f"{n}: {l[:60]}" for n, l in risky))
+
+
+def test_media() -> None:
+    """Video pages: a pasted link can never become a yt-dlp option or a local file, nothing on the PC (config files,
+    plugins, a node.js on PATH, scripts from the internet) changes what yt-dlp runs, and only media files are kept."""
+    from neontorrent import media
+    tools, cache, work = Path("T"), Path("C"), Path("W")
+    tricky = "https://example.com/--exec=calc.exe"
+    cmd = media.download_command(tools, cache, tricky, "18", work)
+    safe_tail = cmd[-2:] == ["--", tricky]
+    refused = []
+    for bad in ("file:///C:/Windows/win.ini", "--exec calc", "javascript:alert(1)", r"\\server\share\x.mp4"):
+        try:
+            media.download_command(tools, cache, bad, "18", work)
+        except Exception:                                     # noqa: BLE001 (any refusal is fine)
+            refused.append(bad)
+    locked = all(flag in cmd for flag in ("--ignore-config", "--no-plugin-dirs", "--no-remote-components",
+                                          "--no-js-runtimes"))
+    source = (ROOT / "src" / "neontorrent" / "downloader.py").read_text(encoding="utf-8")
+    media_only = '(".mp4", ".mkv", ".webm", ".m4a", ".mp3"' in source and "MediaError(\"the download was not a video" \
+        in source and "guard.mark_of_the_web(saved)" in source
+    check("Videos: the link always follows \"--\" (never an option), only http(s) links reach yt-dlp, no config, "
+          "plugins, PATH runtimes or fetched scripts; only media files are kept, with Mark-of-the-Web",
+          safe_tail and len(refused) == 4 and locked and media_only,
+          f"tail={cmd[-2:]} refused={refused} locked={locked} media_only={media_only}")
 
 
 def test_share() -> None:
@@ -587,6 +613,7 @@ def main() -> int:
         test_ui()
         test_finish(e, save)
         test_static()
+        test_media()
         test_share()
     finally:
         e.shutdown()

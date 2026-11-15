@@ -18,6 +18,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 LICENSES = ROOT / "packaging" / "licenses"
 CLOUDFLARED = "2026.10.7"          # keep in step with CLOUDFLARED_VERSION in tools/build_msi.py
+sys.path.insert(0, str(ROOT / "tools"))
+import media_tools as MEDIA        # noqa: E402  (the pinned yt-dlp, Deno and FFmpeg)
 OUT = ROOT / "THIRD-PARTY-NOTICES.md"
 BASE = Path(sys.base_prefix)
 NOBLE = {"ciphers": "2.4.0", "curves": "2.4.0", "hashes": "2.4.0"}  # versions bundled by tools/build_share_web.py
@@ -124,6 +126,10 @@ def build() -> str:
         ("websocket-client (short codes for PC to PC)", wsc, "Apache-2.0"),
         ("@noble/ciphers, @noble/curves, @noble/hashes (phone page, bundled)", NOBLE["curves"], "MIT"),
         ("cloudflared (File Transfer over the internet, unmodified binary)", CLOUDFLARED, "Apache-2.0"),
+        ("yt-dlp (video downloads, unmodified binary)", MEDIA.YTDLP_VERSION,
+         "Unlicense; bundled components under their own licences (below)"),
+        ("Deno (JavaScript runtime used by yt-dlp, unmodified binary)", MEDIA.DENO_VERSION, "MIT"),
+        ("FFmpeg (joins video and audio, unmodified binaries)", MEDIA.FFMPEG_NAME.split("-win64")[0][7:], "GPL-3.0"),
         ("libffi, bzip2, zlib, expat, libmpdec, mimalloc and others in Python", "",
          "MIT, BSD-style and zlib licences (below)"),
         ("xz / liblzma (Python's lzma module)", "", "Public domain"),
@@ -230,6 +236,35 @@ only while File Transfer runs in INTERNET mode, for a temporary quick tunnel; no
 https://github.com/cloudflare/cloudflared (tag {CLOUDFLARED}). Its LICENSE file:
 
 {fenced((LICENSES / f"cloudflared-{CLOUDFLARED}-LICENSE.txt").read_text(encoding="utf-8"))}
+
+## yt-dlp {MEDIA.YTDLP_VERSION}
+
+`media\\yt-dlp.exe` is yt-dlp's official, unmodified release binary. NEON runs it only when you download a video from
+a web page. Source: https://github.com/yt-dlp/yt-dlp (tag {MEDIA.YTDLP_VERSION}). Its LICENSE file:
+
+{fenced((LICENSES / f"yt-dlp-{MEDIA.YTDLP_VERSION}-LICENSE.txt").read_text(encoding="utf-8"))}
+
+yt-dlp.exe bundles Python and other components; their licences, from yt-dlp's THIRD_PARTY_LICENSES.txt:
+
+{fenced((LICENSES / f"yt-dlp-{MEDIA.YTDLP_VERSION}-THIRD_PARTY_LICENSES.txt").read_text(encoding="utf-8"))}
+
+## Deno {MEDIA.DENO_VERSION}
+
+`media\\deno.exe` is Deno's official, unmodified release binary; yt-dlp runs YouTube's player code in it, with no
+permissions. Source: https://github.com/denoland/deno (tag v{MEDIA.DENO_VERSION}). Its LICENSE file:
+
+{fenced((LICENSES / f"deno-{MEDIA.DENO_VERSION}-LICENSE.txt").read_text(encoding="utf-8"))}
+
+## FFmpeg
+
+`media\\ffmpeg.exe` and the `av*.dll` / `sw*.dll` files next to it are the unmodified Windows build
+`{MEDIA.FFMPEG_NAME}` from https://github.com/yt-dlp/FFmpeg-Builds (release {MEDIA.FFMPEG_TAG}), licensed under the
+GNU General Public License version 3. NEON starts it as a separate program and does not link to it. The complete
+source code for this build: FFmpeg at commit `{MEDIA.FFMPEG_NAME.split("-")[2][1:]}` of https://git.ffmpeg.org/ffmpeg.git
+(mirror https://github.com/FFmpeg/FFmpeg), built with the scripts at https://github.com/yt-dlp/FFmpeg-Builds (release
+{MEDIA.FFMPEG_TAG}). Its licence:
+
+{fenced((LICENSES / "ffmpeg-N-128911-LICENSE.txt").read_text(encoding="utf-8"))}
 
 ## Python {py}
 
