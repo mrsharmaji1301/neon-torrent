@@ -1440,8 +1440,8 @@ class ShareTab(QWidget):
             key = f"r{t['number']}"
             tile = self.recv_grid.tiles.get(key)
             if tile is None:
-                if t["state"] != "active":
-                    continue                                   # already removed from the list
+                # a small file can arrive whole between two polls, so it is first seen already "done": show it too.
+                # A tile the user closed is gone from the server's list (forget), so it never comes back here.
                 tile = FileTile(key, t["name"], t["size"])
                 tile.closed.connect(self._close_received)
                 tile.opened.connect(lambda k: self._reveal(self.received.get(k)))

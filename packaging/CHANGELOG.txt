@@ -1,3 +1,6 @@
+NEON Torrent 3.6.1 (21 Nov 2026)
+- File Sharing: every file sent from the phone now shows on the PC. Small files that finished between two checks were saved but not listed.
+
 NEON Torrent 3.6.0 (15 Nov 2026)
 - Videos: paste a YouTube (or Vimeo, X, Instagram, Reddit, TikTok and many more) link into the ADD box. Pick the format (MP4, MKV, MOV, AVI, MPEG, WEBM, FLV, or audio only as MP3, M4A, OPUS, OGG, WAV, FLAC) and the quality: only the resolutions the video really has, up to 4K, or the MP3 bitrate. It downloads in DOWNLOADS with pause, resume and the queue.
 - One-click updates. NEON checks GitHub for a new version now and then. When there is one, a green arrow appears in the title bar.
